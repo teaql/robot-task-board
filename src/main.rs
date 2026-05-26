@@ -10,40 +10,24 @@ use crossterm::terminal::{
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 
-use rusqlite::Connection;
-use teaql_core::{DeleteCommand, Expr, UpdateCommand, TeaqlEntity};
-use teaql_provider_rusqlite::{
-    ensure_rusqlite_schema_for, RusqliteDialect, RusqliteIdSpaceGenerator,
-    RusqliteMutationExecutor, RusqliteProviderExt,
-};
-use teaql_runtime::{
-    InMemoryMetadataStore, InMemoryRepositoryRegistry,
-    UserContext,
-};
-
-// Import generated entities
-use robot_kanban::{Platform, Task, TaskStatus, TeaqlRuntimeContext};
-
 // Declare submodules
 mod utils;
 mod model;
 mod ui;
 
-// Import our new submodules' types
-use model::{LoggingExecutor, TransitionCommand, DomainTask};
+// Import our decoupled submodules' types (no direct TeaQL references!)
+use model::{TaskDb, TaskModel, MoveResult};
 
 pub struct App {
     pub input: String,
     pub logs: Vec<String>,
-    pub planned_tasks: Vec<Task>,
-    pub process_tasks: Vec<Task>,
-    pub done_tasks: Vec<Task>,
+    pub planned_tasks: Vec<TaskModel>,
+    pub process_tasks: Vec<TaskModel>,
+    pub done_tasks: Vec<TaskModel>,
     pub planned_count: usize,
     pub process_count: usize,
     pub done_count: usize,
-    pub ctx: TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>,
-    pub inner_executor: RusqliteMutationExecutor,
-    pub last_log_index: usize,
+    pub db: TaskDb,
     pub search_term: Option<String>,
     pub should_quit: bool,
     pub cpu_model: String,
@@ -51,10 +35,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(
-        ctx: TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>,
-        inner_executor: RusqliteMutationExecutor,
-    ) -> Self {
+    pub fn new(db: TaskDb) -> Self {
         let sys_info = utils::get_system_info();
         let mut app = Self {
             input: String::new(),
@@ -65,9 +46,7 @@ impl App {
             planned_count: 0,
             process_count: 0,
             done_count: 0,
-            ctx,
-            inner_executor,
-            last_log_index: 0,
+            db,
             search_term: None,
             should_quit: false,
             cpu_model: sys_info.cpu_model,
@@ -83,98 +62,23 @@ impl App {
     }
 
     pub fn check_sql_logs(&mut self) {
-        let sql_logs = self.ctx.context().sql_logs();
-        if sql_logs.len() > self.last_log_index {
-            for entry in &sql_logs[self.last_log_index..] {
-                let local_time: chrono::DateTime<chrono::Local> = entry.started_at.into();
-                let timestamp_str = local_time.format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-                let user_id_str = entry.user_identifier.as_deref().unwrap_or("");
-                let comment_part = if let Some(ref c) = entry.comment {
-                    format!(" - [{c}]")
-                } else {
-                    "".to_owned()
-                };
-                let elapsed_ms = entry.elapsed.as_secs_f64() * 1000.0;
-                let log_line = format!(
-                    "{timestamp_str}-[{user_id_str}]--DEBUG - SqlLogEntry{} - [{}] {} (took {:.3}ms)",
-                    comment_part, entry.result_summary, entry.debug_sql, elapsed_ms
-                );
-                self.add_log(&log_line);
-            }
-            self.last_log_index = sql_logs.len();
-        }
-    }
-
-    pub fn build_search_json(&self) -> String {
-        if let Some(ref term) = self.search_term {
-            format!(r#"{{"name": "{}"}}"#, term)
-        } else {
-            r#"{}"#.to_owned()
-        }
-    }
-
-    pub fn build_search_comment(&self) -> &'static str {
-        if self.search_term.is_some() {
-            "Get filtered tasks by keyword"
-        } else {
-            "Get active tasks"
+        let new_logs = self.db.check_sql_logs();
+        for log in new_logs {
+            self.add_log(&log);
         }
     }
 
     pub async fn reload_data(&mut self) -> Result<(), Box<dyn Error>> {
-        use robot_kanban::Q;
+        let res = self.db.reload_data(&self.search_term).await?;
 
-        let select = Q::tasks()
-            .comment(self.build_search_comment())
-            .find_with_json(self.build_search_json())
-            .facet_by_status_as("status_stats", Q::task_status().comment("Count status").count_tasks());
+        self.planned_tasks = res.planned_tasks;
+        self.process_tasks = res.process_tasks;
+        self.done_tasks = res.done_tasks;
+        self.planned_count = res.planned_count;
+        self.process_count = res.process_count;
+        self.done_count = res.done_count;
 
-        self.add_log(&format!(
-            "Q: Q::tasks().comment(\"{}\").find_with_json(\"{}\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())",
-            self.build_search_comment(),
-            self.build_search_json().replace('"', "\\\"")
-        ));
-
-        let all_tasks = select.execute_for_list(&self.ctx).await?;
-
-        // Retrieve status statistics directly from the query facets
-        self.planned_count = 0;
-        self.process_count = 0;
-        self.done_count = 0;
-
-        if let Some(facet_list) = all_tasks.facet("status_stats") {
-            for record in facet_list.iter() {
-                let status_id = match record.get("id") {
-                    Some(teaql_core::Value::U64(id)) => *id,
-                    Some(teaql_core::Value::I64(id)) => *id as u64,
-                    _ => 0,
-                };
-                let count = match record.get("count_tasks") {
-                    Some(teaql_core::Value::U64(c)) => *c as usize,
-                    Some(teaql_core::Value::I64(c)) => *c as usize,
-                    _ => 0,
-                };
-                match status_id {
-                    1 => self.planned_count = count,
-                    2 => self.process_count = count,
-                    3 => self.done_count = count,
-                    _ => {}
-                }
-            }
-        }
-
-        self.planned_tasks.clear();
-        self.process_tasks.clear();
-        self.done_tasks.clear();
-
-        for task in all_tasks.data {
-            match task.status_id() {
-                1 => self.planned_tasks.push(task),
-                2 => self.process_tasks.push(task),
-                3 => self.done_tasks.push(task),
-                _ => {}
-            }
-        }
+        self.add_log(&res.query_trace);
 
         Ok(())
     }
@@ -208,24 +112,7 @@ impl App {
                 if args.is_empty() {
                     self.add_log("Error: Task name cannot be empty. Usage: add <task name>");
                 } else {
-                    let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
-                    let next_id = id_gen.next_id("Task")?;
-
-                    let repo = self
-                        .ctx
-                        .context()
-                        .resolve_repository::<RusqliteDialect, LoggingExecutor>("Task")?;
-
-                    repo.insert(
-                        &repo
-                            .insert_command()
-                            .value("id", next_id)
-                            .value("version", 1_i64)
-                            .value("name", args.to_owned())
-                            .value("status_id", 1_u64) // Planned status ID
-                            .value("platform_id", 1_u64), // Platform ID
-                    )?;
-
+                    let next_id = self.db.add_task(args)?;
                     self.add_log(&format!("Created task [ID: {}] '{}'", next_id, args));
                     self.reload_data().await?;
                 }
@@ -234,17 +121,7 @@ impl App {
                 if args.is_empty() {
                     self.add_log("Error: Missing task ID. Usage: delete <id>");
                 } else if let Ok(id) = args.parse::<u64>() {
-                    let repo = self
-                        .ctx
-                        .context()
-                        .resolve_repository::<RusqliteDialect, LoggingExecutor>("Task")?;
-
-                    // Let's find the task to get its version
-                    let select = repo.select().project("version").filter(Expr::eq("id", id));
-                    let found_tasks = repo.fetch_entities::<Task>(&select)?;
-
-                    if let Some(task) = found_tasks.first() {
-                        repo.delete(&DeleteCommand::new("Task", id).expected_version(task.version()))?;
+                    if self.db.delete_task(id)? {
                         self.add_log(&format!("Deleted task [ID: {}]", id));
                         self.reload_data().await?;
                     } else {
@@ -272,67 +149,28 @@ impl App {
                     let target_status = if move_parts.len() > 1 {
                         move_parts[1].to_lowercase()
                     } else {
-                        "next".to_owned()
+                        "".to_owned() // Triggers next transition
                     };
 
-                    let target_arg = if target_status == "next" {
-                        "".to_owned() // Pass empty string to trigger domain next transition logic!
-                    } else {
-                        target_status
-                    };
-
-                    use robot_kanban::Q;
-
-                    let select = Q::tasks()
-                        .comment("Get task for DDD")
-                        .filter(Expr::eq("id", id))
-                        .return_type::<DomainTask>();
-
-                    self.add_log(&format!(
-                        "Q: Q::tasks().comment(\"Get task for DDD\").filter(Expr::eq(\"id\", {})).return_type::<DomainTask>()",
-                        id
-                    ));
-
-                    let found_tasks = select.execute_for_list(&self.ctx).await?;
-
-                    if let Some(mut domain_task) = found_tasks.into_iter().next() {
-                        let cmd_obj = TransitionCommand {
-                            target_status: target_arg,
-                        };
-                        let transition_result = domain_task.transition_status(&cmd_obj);
-
-                        match transition_result {
-                            Ok(Some(new_status)) => {
-                                let repo = self
-                                    .ctx
-                                    .context()
-                                    .resolve_repository::<RusqliteDialect, LoggingExecutor>("Task")?;
-
-                                repo.update(
-                                    &UpdateCommand::new("Task", id)
-                                        .expected_version(domain_task.task.version())
-                                        .value("status_id", new_status),
-                                )?;
-
-                                let status_name = match new_status {
-                                    1 => "Planned",
-                                    2 => "Process",
-                                    3 => "Done",
-                                    _ => "Unknown",
-                                };
-
-                                self.add_log(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
-                                self.reload_data().await?;
-                            }
-                            Ok(None) => {
-                                self.add_log(&format!("Task {} is already in 'Done' status", id));
-                            }
-                            Err(err_msg) => {
-                                self.add_log(&format!("Error: {}", err_msg));
-                            }
+                    let res = self.db.move_task(id, &target_status).await?;
+                    match res {
+                        MoveResult::Moved { status_name, query_trace } => {
+                            self.add_log(&query_trace);
+                            self.add_log(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
+                            self.reload_data().await?;
                         }
-                    } else {
-                        self.add_log(&format!("Error: Task with ID {} not found", id));
+                        MoveResult::AlreadyDone { query_trace } => {
+                            self.add_log(&query_trace);
+                            self.add_log(&format!("Task {} is already in 'Done' status", id));
+                        }
+                        MoveResult::Error { err_msg, query_trace } => {
+                            self.add_log(&query_trace);
+                            self.add_log(&format!("Error: {}", err_msg));
+                        }
+                        MoveResult::NotFound { query_trace } => {
+                            self.add_log(&query_trace);
+                            self.add_log(&format!("Error: Task with ID {} not found", id));
+                        }
                     }
                 } else {
                     self.add_log(&format!("Error: Invalid task ID '{}'", move_parts[0]));
@@ -350,87 +188,10 @@ impl App {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // 1. Initialize SQLite Database & context
-    let conn = Connection::open("robot_kanban.db")?;
-    let inner_executor = RusqliteMutationExecutor::new(conn);
+    // 1. Initialize SQLite Database, Schema & seed initial values
+    let db = TaskDb::new("robot_kanban.db")?;
 
-    let logging_executor = LoggingExecutor {
-        inner: inner_executor.clone(),
-    };
-
-    let mut ctx = UserContext::new()
-        .with_metadata(
-            InMemoryMetadataStore::new()
-                .with_entity(Platform::entity_descriptor())
-                .with_entity(TaskStatus::entity_descriptor())
-                .with_entity(Task::entity_descriptor()),
-        )
-        .with_repository_registry(
-            InMemoryRepositoryRegistry::new()
-                .with_entity("Platform")
-                .with_entity("TaskStatus")
-                .with_entity("Task"),
-        );
-
-    // Register our synchronous executors
-    ctx.use_rusqlite_provider(inner_executor.clone());
-    ctx.insert_resource(logging_executor.clone());
-
-    // 2. Build Schema & seed initial values if missing
-    ensure_rusqlite_schema_for(&ctx)?;
-
-    // Seed initial Platform if empty
-    let platform_repo = ctx
-        .resolve_repository::<RusqliteDialect, LoggingExecutor>("Platform")?;
-    let plat_select = platform_repo.select().project("id");
-    let platforms = platform_repo.fetch_entities::<Platform>(&plat_select)?;
-    if platforms.is_empty() {
-        platform_repo.insert(
-            &platform_repo
-                .insert_command()
-                .value("id", 1_u64)
-                .value("name", "Robot System".to_owned())
-                .value("founded", chrono::Utc::now())
-                .value("version", 1_i64),
-        )?;
-    }
-
-    // Seed initial task statuses if empty
-    let status_repo = ctx
-        .resolve_repository::<RusqliteDialect, LoggingExecutor>("TaskStatus")?;
-    let stat_select = status_repo.select().project("id");
-    let statuses = status_repo.fetch_entities::<TaskStatus>(&stat_select)?;
-    if statuses.is_empty() {
-        status_repo.insert(
-            &status_repo
-                .insert_command()
-                .value("id", 1_u64)
-                .value("name", "Planned".to_owned())
-                .value("code", "PLANNED".to_owned())
-                .value("version", 1_i64)
-                .value("platform_id", 1_u64),
-        )?;
-        status_repo.insert(
-            &status_repo
-                .insert_command()
-                .value("id", 2_u64)
-                .value("name", "Process".to_owned())
-                .value("code", "PROCESS".to_owned())
-                .value("version", 1_i64)
-                .value("platform_id", 1_u64),
-        )?;
-        status_repo.insert(
-            &status_repo
-                .insert_command()
-                .value("id", 3_u64)
-                .value("name", "Done".to_owned())
-                .value("code", "DONE".to_owned())
-                .value("version", 1_i64)
-                .value("platform_id", 1_u64),
-        )?;
-    }
-
-    // 3. Initialize terminal and ratatui backend
+    // 2. Initialize terminal and ratatui backend
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(
@@ -443,15 +204,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
     terminal.show_cursor()?;
 
-    // 4. Initialize app state
-    let rt_ctx = TeaqlRuntimeContext::<RusqliteDialect, LoggingExecutor>::new(ctx);
-    let mut app = App::new(rt_ctx, inner_executor);
+    // 3. Initialize app state
+    let mut app = App::new(db);
     app.reload_data().await?;
 
-    // 5. Main application loop
+    // 4. Main application loop
     let loop_res = run_app(&mut terminal, &mut app).await;
 
-    // 6. Cleanup terminal
+    // 5. Cleanup terminal
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
