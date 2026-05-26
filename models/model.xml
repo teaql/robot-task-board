@@ -1,0 +1,21 @@
+<root name="robot_kanban" org="doublechain" version="1.0.0">
+    <platform
+        name="Robot System"
+        founded="now()"
+    />
+
+    <task_status
+        name="Planned|Process|Done"
+        code="PLANNED|PROCESS|DONE"
+        platform="platform()"
+        _features="status"
+        _identified_by="code"
+    />
+
+    <task
+        name="Task Name|[1,200]"
+        status="task_status()"
+        platform="platform()"
+        _features="custom"
+    />
+</root>
