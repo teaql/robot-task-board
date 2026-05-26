@@ -12,11 +12,11 @@ use ratatui::Terminal;
 
 // Declare submodules
 mod utils;
-mod model;
 mod ui;
+pub mod service;
 
 // Import our decoupled submodules' types (no direct TeaQL references!)
-use model::{TaskDb, TaskModel, MoveResult};
+use service::{TaskService, TaskModel, MoveResult};
 
 pub struct App {
     pub input: String,
@@ -27,7 +27,7 @@ pub struct App {
     pub planned_count: usize,
     pub process_count: usize,
     pub done_count: usize,
-    pub db: TaskDb,
+    pub service: TaskService,
     pub search_term: Option<String>,
     pub should_quit: bool,
     pub cpu_model: String,
@@ -35,7 +35,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(db: TaskDb) -> Self {
+    pub fn new(service: TaskService) -> Self {
         let sys_info = utils::get_system_info();
         let mut app = Self {
             input: String::new(),
@@ -46,7 +46,7 @@ impl App {
             planned_count: 0,
             process_count: 0,
             done_count: 0,
-            db,
+            service,
             search_term: None,
             should_quit: false,
             cpu_model: sys_info.cpu_model,
@@ -54,7 +54,7 @@ impl App {
         };
         app.add_log("System successfully initialized.");
         app.add_log("Pre-loaded SQLite database 'robot_kanban.db'.");
-        app.add_log("TeaQL v0.9.3: Comment Propagation (注释传播性) is fully active.");
+        app.add_log("TeaQL v0.9.3: Comment Propagation is fully active.");
         app
     }
 
@@ -63,14 +63,14 @@ impl App {
     }
 
     pub fn check_sql_logs(&mut self) {
-        let new_logs = self.db.check_sql_logs();
+        let new_logs = self.service.check_sql_logs();
         for log in new_logs {
             self.add_log(&log);
         }
     }
 
     pub async fn reload_data(&mut self) -> Result<(), Box<dyn Error>> {
-        let res = self.db.reload_data(&self.search_term).await?;
+        let res = self.service.reload_data(&self.search_term).await?;
 
         self.planned_tasks = res.planned_tasks;
         self.process_tasks = res.process_tasks;
@@ -113,7 +113,7 @@ impl App {
                 if args.is_empty() {
                     self.add_log("Error: Task name cannot be empty. Usage: add <task name>");
                 } else {
-                    let next_id = self.db.add_task(args)?;
+                    let next_id = self.service.add_task(args).await?;
                     self.add_log(&format!("Created task [ID: {}] '{}'", next_id, args));
                     self.reload_data().await?;
                 }
@@ -122,7 +122,7 @@ impl App {
                 if args.is_empty() {
                     self.add_log("Error: Missing task ID. Usage: delete <id>");
                 } else if let Ok(id) = args.parse::<u64>() {
-                    if self.db.delete_task(id)? {
+                    if self.service.delete_task(id).await? {
                         self.add_log(&format!("Deleted task [ID: {}]", id));
                         self.reload_data().await?;
                     } else {
@@ -153,7 +153,7 @@ impl App {
                         "".to_owned() // Triggers next transition
                     };
 
-                    let res = self.db.move_task(id, &target_status).await?;
+                    let res = self.service.move_task(id, &target_status).await?;
                     match res {
                         MoveResult::Moved { status_name, query_trace } => {
                             self.add_log(&query_trace);
@@ -190,7 +190,7 @@ impl App {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // 1. Initialize SQLite Database, Schema & seed initial values
-    let db = TaskDb::new("robot_kanban.db")?;
+    let service = TaskService::new("robot_kanban.db").await?;
 
     // 2. Initialize terminal and ratatui backend
     enable_raw_mode()?;
@@ -206,7 +206,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     terminal.show_cursor()?;
 
     // 3. Initialize app state
-    let mut app = App::new(db);
+    let mut app = App::new(service);
     app.reload_data().await?;
 
     // 4. Main application loop
@@ -269,11 +269,11 @@ mod tests {
     #[tokio::test]
     async fn test_comment_propagation() -> Result<(), Box<dyn std::error::Error>> {
         // 1. Delete old test files if present
-        let _ = std::fs::remove_file("test_kanban.db");
+        let _ = std::fs::remove_file("test_propagation.db");
         let _ = std::fs::remove_file("app.log");
 
-        // 2. Initialize database
-        let mut db = TaskDb::new("test_kanban.db")?;
+        // 2. Initialize service directly
+        let db = TaskService::new("test_propagation.db").await?;
 
         // 3. Reload data with None (triggering Get active tasks)
         let _ = db.reload_data(&None).await?;
@@ -282,19 +282,111 @@ mod tests {
         let formatted_logs = db.check_sql_logs();
         
         println!("=== Captured Formatted Logs ===");
-        let mut found_propagation = false;
+        let mut found_facet_status_query = false;
+        let mut found_facet_task_query = false;
         for log in &formatted_logs {
             println!("{}", log);
             if log.contains("Get active tasks->status_stats->Count status") {
-                found_propagation = true;
+                if log.contains("task_status_data") {
+                    found_facet_status_query = true;
+                }
+                if log.contains("task_data") && log.contains("COUNT(*)") {
+                    found_facet_task_query = true;
+                }
             }
         }
 
         // Cleanup test db and log
-        let _ = std::fs::remove_file("test_kanban.db");
+        let _ = std::fs::remove_file("test_propagation.db");
         let _ = std::fs::remove_file("app.log");
 
-        assert!(found_propagation, "Comment propagation chain [Get active tasks->status_stats->Count status] not found in logs!");
+        assert!(
+            found_facet_status_query,
+            "Comment propagation chain [Get active tasks->status_stats->Count status] not found in task_status_data subquery log!"
+        );
+        assert!(
+            found_facet_task_query,
+            "Comment propagation chain [Get active tasks->status_stats->Count status] not found in task_data relation aggregate subquery log!"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_add_and_delete_task() -> Result<(), Box<dyn std::error::Error>> {
+        let db_file = "test_add_delete.db";
+        let _ = std::fs::remove_file(db_file);
+
+        // 1. Initialize Service and add a task
+        let db = TaskService::new(db_file).await?;
+        let task_id = db.add_task("Verify Task Flow").await?;
+        assert!(task_id > 0, "Task ID should be greater than 0");
+
+        // 2. Reload data and verify task presence
+        let reloaded = db.reload_data(&None).await?;
+        assert_eq!(reloaded.planned_tasks.len(), 1, "Should have exactly 1 planned task");
+        assert_eq!(reloaded.planned_tasks[0].name, "Verify Task Flow");
+
+        // 3. Delete task and verify it's gone
+        let deleted = db.delete_task(task_id).await?;
+        assert!(deleted, "Task deletion should be successful");
+
+        let reloaded_after = db.reload_data(&None).await?;
+        assert_eq!(reloaded_after.planned_tasks.len(), 0, "Planned task list should be empty after deletion");
+
+        let _ = std::fs::remove_file(db_file);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_move_task_ddd() -> Result<(), Box<dyn std::error::Error>> {
+        let db_file = "test_move_task.db";
+        let _ = std::fs::remove_file(db_file);
+
+        // 1. Initialize and add a task
+        let db = TaskService::new(db_file).await?;
+        let task_id = db.add_task("DDD Aggregates Transition").await?;
+
+        // Verify initial status (Planned = 1)
+        let reloaded = db.reload_data(&None).await?;
+        assert_eq!(reloaded.planned_tasks.len(), 1);
+        assert_eq!(reloaded.process_tasks.len(), 0);
+
+        // 2. Move next (empty command moves Planned -> Process)
+        let res = db.move_task(task_id, "").await?;
+        match res {
+            MoveResult::Moved { status_name, .. } => {
+                assert_eq!(status_name, "Process");
+            }
+            _ => panic!("Expected task to be moved"),
+        }
+
+        let reloaded = db.reload_data(&None).await?;
+        assert_eq!(reloaded.planned_tasks.len(), 0);
+        assert_eq!(reloaded.process_tasks.len(), 1);
+
+        // 3. Move directly to Done
+        let res2 = db.move_task(task_id, "done").await?;
+        match res2 {
+            MoveResult::Moved { status_name, .. } => {
+                assert_eq!(status_name, "Done");
+            }
+            _ => panic!("Expected task to be moved to Done"),
+        }
+
+        let reloaded = db.reload_data(&None).await?;
+        assert_eq!(reloaded.process_tasks.len(), 0);
+        assert_eq!(reloaded.done_tasks.len(), 1);
+
+        // 4. Test invalid status move
+        let res3 = db.move_task(task_id, "invalid_status").await?;
+        match res3 {
+            MoveResult::Error { err_msg, .. } => {
+                assert!(err_msg.contains("Invalid status"));
+            }
+            _ => panic!("Expected move to fail with invalid status"),
+        }
+
+        let _ = std::fs::remove_file(db_file);
         Ok(())
     }
 }
