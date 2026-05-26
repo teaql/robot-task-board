@@ -54,6 +54,7 @@ impl App {
         };
         app.add_log("System successfully initialized.");
         app.add_log("Pre-loaded SQLite database 'robot_kanban.db'.");
+        app.add_log("TeaQL v0.9.3: Comment Propagation (注释传播性) is fully active.");
         app
     }
 
@@ -258,5 +259,42 @@ async fn run_app<B: ratatui::backend::Backend>(
         if app.should_quit {
             return Ok(());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_comment_propagation() -> Result<(), Box<dyn std::error::Error>> {
+        // 1. Delete old test files if present
+        let _ = std::fs::remove_file("test_kanban.db");
+        let _ = std::fs::remove_file("app.log");
+
+        // 2. Initialize database
+        let mut db = TaskDb::new("test_kanban.db")?;
+
+        // 3. Reload data with None (triggering Get active tasks)
+        let _ = db.reload_data(&None).await?;
+
+        // 4. Retrieve logged entries returned by check_sql_logs()
+        let formatted_logs = db.check_sql_logs();
+        
+        println!("=== Captured Formatted Logs ===");
+        let mut found_propagation = false;
+        for log in &formatted_logs {
+            println!("{}", log);
+            if log.contains("Get active tasks->status_stats->Count status") {
+                found_propagation = true;
+            }
+        }
+
+        // Cleanup test db and log
+        let _ = std::fs::remove_file("test_kanban.db");
+        let _ = std::fs::remove_file("app.log");
+
+        assert!(found_propagation, "Comment propagation chain [Get active tasks->status_stats->Count status] not found in logs!");
+        Ok(())
     }
 }
