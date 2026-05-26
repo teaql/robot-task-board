@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::error::Error;
 use std::io;
 use std::time::Duration;
@@ -18,9 +19,11 @@ pub mod service;
 // Import our decoupled submodules' types (no direct TeaQL references!)
 use service::{TaskService, TaskModel, MoveResult};
 
+const MAX_LOGS: usize = 40;
+
 pub struct App {
     pub input: String,
-    pub logs: Vec<String>,
+    pub logs: VecDeque<String>,
     pub planned_tasks: Vec<TaskModel>,
     pub process_tasks: Vec<TaskModel>,
     pub done_tasks: Vec<TaskModel>,
@@ -39,7 +42,7 @@ impl App {
         let sys_info = utils::get_system_info();
         let mut app = Self {
             input: String::new(),
-            logs: Vec::new(),
+            logs: VecDeque::new(),
             planned_tasks: Vec::new(),
             process_tasks: Vec::new(),
             done_tasks: Vec::new(),
@@ -59,7 +62,10 @@ impl App {
     }
 
     pub fn add_log(&mut self, msg: &str) {
-        self.logs.push(msg.to_owned());
+        if self.logs.len() >= MAX_LOGS {
+            self.logs.pop_front();
+        }
+        self.logs.push_back(msg.to_owned());
     }
 
     pub fn check_sql_logs(&mut self) {
@@ -140,11 +146,6 @@ impl App {
                 }
 
                 let move_parts: Vec<&str> = args.split_whitespace().collect();
-                if move_parts.is_empty() {
-                    self.add_log("Error: Missing task ID. Usage: move <id> [planned|process|done|next]");
-                    self.input.clear();
-                    return Ok(());
-                }
 
                 if let Ok(id) = move_parts[0].parse::<u64>() {
                     let target_status = if move_parts.len() > 1 {

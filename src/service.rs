@@ -207,7 +207,8 @@ impl TaskService {
         };
 
         let search_json = if let Some(ref term) = search_term {
-            format!(r#"{{"name": "{}"}}"#, term)
+            let escaped_name = serde_json::Value::String(term.clone());
+            format!(r#"{{"name": {}}}"#, escaped_name)
         } else {
             r#"{}"#.to_owned()
         };

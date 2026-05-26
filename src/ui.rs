@@ -86,11 +86,11 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
 
     // 1. Render Log Area (Keeps beautiful syntax-highlighted logs)
     let log_height = chunks[0].height as usize - 2; // Subtract borders
-    let logs_to_show = if app.logs.len() > log_height {
-        &app.logs[app.logs.len() - log_height..]
-    } else {
-        &app.logs
-    };
+    let skip_count = app.logs.len().saturating_sub(log_height);
+    let log_lines: Vec<Line> = app.logs.iter()
+        .skip(skip_count)
+        .map(|l| parse_log_line(l))
+        .collect();
 
     let search_str = if let Some(ref term) = app.search_term {
         term.as_str()
@@ -102,12 +102,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         app.cpu_model, app.mem_size, search_str
     );
 
-    let log_paragraph = Paragraph::new(
-        logs_to_show
-            .iter()
-            .map(|l| parse_log_line(l))
-            .collect::<Vec<Line>>(),
-    )
+    let log_paragraph = Paragraph::new(log_lines)
     .block(
         Block::default()
             .borders(Borders::ALL)
