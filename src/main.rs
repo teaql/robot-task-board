@@ -8,10 +8,6 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Terminal;
 
 use rusqlite::Connection;
@@ -21,122 +17,45 @@ use teaql_provider_rusqlite::{
     RusqliteMutationExecutor, RusqliteProviderExt,
 };
 use teaql_runtime::{
-    GraphTransactionBoundary, InMemoryMetadataStore, InMemoryRepositoryRegistry,
-    QueryExecutor, UserContext,
+    InMemoryMetadataStore, InMemoryRepositoryRegistry,
+    UserContext,
 };
 
 // Import generated entities
 use robot_kanban::{Platform, Task, TaskStatus, TeaqlRuntimeContext};
 
-#[derive(Clone)]
-struct LoggingExecutor {
-    inner: RusqliteMutationExecutor,
-}
+// Declare submodules
+mod utils;
+mod model;
+mod ui;
 
-impl QueryExecutor for LoggingExecutor {
-    type Error = teaql_provider_rusqlite::MutationExecutorError;
+// Import our new submodules' types
+use model::{LoggingExecutor, TransitionCommand, DomainTask};
 
-    fn fetch_all(
-        &self,
-        query: &teaql_sql::CompiledQuery,
-    ) -> Result<Vec<teaql_core::Record>, Self::Error> {
-        QueryExecutor::fetch_all(&self.inner, query)
-    }
-
-    fn execute(&self, query: &teaql_sql::CompiledQuery) -> Result<u64, Self::Error> {
-        QueryExecutor::execute(&self.inner, query)
-    }
-
-    fn begin_transaction(&self) -> Result<GraphTransactionBoundary, Self::Error> {
-        QueryExecutor::begin_transaction(&self.inner)
-    }
-
-    fn commit_transaction(&self) -> Result<(), Self::Error> {
-        QueryExecutor::commit_transaction(&self.inner)
-    }
-
-    fn rollback_transaction(&self) -> Result<(), Self::Error> {
-        QueryExecutor::rollback_transaction(&self.inner)
-    }
-}
-
-struct TransitionCommand {
-    pub target_status: String,
-}
-
-#[derive(Debug, Clone)]
-struct DomainTask {
-    pub task: Task,
-}
-
-impl teaql_core::TeaqlEntity for DomainTask {
-    fn entity_descriptor() -> teaql_core::EntityDescriptor {
-        Task::entity_descriptor()
-    }
-}
-
-impl teaql_core::Entity for DomainTask {
-    fn from_record(record: teaql_core::Record) -> Result<Self, teaql_core::EntityError> {
-        let task = Task::from_record(record)?;
-        Ok(Self { task })
-    }
-
-    fn into_record(self) -> teaql_core::Record {
-        self.task.into_record()
-    }
-}
-
-impl DomainTask {
-    /// Domain behavior method showing DDD Aggregate Root logic.
-    /// Transitions task status based on a TransitionCommand object.
-    /// If target status is empty, it automatically moves to the next phase.
-    pub fn transition_status(&mut self, cmd: &TransitionCommand) -> Result<Option<u64>, String> {
-        let current_status = self.task.status_id();
-        let target = cmd.target_status.trim().to_lowercase();
-
-        let next_status_id = if target.is_empty() {
-            // Planned -> Process -> Done
-            if current_status == 1 {
-                Some(2_u64)
-            } else if current_status == 2 {
-                Some(3_u64)
-            } else {
-                None
-            }
-        } else {
-            match target.as_str() {
-                "planned" => Some(1_u64),
-                "process" => Some(2_u64),
-                "done" => Some(3_u64),
-                _ => return Err(format!("Invalid status '{}'. Use planned, process, done, or empty to move next.", cmd.target_status)),
-            }
-        };
-
-        Ok(next_status_id)
-    }
-}
-
-struct App {
-    input: String,
-    logs: Vec<String>,
-    planned_tasks: Vec<Task>,
-    process_tasks: Vec<Task>,
-    done_tasks: Vec<Task>,
-    planned_count: usize,
-    process_count: usize,
-    done_count: usize,
-    ctx: TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>,
-    inner_executor: RusqliteMutationExecutor,
-    last_log_index: usize,
-    search_term: Option<String>,
-    should_quit: bool,
+pub struct App {
+    pub input: String,
+    pub logs: Vec<String>,
+    pub planned_tasks: Vec<Task>,
+    pub process_tasks: Vec<Task>,
+    pub done_tasks: Vec<Task>,
+    pub planned_count: usize,
+    pub process_count: usize,
+    pub done_count: usize,
+    pub ctx: TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>,
+    pub inner_executor: RusqliteMutationExecutor,
+    pub last_log_index: usize,
+    pub search_term: Option<String>,
+    pub should_quit: bool,
+    pub cpu_model: String,
+    pub mem_size: String,
 }
 
 impl App {
-    fn new(
+    pub fn new(
         ctx: TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>,
         inner_executor: RusqliteMutationExecutor,
     ) -> Self {
+        let sys_info = utils::get_system_info();
         let mut app = Self {
             input: String::new(),
             logs: Vec::new(),
@@ -151,17 +70,19 @@ impl App {
             last_log_index: 0,
             search_term: None,
             should_quit: false,
+            cpu_model: sys_info.cpu_model,
+            mem_size: sys_info.mem_size,
         };
         app.add_log("System successfully initialized.");
         app.add_log("Pre-loaded SQLite database 'robot_kanban.db'.");
         app
     }
 
-    fn add_log(&mut self, msg: &str) {
+    pub fn add_log(&mut self, msg: &str) {
         self.logs.push(msg.to_owned());
     }
 
-    fn check_sql_logs(&mut self) {
+    pub fn check_sql_logs(&mut self) {
         let sql_logs = self.ctx.context().sql_logs();
         if sql_logs.len() > self.last_log_index {
             for entry in &sql_logs[self.last_log_index..] {
@@ -184,7 +105,7 @@ impl App {
         }
     }
 
-    fn build_search_json(&self) -> String {
+    pub fn build_search_json(&self) -> String {
         if let Some(ref term) = self.search_term {
             format!(r#"{{"name": "{}"}}"#, term)
         } else {
@@ -192,7 +113,7 @@ impl App {
         }
     }
 
-    fn build_search_comment(&self) -> &'static str {
+    pub fn build_search_comment(&self) -> &'static str {
         if self.search_term.is_some() {
             "Get filtered tasks by keyword"
         } else {
@@ -200,7 +121,7 @@ impl App {
         }
     }
 
-    async fn reload_data(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn reload_data(&mut self) -> Result<(), Box<dyn Error>> {
         use robot_kanban::Q;
 
         let select = Q::tasks()
@@ -258,7 +179,7 @@ impl App {
         Ok(())
     }
 
-    async fn execute_command(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn execute_command(&mut self) -> Result<(), Box<dyn Error>> {
         let trimmed = self.input.trim();
         if trimmed.is_empty() {
             return Ok(());
@@ -418,7 +339,7 @@ impl App {
                 }
             }
             _ => {
-                self.add_log(&format!("Error: Unknown command '{}'", cmd));
+                self.add_log(&format!("Unknown command: '{}'. Valid commands: add, delete (del), move (mv), search (s), exit (q)", cmd));
             }
         }
 
@@ -548,7 +469,7 @@ async fn run_app<B: ratatui::backend::Backend>(
 ) -> io::Result<()> {
     loop {
         app.check_sql_logs();
-        terminal.draw(|f| ui(f, app))?;
+        terminal.draw(|f| ui::ui(f, app))?;
 
         if crossterm::event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
@@ -578,297 +499,4 @@ async fn run_app<B: ratatui::backend::Backend>(
             return Ok(());
         }
     }
-}
-
-fn parse_log_line(line: &str) -> Line<'_> {
-    if line.len() < 23 || !line.starts_with("202") {
-        return Line::from(line.cyan());
-    }
-
-    let mut spans = Vec::new();
-    
-    // 1. Timestamp (Slate gray)
-    let timestamp = &line[..23];
-    spans.push(Span::styled(timestamp, Style::default().fg(Color::Indexed(244))));
-
-    let mut rest = &line[23..];
-
-    // 2. User ID bracket e.g. -[philip@pid-xxx.tid-x] (Neon Violet)
-    if rest.starts_with("-[") {
-        if let Some(end) = rest.find(']') {
-            let user_part = &rest[..end+1];
-            spans.push(Span::styled(user_part, Style::default().fg(Color::Rgb(155, 89, 182)).add_modifier(Modifier::BOLD)));
-            rest = &rest[end+1..];
-        }
-    }
-
-    // 3. Severity e.g. --DEBUG - SqlLogEntry
-    if rest.starts_with("--DEBUG - SqlLogEntry") {
-        spans.push(Span::styled("--DEBUG - SqlLogEntry", Style::default().fg(Color::Indexed(242))));
-        rest = &rest[21..];
-    }
-
-    // 4. Comment part and Result summary part
-    // Dynamically distinguish between log entries that have comments vs. those that do not.
-    if rest.starts_with(" - [") {
-        if let Some(end) = rest[4..].find(']') {
-            let first_segment = &rest[..end+5];
-            let after_first = &rest[end+5..];
-            
-            if after_first.starts_with(" - [") {
-                // If there is another " - [" immediately following, then the first one is the comment!
-                spans.push(Span::styled(first_segment, Style::default().fg(Color::Rgb(241, 196, 15)).add_modifier(Modifier::BOLD)));
-                rest = after_first;
-                
-                // Now parse the second one as the result summary
-                if let Some(end2) = rest[4..].find(']') {
-                    let result_part = &rest[..end2+5];
-                    spans.push(Span::styled(result_part, Style::default().fg(Color::Rgb(52, 152, 219))));
-                    rest = &rest[end2+5..];
-                }
-            } else {
-                // If there is no " - [" following, then this first segment is the result summary (no comment exists)!
-                spans.push(Span::styled(first_segment, Style::default().fg(Color::Rgb(52, 152, 219))));
-                rest = after_first;
-            }
-        }
-    }
-
-    // 6. SQL statement and elapsed time
-    if let Some(took_idx) = rest.rfind(" (took ") {
-        let sql = &rest[..took_idx];
-        let took = &rest[took_idx..];
-        spans.push(Span::styled(sql, Style::default().fg(Color::White)));
-        spans.push(Span::styled(took, Style::default().fg(Color::Rgb(231, 76, 60))));
-    } else {
-        spans.push(Span::styled(rest, Style::default().fg(Color::White)));
-    }
-
-    Line::from(spans)
-}
-
-fn ui(f: &mut ratatui::Frame, app: &App) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(50), // 1. Log area
-            Constraint::Length(3),      // 2. Status statistics
-            Constraint::Min(5),         // 3. Columns (Planned, Process, Done)
-            Constraint::Length(3),      // 4. Command Line Area
-            Constraint::Length(9),      // 5. Command Help Area
-        ])
-        .split(f.size());
-
-    // 1. Render Log Area (Keeps beautiful syntax-highlighted logs)
-    let log_height = chunks[0].height as usize - 2; // Subtract borders
-    let logs_to_show = if app.logs.len() > log_height {
-        &app.logs[app.logs.len() - log_height..]
-    } else {
-        &app.logs
-    };
-    let log_paragraph = Paragraph::new(
-        logs_to_show
-            .iter()
-            .map(|l| parse_log_line(l))
-            .collect::<Vec<Line>>(),
-    )
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title(" Action Logs & Executed SQL ")
-            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-            .border_style(Style::default().fg(Color::Indexed(240))),
-    );
-    f.render_widget(log_paragraph, chunks[0]);
-
-    // 2. Render Status Statistics Area (3 equal columns - plain white borders)
-    let stats_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(34),
-        ])
-        .split(chunks[1]);
-
-    let planned_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Planned tasks count: "),
-        Span::styled(
-            format!("{}", app.planned_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(planned_stat, stats_chunks[0]);
-
-    let process_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Tasks in Process count: "),
-        Span::styled(
-            format!("{}", app.process_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(process_stat, stats_chunks[1]);
-
-    let done_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Completed Tasks count: "),
-        Span::styled(
-            format!("{}", app.done_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(done_stat, stats_chunks[2]);
-
-    // 3. Render task list columns (Planned, Process, Done - plain white borders)
-    let col_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(34),
-        ])
-        .split(chunks[2]);
-
-    // Planned Tasks column
-    let planned_lines = app
-        .planned_tasks
-        .iter()
-        .map(|t| Line::from(vec![
-            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::Indexed(243))),
-            Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
-        ]))
-        .collect::<Vec<Line>>();
-    let planned_list = Paragraph::new(planned_lines).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title(" PLANNED ")
-            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(planned_list, col_chunks[0]);
-
-    // Process Tasks column
-    let process_lines = app
-        .process_tasks
-        .iter()
-        .map(|t| Line::from(vec![
-            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::Indexed(243))),
-            Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
-        ]))
-        .collect::<Vec<Line>>();
-    let process_list = Paragraph::new(process_lines).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title(" PROCESS ")
-            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(process_list, col_chunks[1]);
-
-    // Done Tasks column
-    let done_lines = app
-        .done_tasks
-        .iter()
-        .map(|t| Line::from(vec![
-            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::Indexed(243))),
-            Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
-        ]))
-        .collect::<Vec<Line>>();
-    let done_list = Paragraph::new(done_lines).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title(" DONE ")
-            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(done_list, col_chunks[2]);
-
-    // 4. Render Command Line Area (plain white borders)
-    let prompt_line = Line::from(vec![
-        Span::styled("  >  ", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-        Span::styled(app.input.clone(), Style::default().fg(Color::White)),
-    ]);
-    let cmd_input = Paragraph::new(prompt_line).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title(" Command Line Area ")
-            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(cmd_input, chunks[3]);
-
-    // Position and show the cursor inside the input area (adjusted +6: 1 for left border + 5 for prompt arrow)
-    f.set_cursor(
-        chunks[3].x + 6 + app.input.chars().count() as u16,
-        chunks[3].y + 1,
-    );
-
-    let help_text = vec![
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("add <name>           ", Style::default().fg(Color::White)),
-            Span::raw("- Create a new task in Planned status"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("move <id> [s]        ", Style::default().fg(Color::White)),
-            Span::raw("- Change status to planned/process/done (default next)"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("delete <id>          ", Style::default().fg(Color::White)),
-            Span::raw("- Permanently delete task from database"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("search <kw>          ", Style::default().fg(Color::White)),
-            Span::raw("- Search tasks by keyword using JSON dynamic EXPR"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("s <kw>               ", Style::default().fg(Color::White)),
-            Span::raw("- Shortcut for search (empty keyword to clear search)"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("exit | quit          ", Style::default().fg(Color::White)),
-            Span::raw("- Quit the application dashboard"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("ESC                  ", Style::default().fg(Color::White)),
-            Span::raw("- Immediate escape"),
-        ]),
-    ];
-    let help_box = Paragraph::new(help_text).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title(" Command Help Area ")
-            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(help_box, chunks[4]);
 }
