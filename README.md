@@ -185,7 +185,7 @@ INSERT INTO task_data (id, name, version, status, platform)
 
 ```rust
 // service.rs — add_task()
-let next_id = self.ctx.next_id("Task")?;
+let next_id = self.ctx.next_id_for::<Task>()?;
 ```
 
 **Applied in:** bare input `<name>` or `/add` command — each new task receives a unique ID from the `Task` ID space.

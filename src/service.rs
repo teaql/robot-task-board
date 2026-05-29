@@ -9,16 +9,16 @@ use teaql_runtime::{
     UserContext, QueryExecutor, GraphTransactionBoundary, EntityEvent,
     EntityEventKind, EntityEventSink, RuntimeError, TuiLogEntry, TuiLogBuffer,
 };
-use teaql_core::{Record, Value};
+use teaql_core::{Record, Value, TeaqlEntity};
 use teaql_sql::CompiledQuery;
 
 pub trait UserContextExt {
-    fn next_id(&self, entity: &str) -> Result<u64, Box<dyn Error>>;
+    fn next_id_for<T: TeaqlEntity>(&self) -> Result<u64, Box<dyn Error>>;
 }
 
 impl UserContextExt for UserContext {
-    fn next_id(&self, entity: &str) -> Result<u64, Box<dyn Error>> {
-        self.generate_id(entity)?
+    fn next_id_for<T: TeaqlEntity>(&self) -> Result<u64, Box<dyn Error>> {
+        self.generate_id(&T::entity_descriptor().name)?
             .ok_or_else(|| "ID generator not configured for UserContext".into())
     }
 }
@@ -487,7 +487,7 @@ impl TaskService {
     }
 
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
-        let next_id = self.ctx.next_id("Task")?;
+        let next_id = self.ctx.next_id_for::<Task>()?;
 
 
         let cmd = CreateTaskCommand {
@@ -581,7 +581,7 @@ impl TaskService {
                     };
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
-                    let log_id = self.ctx.next_id("TaskExecutionLog")?;
+                    let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
                     let mut log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
                     let task_name = task.name().to_string();
 

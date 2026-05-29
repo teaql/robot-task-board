@@ -1,8 +1,8 @@
 use std::error::Error;
 use chrono::Local;
 
-use robot_kanban::{Q, TeaqlRuntime};
-use teaql_core::Value;
+use robot_kanban::{Q, TeaqlRuntime, Task};
+use teaql_core::{Value, TeaqlEntity};
 use teaql_runtime::{
     EntityEvent, EntityEventKind, EntityEventSink, UserContext, RuntimeError,
     QueryCommentGuard,
@@ -150,7 +150,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 6. Action 1: Create a new Task
     println!("--- Action 1: Creating a Task ---");
-    let next_id = ctx.generate_id("Task")?.expect("ID generator configured");
+    let next_id = ctx.generate_id(&Task::entity_descriptor().name)?.expect("ID generator configured");
 
     let mut task = Q::tasks().new_entity(&ctx);
     task.update_id(next_id)
