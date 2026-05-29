@@ -1,4 +1,4 @@
-<root name="robot-kanban-service" org="doublechaintech" version="1.0.0">
+<root name="robot-kanban-service" org="doublechaintech" version="1.0.0" data_service="rusqlite">
     <platform
         name="Robot System"
         founded="createTime()"

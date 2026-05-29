@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root name="robot-kanban-service" org="skynet" version="1.0.0">
+    <object name="task">
+        <attribute name="title" type="string" max="255"/>
+    </object>
+</root>

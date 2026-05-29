@@ -14,6 +14,8 @@ To make the idea concrete, we built a terminal-based Kanban board using Ratatui 
 
 The app also cross-compiles as a standalone statically linked binary for `armv7` router environments, with no external runtime dependencies.
 
+✨ **Powered by native `rusqlite`**: The TeaQL code generator natively supports `rusqlite`, producing 100% Rust-native SQLite execution code that compiles directly into your binary with zero external driver overhead.
+
 ---
 
 ## 📁 Project Structure

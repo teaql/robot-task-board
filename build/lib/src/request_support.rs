@@ -170,26 +170,16 @@ where
 pub type TeaqlRepositoryError<R> = RepositoryError<<R as TeaqlRecordRepository>::Error>;
 
 pub trait TeaqlRuntime {
-    type PlatformRepository<'a>: TeaqlEntityRepository + 'a
+    type ObjectRepository<'a>: TeaqlEntityRepository + 'a
     where
         Self: 'a;
 
-    fn platform_repository(&self) -> Result<Self::PlatformRepository<'_>, ContextError>;
-    type TaskStatusRepository<'a>: TeaqlEntityRepository + 'a
+    fn object_repository(&self) -> Result<Self::ObjectRepository<'_>, ContextError>;
+    type AttributeRepository<'a>: TeaqlEntityRepository + 'a
     where
         Self: 'a;
 
-    fn task_status_repository(&self) -> Result<Self::TaskStatusRepository<'_>, ContextError>;
-    type TaskRepository<'a>: TeaqlEntityRepository + 'a
-    where
-        Self: 'a;
-
-    fn task_repository(&self) -> Result<Self::TaskRepository<'_>, ContextError>;
-    type TaskExecutionLogRepository<'a>: TeaqlEntityRepository + 'a
-    where
-        Self: 'a;
-
-    fn task_execution_log_repository(&self) -> Result<Self::TaskExecutionLogRepository<'_>, ContextError>;
+    fn attribute_repository(&self) -> Result<Self::AttributeRepository<'_>, ContextError>;
 
     fn user_context(&self) -> &UserContext;
 
@@ -248,36 +238,20 @@ impl TeaqlUserContextExt for teaql_runtime::UserContext {
 }
 
 impl TeaqlRuntime for teaql_runtime::UserContext {
-    type PlatformRepository<'a> = teaql_runtime::ResolvedRepository<'a, crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>
+    type ObjectRepository<'a> = teaql_runtime::ResolvedRepository<'a, crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>
     where
         Self: 'a;
 
-    fn platform_repository(&self) -> Result<Self::PlatformRepository<'_>, ContextError> {
-        self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>("Platform")
+    fn object_repository(&self) -> Result<Self::ObjectRepository<'_>, ContextError> {
+        self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>("Object")
     }
 
-    type TaskStatusRepository<'a> = teaql_runtime::ResolvedRepository<'a, crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>
+    type AttributeRepository<'a> = teaql_runtime::ResolvedRepository<'a, crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>
     where
         Self: 'a;
 
-    fn task_status_repository(&self) -> Result<Self::TaskStatusRepository<'_>, ContextError> {
-        self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>("TaskStatus")
-    }
-
-    type TaskRepository<'a> = teaql_runtime::ResolvedRepository<'a, crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>
-    where
-        Self: 'a;
-
-    fn task_repository(&self) -> Result<Self::TaskRepository<'_>, ContextError> {
-        self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>("Task")
-    }
-
-    type TaskExecutionLogRepository<'a> = teaql_runtime::ResolvedRepository<'a, crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>
-    where
-        Self: 'a;
-
-    fn task_execution_log_repository(&self) -> Result<Self::TaskExecutionLogRepository<'_>, ContextError> {
-        self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>("TaskExecutionLog")
+    fn attribute_repository(&self) -> Result<Self::AttributeRepository<'_>, ContextError> {
+        self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>("Attribute")
     }
 
     fn user_context(&self) -> &UserContext {

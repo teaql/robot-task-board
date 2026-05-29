@@ -211,6 +211,12 @@ impl QueryExecutor for LoggingExecutor {
     }
 }
 
+pub trait TaskDomainBehavior {
+    fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> where Self: Sized;
+    fn transition_status(&self, cmd: &TransitionCommand) -> Result<Option<u64>, String>;
+    fn generate_execution_log(&self, log_id: u64, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog;
+}
+
 pub struct TransitionCommand {
     pub target_status: String,
 }
@@ -221,45 +227,8 @@ pub struct CreateTaskCommand {
 
 pub struct DeleteTaskCommand;
 
-#[derive(Debug, Clone)]
-pub struct DomainTask {
-    pub task: Task,
-    pub logs: Vec<(TaskExecutionLog, String)>,
-}
-
-impl TeaqlEntity for DomainTask {
-    fn entity_descriptor() -> EntityDescriptor {
-        Task::entity_descriptor()
-    }
-}
-
-impl Entity for DomainTask {
-    fn from_record(record: Record) -> Result<Self, EntityError> {
-        let task = Task::from_record(record)?;
-        Ok(Self { task, logs: Vec::new() })
-    }
-
-    fn into_record(self) -> Record {
-        let mut record = self.task.into_record();
-        if !self.logs.is_empty() {
-            let mut list_values = match record.remove("task_execution_log_list") {
-                Some(Value::List(list)) => list,
-                _ => Vec::new(),
-            };
-            for (log, comment) in self.logs {
-                let mut log_record = log.into_record();
-                log_record.insert("_comment".to_owned(), Value::Text(comment));
-                list_values.push(Value::object(log_record));
-            }
-            record.insert("task_execution_log_list".to_owned(), Value::List(list_values));
-        }
-        record
-    }
-}
-
-impl DomainTask {
-    /// Domain factory method to create a new DomainTask.
-    pub fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> {
+impl TaskDomainBehavior for Task {
+    fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> {
         if cmd.name.trim().is_empty() {
             return Err("Task name cannot be empty".to_owned());
         }
@@ -269,30 +238,28 @@ impl DomainTask {
             .update_version(1_i64)
             .update_status_to_planned()
             .update_platform_id(1_u64);
-        Ok(Self { task, logs: Vec::new() })
+        Ok(task)
     }
 
-    pub fn add_execution_log(&mut self, log_id: u64, action: &str, detail: &str, comment: &str, ctx: &UserContext) {
+    fn generate_execution_log(&self, log_id: u64, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
         let mut log = Q::task_execution_logs().new_entity(ctx);
         log.update_id(log_id)
             .update_action(action.to_owned())
             .update_detail(detail.to_owned())
             .update_version(1_i64)
-            .update_task_id(self.task.id());
-        self.logs.push((log, comment.to_owned()));
+            .update_task_id(self.id());
+        log
     }
 
-    /// Domain method to execute aggregate deletion validation.
-    pub fn delete(&self, _cmd: &DeleteTaskCommand) -> Result<(), String> {
-        // Validation logic can be added here if needed in the future
-        Ok(())
-    }
+
+
+
 
     /// Domain behavior method showing DDD Aggregate Root logic.
     /// Transitions task status based on a TransitionCommand object.
     /// If target status is empty, it automatically moves to the next phase.
-    pub fn transition_status(&mut self, cmd: &TransitionCommand) -> Result<Option<u64>, String> {
-        let current_status = self.task.status_id();
+    fn transition_status(&self, cmd: &TransitionCommand) -> Result<Option<u64>, String> {
+        let current_status = self.status_id();
         let target = cmd.target_status.trim().to_lowercase();
 
         let next_status_id = if target.is_empty() {
@@ -376,6 +343,10 @@ impl TaskService {
         // Register synchronous executors
         ctx.use_rusqlite_provider(inner_executor.clone());
         ctx.insert_resource(logging_executor.clone());
+        
+        // Also register ServiceRuntimeExecutor for the generated repository lookups
+        let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
+        ctx.insert_resource(service_runtime_executor);
 
         // Build Schema & seed initial values if missing
         ensure_rusqlite_schema_for(&ctx)?;
@@ -510,14 +481,19 @@ impl TaskService {
         let cmd = CreateTaskCommand {
             name: name.to_owned(),
         };
-        let mut domain_task = DomainTask::create(&cmd, next_id, &self.ctx)?;
+        let task = Task::create(&cmd, next_id, &self.ctx)?;
 
         let log_id = id_gen.next_id("TaskExecutionLog")?;
-        domain_task.add_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), "CREATED", &self.ctx);
+        let log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
         let comment = format!("Create task '{}'", name);
-        let repo = self.ctx.task_repository()?;
-        repo.create_entity_graph_with_comment(domain_task, comment)?;
+        let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        repo.save_entity_with_comment(task.clone(), teaql_runtime::EntityStatus::Persisted, comment.clone())
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+        let log_repo = self.ctx.task_execution_log_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        log_repo.save_entity_with_comment(log.clone(), teaql_runtime::EntityStatus::Persisted, comment)
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Created task [ID: {}] '{}'", next_id, name));
 
@@ -527,36 +503,19 @@ impl TaskService {
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
         let select = Q::tasks()
             .comment(&format!("Get task {} for deletion", id))
-            .with_id_is(id)
-            .select_task_execution_log_list()
-            .return_type::<DomainTask>();
+            .with_id_is(id);
 
         self.log_info(&format!(
-            "Q: Q::tasks().comment(\"Get task {} for deletion\").with_id_is({}).select_task_execution_log_list().return_type::<DomainTask>()",
+            "Q: Q::tasks().comment(\"Get task {} for deletion\").with_id_is({})",
             id, id
         ));
 
-        let found_tasks = select.execute_for_list(&self.ctx).await?;
+        let task_opt = select.execute_for_one(&self.ctx).await?;
 
-        if let Some(domain_task) = found_tasks.into_iter().next() {
-            let cmd = DeleteTaskCommand;
-            domain_task.delete(&cmd)?;
-
-            let comment = format!("Delete task '{}'", domain_task.task.name());
-            let repo = self.ctx.task_repository()?;
-            repo.delete_scoped(
-                &DeleteCommand::new("Task", id).expected_version(domain_task.task.version()),
-                Some(comment.clone()),
-            )?;
-
-            // Cascade soft-delete all related task execution logs
-            let log_repo = self.ctx.task_execution_log_repository()?;
-            for log in domain_task.task.task_execution_log_list() {
-                log_repo.delete_scoped(
-                    &DeleteCommand::new("TaskExecutionLog", log.id()).expected_version(log.version()),
-                    Some(comment.clone()),
-                )?;
-            }
+        if let Some(task) = task_opt {
+            let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            repo.save_entity_with_comment(task.clone(), teaql_runtime::EntityStatus::UpdatedDeleted, format!("Delete task '{}'", task.name()))
+                .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Deleted task [ID: {}]", id));
 
@@ -574,31 +533,30 @@ impl TaskService {
     ) -> Result<MoveResult, Box<dyn Error>> {
         let select = Q::tasks()
             .comment("Get task for DDD")
-            .with_id_is(id)
-            .return_type::<DomainTask>();
+            .with_id_is(id);
 
         let query_trace = format!(
-            "Q: Q::tasks().comment(\"Get task for DDD\").with_id_is({}).return_type::<DomainTask>()",
+            "Q: Q::tasks().comment(\"Get task for DDD\").with_id_is({})",
             id
         );
 
         self.log_info(&query_trace);
 
-        let found_tasks = select.execute_for_list(&self.ctx).await?;
+        let task_opt = select.execute_for_one(&self.ctx).await?;
 
-        if let Some(mut domain_task) = found_tasks.into_iter().next() {
+        if let Some(mut task) = task_opt {
             let cmd_obj = TransitionCommand {
                 target_status: target_status.to_owned(),
             };
-            let transition_result = domain_task.transition_status(&cmd_obj);
+            let transition_result = task.transition_status(&cmd_obj);
 
             match transition_result {
                 Ok(Some(new_status)) => {
-                    let old_status_id = domain_task.task.status_id();
+                    let old_status_id = task.status_id();
                     match new_status {
-                        1001 => { domain_task.task.update_status_to_planned(); }
-                        1002 => { domain_task.task.update_status_to_process(); }
-                        1003 => { domain_task.task.update_status_to_done(); }
+                        1001 => { task.update_status_to_planned(); }
+                        1002 => { task.update_status_to_process(); }
+                        1003 => { task.update_status_to_done(); }
                         _ => {}
                     }
                     let status_name = match new_status {
@@ -617,11 +575,16 @@ impl TaskService {
                     
                     let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
                     let log_id = id_gen.next_id("TaskExecutionLog")?;
-                    domain_task.add_execution_log(log_id, "STATUS_CHANGED", &detail, "STATUS_CHANGED", &self.ctx);
+                    let log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
 
-                    let comment = format!("Move task '{}' to {}", domain_task.task.name(), status_name);
-                    let repo = self.ctx.task_repository()?;
-                    repo.save_entity_graph_with_comment(domain_task, comment)?;
+                    let comment = format!("Move task '{}' to {}", task.name(), status_name);
+                    let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    repo.save_entity_with_comment(task.clone(), teaql_runtime::EntityStatus::Persisted, comment.clone())
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                        
+                    let log_repo = self.ctx.task_execution_log_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    log_repo.save_entity_with_comment(log.clone(), teaql_runtime::EntityStatus::Persisted, comment)
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
                     self.log_info(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
 
