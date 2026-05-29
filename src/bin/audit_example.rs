@@ -142,6 +142,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let db_path = "robot_kanban.db";
     let conn = rusqlite::Connection::open(db_path)?;
     let executor = RusqliteMutationExecutor::new(conn);
+    ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(executor.clone()));
     ctx.use_rusqlite_provider(executor.clone());
 
     // 5. Ensure Schema is bootstrapped
@@ -149,8 +150,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 6. Action 1: Create a new Task
     println!("--- Action 1: Creating a Task ---");
-    let id_gen = RusqliteIdSpaceGenerator::from_executor(executor.clone());
-    let next_id = id_gen.next_id("Task")?;
+    let next_id = ctx.generate_id("Task")?.expect("ID generator configured");
 
     let mut task = Q::tasks().new_entity(&ctx);
     task.update_id(next_id)

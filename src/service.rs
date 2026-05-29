@@ -12,6 +12,17 @@ use teaql_runtime::{
 use teaql_core::{Record, Value};
 use teaql_sql::CompiledQuery;
 
+pub trait UserContextExt {
+    fn next_id(&self, entity: &str) -> Result<u64, Box<dyn Error>>;
+}
+
+impl UserContextExt for UserContext {
+    fn next_id(&self, entity: &str) -> Result<u64, Box<dyn Error>> {
+        self.generate_id(entity)?
+            .ok_or_else(|| "ID generator not configured for UserContext".into())
+    }
+}
+
 /// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
 fn short_user(ctx: &UserContext) -> String {
     let full = ctx.user_identifier().unwrap_or("unknown");
@@ -342,6 +353,7 @@ impl TaskService {
 
         // Register synchronous executors
         ctx.use_rusqlite_provider(inner_executor.clone());
+        ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
         ctx.insert_resource(logging_executor.clone());
         
         // Also register ServiceRuntimeExecutor for the generated repository lookups
@@ -475,15 +487,15 @@ impl TaskService {
     }
 
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
-        let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
-        let next_id = id_gen.next_id("Task")?;
+        let next_id = self.ctx.next_id("Task")?;
+
 
         let cmd = CreateTaskCommand {
             name: name.to_owned(),
         };
         let mut task = Task::create(&cmd, next_id, &self.ctx)?;
 
-        let log_id = id_gen.next_id("TaskExecutionLog")?;
+        let log_id = self.ctx.next_id("TaskExecutionLog")?;
         let mut log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
         task.set_comment(format!("Create task '{}'", name));
@@ -569,8 +581,7 @@ impl TaskService {
                     };
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
-                    let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
-                    let log_id = id_gen.next_id("TaskExecutionLog")?;
+                    let log_id = self.ctx.next_id("TaskExecutionLog")?;
                     let mut log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
                     let task_name = task.name().to_string();
 

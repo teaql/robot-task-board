@@ -185,8 +185,7 @@ INSERT INTO task_data (id, name, version, status, platform)
 
 ```rust
 // service.rs — add_task()
-let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
-let next_id = id_gen.next_id("Task")?;
+let next_id = self.ctx.next_id("Task")?;
 ```
 
 **Applied in:** bare input `<name>` or `/add` command — each new task receives a unique ID from the `Task` ID space.
