@@ -190,6 +190,17 @@ let next_id = self.ctx.next_id_for::<Task>()?;
 
 **Applied in:** bare input `<name>` or `/add` command — each new task receives a unique ID from the `Task` ID space.
 
+> **💡 Pro Tip: The Universal `UserContext`**
+> Notice how we retrieve the ID generator from `self.ctx`? The `UserContext` object is pervasive throughout your application's domain layer and request lifecycle. Because it is visible everywhere, it acts as the perfect dependency injection container.
+> 
+> You can integrate any external resources directly into `UserContext`, such as:
+> *   Redis caching layers
+> *   External API clients
+> *   Email / SMS service clients
+> *   Internationalization (i18n) resources
+> 
+> Simply use `ctx.insert_resource(...)` at initialization, and use extension traits to expose type-safe, domain-specific methods anywhere in your business logic.
+
 ---
 
 ### Scenario 6: Domain Behavior Injection (Extension Traits)
