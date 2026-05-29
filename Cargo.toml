@@ -15,18 +15,12 @@ serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 # TeaQL runtime packages from registry
-teaql-core = "0.9.10"
-teaql-runtime = "0.9.10"
-teaql-macros = "0.9.10"
-teaql-sql = "0.9.10"
-teaql-provider-rusqlite = "0.9.10"
+teaql-core = "1.0.0"
+teaql-runtime = "1.0.0"
+teaql-macros = "1.0.0"
+teaql-sql = "1.0.0"
+teaql-provider-rusqlite = "1.0.0"
 
 # Our generated TeaQL domain logic library
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
 
-[patch.crates-io]
-teaql-core = { path = "/home/philip/teaql-home/teaql-rs/teaql-core" }
-teaql-runtime = { path = "/home/philip/teaql-home/teaql-rs/teaql-runtime" }
-teaql-macros = { path = "/home/philip/teaql-home/teaql-rs/teaql-macros" }
-teaql-sql = { path = "/home/philip/teaql-home/teaql-rs/teaql-sql" }
-teaql-provider-rusqlite = { path = "/home/philip/teaql-home/teaql-rs/teaql-provider-rusqlite" }
