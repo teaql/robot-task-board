@@ -1,5 +1,7 @@
 # Show HN: TeaQL Showcase – See What Your Business Code Actually Does
 
+> **TeaQL Website**: [https://teaql.io/](https://teaql.io/)
+
 This repository is a real-world demonstration of **TeaQL**, a Rust query framework and domain modeling tool designed to make business logic observable.
 
 Instead of hiding database behavior behind an opaque ORM, this demo shows the full execution path of a domain action:
@@ -78,7 +80,7 @@ let select = Q::tasks()
 | No search | `{}` | `SELECT ... FROM task_data WHERE (version > 0)` |
 | `calibrate` | `{"name": "calibrate"}` | `SELECT ... FROM task_data WHERE (version > 0) AND (name LIKE '%calibrate%')` |
 
-**Applied in:** `search` / `s` command — filters the Kanban board in real-time.
+**Applied in:** `/search` or `/s` command — filters the Kanban board in real-time.
 
 ---
 
@@ -145,7 +147,7 @@ INSERT INTO task_data (id, name, version, status, platform)
   VALUES (1, 'calibrate sensor', 1, 1, 1)
 ```
 
-**Applied in:** `add` command — creates a new task in Planned status.
+**Applied in:** bare input `<name>` or `/add` command — creates a new task in Planned status.
 
 ---
 
@@ -159,7 +161,7 @@ let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone()
 let next_id = id_gen.next_id("Task")?;
 ```
 
-**Applied in:** `add` command — each new task receives a unique ID from the `Task` ID space.
+**Applied in:** bare input `<name>` or `/add` command — each new task receives a unique ID from the `Task` ID space.
 
 ---
 
@@ -190,7 +192,7 @@ let found_tasks = select.execute_for_list(&self.ctx).await?;
 // found_tasks contains DomainTask instances with business methods attached
 ```
 
-**Applied in:** `move` / `mv` and `delete` / `del` commands — the fetched `DomainTask` carries `transition_status()` and `delete()` domain methods that raw `Task` entities don't have.
+**Applied in:** `/mv` and `/del` commands — the fetched `DomainTask` carries `transition_status()` and `delete()` domain methods that raw `Task` entities don't have.
 
 ---
 
@@ -215,7 +217,7 @@ UPDATE task_data SET version = -2 WHERE id = 1 AND version = 1
 
 TeaQL uses a soft-delete pattern — `version` is set to a negative value rather than removing the row, preserving audit history.
 
-**Applied in:** `delete` / `del` command.
+**Applied in:** `/del` command.
 
 ---
 
@@ -276,7 +278,7 @@ impl EntityEventSink for AppAuditSink {
 }
 
 // Attach it during runtime initialization
-runtime.register_event_sink(Arc::new(AppAuditSink));
+ctx.set_event_sink(AppAuditSink);
 ```
 
 **Resulting log output:**
@@ -297,12 +299,12 @@ In the next phase, we will introduce the **`audit ignore`** feature. By adding a
 | # | TeaQL API | App Feature | Command |
 |:---|:---|:---|:---|
 | 1 | `ensure_rusqlite_schema_for` | Auto-create tables & seed data | Startup |
-| 2 | `filter_with_json` | Dynamic search / wildcard load | `search` |
+| 2 | `filter_with_json` | Dynamic search / wildcard load | `/s` |
 | 3 | `facet_by_status_as` | Status count aggregation | Board reload |
-| 4 | `Q::tasks().new_entity()` | Create task with defaults | `add` |
-| 5 | `RusqliteIdSpaceGenerator` | Unique ID generation | `add` |
-| 6 | `.return_type::<DomainTask>()` | Custom domain type mapping | `move`, `delete` |
-| 7 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `delete` |
+| 4 | `Q::tasks().new_entity()` | Create task with defaults | `<name>` |
+| 5 | `RusqliteIdSpaceGenerator` | Unique ID generation | `<name>` |
+| 6 | `.return_type::<DomainTask>()` | Custom domain type mapping | `/mv`, `/del` |
+| 7 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `/del` |
 | 8 | `.comment()` | Query intent tracing | All queries |
 | 9 | `EntityEventSink` | Field-level lifecycle diffs & Audit | All mutations |
 
@@ -366,8 +368,10 @@ Commands use a slash (`/`) prefix. **Any bare text (without a slash) is treated 
 ## ⚙️ Prerequisites
 
 - **Rust toolchain** (1.70+)
-- **TeaQL workspace packages** — the following crates are expected at `/home/philip/teaql-home/teaql-rs/`:
+- **TeaQL Runtime Packages** — the following crates are expected to be available (e.g., via relative path or git submodule):
   - `teaql-core`, `teaql-runtime`, `teaql-macros`, `teaql-sql`, `teaql-provider-rusqlite`
+  
+> **A Note on Open Source:** The TeaQL *runtime* (which executes the queries, handles concurrency, audits, and powers the TUI) is open source. The *generator* that compiles `model.xml` into the Rust code found in `generate-lib/lib/` is currently closed-source while we refine it. However, we have **checked in the generated code** so you can compile, run, and modify this demo app immediately using only the open-source runtime components!
 - **For cross-compilation**: `cargo-zigbuild` and the `armv7-unknown-linux-musleabihf` target
 
 > **Note:** `Cargo.toml` uses absolute paths to the TeaQL workspace. Adjust these paths if building on a different machine.
@@ -411,3 +415,18 @@ Tests cover:
 - **Comment propagation** — verifies TeaQL comment chains propagate through facet sub-queries
 - **CRUD lifecycle** — add → reload → verify → delete → verify
 - **DDD transitions** — Planned → Process → Done with automatic and explicit status moves
+
+---
+
+## 💬 What We'd Love Feedback On
+
+We're building TeaQL because we believe developers shouldn't have to choose between clean Domain-Driven Design and raw SQL performance/visibility.
+
+If you try out this Kanban board or look at the code:
+- **Does the query tracing (`.comment()`) actually help you understand what the app is doing?**
+- **How do you feel about defining your domain in `model.xml` vs writing Rust structs directly?** (Even though the generator is currently closed-source, we'd love your thoughts on the DX of declarative modeling).
+- **Upcoming Feature:** We are working on an `audit ignore` attribute to exclude PII/sensitive data from the `EntityEventSink`. How do you currently handle this in your stack?
+
+Drop a comment on HN, open an issue, or reach out! 
+
+*(P.S. TeaQL was originally born out of our need to manage complex workflows and data at scale. Check out the framework behind this at [teaql.io](https://teaql.io/) — if you're building physical infra or complex business logic, come say hi!)*
