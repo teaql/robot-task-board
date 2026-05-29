@@ -481,13 +481,13 @@ impl TaskService {
         let cmd = CreateTaskCommand {
             name: name.to_owned(),
         };
-        let task = Task::create(&cmd, next_id, &self.ctx)?;
+        let mut task = Task::create(&cmd, next_id, &self.ctx)?;
 
         let log_id = id_gen.next_id("TaskExecutionLog")?;
-        let log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
+        let mut log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
-        let comment = format!("Create task '{}'", name);
-        let _guard = teaql_runtime::QueryCommentGuard::new(&self.ctx, Some(comment));
+        task.set_comment(format!("Create task '{}'", name));
+        log.set_comment(format!("Create task '{}'", name));
         task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
         log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
@@ -509,10 +509,8 @@ impl TaskService {
         let task_opt = select.execute_for_one(&self.ctx).await?;
 
         if let Some(mut task) = task_opt {
-            let comment = format!("Delete task '{}'", task.name());
-            let _guard = teaql_runtime::QueryCommentGuard::new(&self.ctx, Some(comment));
-            // Soft-delete by setting version to a negative value
-            task.update_version(-2);
+            let task_name = task.name().to_string();
+            task.mark_as_delete().set_comment(format!("Delete task '{}'", task_name));
             task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Deleted task [ID: {}]", id));
@@ -573,10 +571,11 @@ impl TaskService {
                     
                     let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
                     let log_id = id_gen.next_id("TaskExecutionLog")?;
-                    let log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
+                    let mut log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
+                    let task_name = task.name().to_string();
 
-                    let comment = format!("Move task '{}' to {}", task.name(), status_name);
-                    let _guard = teaql_runtime::QueryCommentGuard::new(&self.ctx, Some(comment));
+                    task.set_comment(format!("Move task '{}' to {}", task_name, status_name));
+                    log.set_comment(format!("Move task '{}' to {}", task_name, status_name));
                     task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     self.log_info(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));

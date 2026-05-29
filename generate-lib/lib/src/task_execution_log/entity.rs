@@ -129,6 +129,16 @@ impl TaskExecutionLog {
         self.task.as_ref()
     }
 
+    pub fn mark_as_delete(&mut self) -> &mut Self {
+        self.root.mark_as_delete(self.entity_key());
+        self
+    }
+
+    pub fn set_comment(&mut self, comment: impl Into<String>) -> &mut Self {
+        self.root.set_comment(comment);
+        self
+    }
+
     pub async fn save<'a, C>(
         self,
         ctx: &'a C,
