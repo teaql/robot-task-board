@@ -243,6 +243,45 @@ The TUI renders these traces in real-time with syntax-highlighted colors — tim
 
 ---
 
+### Scenario 9: Entity Audit Subsystem (`EntityEventSink`)
+
+**What it does:** TeaQL automatically hooks into the persistence lifecycle to track fine-grained Entity Events (Create, Update, Delete, Recover) and computes precise field-level diffs (`old_value` ➔ `new_value`).
+
+```rust
+// service.rs — Implement the sink to intercept framework audit events
+pub struct AppAuditSink;
+
+impl EntityEventSink for AppAuditSink {
+    fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
+        let user = short_user(ctx);
+        // ... format changes and output to TUI Log Area and app.log
+        for change in &event.changes {
+            let detail_line = format!(
+                "[{}]-[{}]-[AUDIT]-  -> Field [{}]: {} ➔ {}",
+                timestamp, user, change.field, change.old_value, change.new_value
+            );
+        }
+        Ok(())
+    }
+}
+
+// Attach it during runtime initialization
+runtime.register_event_sink(Arc::new(AppAuditSink));
+```
+
+**Resulting log output:**
+
+```text
+[12:04:23.529]-[philip]-[AUDIT]-Entity [Task(1)] was UPDATED. [Task(1): Move task 'My New Task' to Process]
+[12:04:23.529]-[philip]-[AUDIT]-  -> Field [status]: Planned ➔ Process
+[12:04:23.529]-[philip]-[AUDIT]-  -> Field [version]: 1 ➔ 2
+```
+
+**Next Steps / Coming Soon:** 
+In the next phase, we will introduce the **`audit ignore`** feature. By adding an attribute in the `model.xml`, developers will be able to explicitly exclude sensitive data (like passwords, PII, or internal tokens) from being captured or diffed by the audit subsystem.
+
+---
+
 ### Scenario Summary
 
 | # | TeaQL API | App Feature | Command |
@@ -255,6 +294,7 @@ The TUI renders these traces in real-time with syntax-highlighted colors — tim
 | 6 | `.return_type::<DomainTask>()` | Custom domain type mapping | `move`, `delete` |
 | 7 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `delete` |
 | 8 | `.comment()` | Query intent tracing | All queries |
+| 9 | `EntityEventSink` | Field-level lifecycle diffs & Audit | All mutations |
 
 ---
 
