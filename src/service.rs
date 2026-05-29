@@ -70,22 +70,24 @@ fn format_val_helper(val: &Option<Value>) -> String {
     }
 }
 
-fn map_field_and_value(field: &str, val: &Option<Value>) -> (String, String) {
+async fn map_field_and_value_async(ctx: &UserContext, field: &str, val: &Option<Value>) -> (String, String) {
     let raw_str = format_val_helper(val);
     if field == "status_id" {
-        let mapped_val = match raw_str.as_str() {
-            "1001" => "Planned".to_owned(),
-            "1002" => "Process".to_owned(),
-            "1003" => "Done".to_owned(),
-            other => other.to_owned(),
-        };
-        ("status".to_owned(), mapped_val)
+        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
+            if let Ok(Some(status)) = Q::task_status().execute_by_id(ctx, id).await {
+                let name = robot_kanban::E::task_status(status).get_name().eval().unwrap_or(raw_str.clone());
+                return ("status".to_owned(), name);
+            }
+        }
+        ("status".to_owned(), raw_str)
     } else if field == "platform_id" {
-        let mapped_val = match raw_str.as_str() {
-            "1" => "Robot System".to_owned(),
-            other => other.to_owned(),
-        };
-        ("platform".to_owned(), mapped_val)
+        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
+            if let Ok(Some(platform)) = Q::platforms().execute_by_id(ctx, id).await {
+                let name = robot_kanban::E::platform(platform).get_name().eval().unwrap_or(raw_str.clone());
+                return ("platform".to_owned(), name);
+            }
+        }
+        ("platform".to_owned(), raw_str)
     } else {
         (field.to_owned(), raw_str)
     }
@@ -117,24 +119,12 @@ impl EntityEventSink for AppAuditSink {
         };
         let entity_identity = format!("{}({})", event.entity, entity_id_str);
 
-        let mut changes_list = Vec::new();
-        for change in &event.changes {
-            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
-            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
-            if old_str != new_str {
-                changes_list.push(format!("{}: {} ➔ {}", mapped_field, old_str, new_str));
-            }
-        }
-
-
-        // Include comment lineage if present
         let comment_part = if let Some(ref comment) = event.comment {
             format!(" [{}]", comment)
         } else {
             "".to_owned()
         };
 
-        // Header line
         let header_line = format!(
             "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}",
             timestamp, user, entity_identity, action_name, comment_part
@@ -143,21 +133,19 @@ impl EntityEventSink for AppAuditSink {
         let mut lines = vec![header_line];
 
         for change in &event.changes {
-            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
-            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
+            let old_str = format_val_helper(&change.old_value);
+            let new_str = format_val_helper(&change.new_value);
             if old_str != new_str {
                 let detail_line = format!(
                     "[{}]-[{}]-[AUDIT]-  -> Field [{}]: {} ➔ {}",
-                    timestamp, user, mapped_field, old_str, new_str
+                    timestamp, user, change.field, old_str, new_str
                 );
                 lines.push(detail_line);
             }
         }
 
-
         // Write all lines to app.log and TUI buffer
         for line in &lines {
-            // 1. Write to app.log
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -167,7 +155,6 @@ impl EntityEventSink for AppAuditSink {
                 let _ = writeln!(file, "{}", line);
             }
 
-            // 2. Write to TUI buffer
             if let Some(buf) = ctx.get_resource::<TuiLogBuffer>() {
                 if let Ok(mut entries) = buf.entries.lock() {
                     entries.push(TuiLogEntry {
@@ -178,7 +165,7 @@ impl EntityEventSink for AppAuditSink {
             }
         }
 
-        // Also write to audit.log in the original detailed multi-line format with date, spaces, and a divider
+        // Write to audit.log with the long format
         let timestamp_with_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         let audit_header = format!(
             "[{}] - [{}] - [AUDIT] Entity [{}] was {}.{}",
@@ -186,34 +173,33 @@ impl EntityEventSink for AppAuditSink {
         );
         let mut audit_lines = vec![audit_header];
         for change in &event.changes {
-            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
-            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
+            let old_str = format_val_helper(&change.old_value);
+            let new_str = format_val_helper(&change.new_value);
             if old_str != new_str {
                 let detail = format!(
                     "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
-                    timestamp_with_date, user, mapped_field, old_str, new_str
+                    timestamp_with_date, user, change.field, old_str, new_str
                 );
                 audit_lines.push(detail);
             }
         }
-        // Add a visual divider and a blank line to audit.log
         audit_lines.push(format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp_with_date, user));
-
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("audit.log")
-        {
-            use std::io::Write;
-            for line in audit_lines {
+        
+        for line in &audit_lines {
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("audit.log")
+            {
+                use std::io::Write;
                 let _ = writeln!(file, "{}", line);
             }
-            let _ = writeln!(file, ""); // empty line separator
         }
 
         Ok(())
     }
 }
+
 
 #[derive(Clone)]
 pub struct LoggingExecutor {

@@ -2,23 +2,17 @@
 
 > **TeaQL Website**: [https://teaql.io/](https://teaql.io/)
 
-TeaQL is a Rust query framework and domain modeling tool for making business logic observable.
-
-This demo is a tiny terminal Kanban board, but it exercises the same runtime features TeaQL was built for in much larger business domains:
+Instead of hiding database behavior behind an opaque ORM, this demo shows the full execution path of a domain action:
 
 `Command` → `Domain transition` → `SQL` → `Audit diff` → `Event log` → `UI projection`
 
 ![TeaQL task board demo](./assets/teaql-task-board.gif)
 
-Instead of hiding database behavior behind an opaque ORM, this showcase lets you follow the full execution path of a domain action: from command input, to domain transition, to generated SQL, to audit diff, to UI refresh.
+The task board intentionally uses a tiny domain model so the runtime behavior is easy to follow. TeaQL itself is designed for significantly larger business domains, where understanding domain transitions, generated SQL, audit trails and query execution paths becomes even more important.
 
-The task board intentionally uses a tiny domain model so the runtime behavior is easy to follow. In real systems, TeaQL is meant for much larger business domains, where domain transitions, generated SQL, audit trails, query paths, and lifecycle events quickly become difficult to reason about without framework-level visibility.
+To make the idea concrete, we built a terminal-based Kanban board using Ratatui + SQLite. When you move a task from *Planned* to *Process*, TeaQL shows the generated SQL, optimistic concurrency update, audit trail, lifecycle event, and refreshed status facets — all in real time.
 
-To make the idea concrete, we built a terminal-based Kanban board using Ratatui + SQLite. When you move a task from *Planned* to *Process*, TeaQL shows the generated SQL, optimistic concurrency update, audit trail, lifecycle event, and refreshed status facets in real time.
-
-This is not just a task board. It is a small showcase of how TeaQL bridges Domain-Driven Design, raw SQL transparency, query introspection, faceted aggregation, lifecycle auditing, and embedded-friendly Rust deployment.
-
-The app can also cross-compile as a standalone statically linked binary for `armv7` router environments, with no external runtime dependencies.
+The app also cross-compiles as a standalone statically linked binary for `armv7` router environments, with no external runtime dependencies.
 
 ---
 
@@ -104,6 +98,8 @@ let select = Q::tasks()
     .comment(search_comment)
     .filter_with_json(&search_json)
     .facet_by_status_as("status_stats",
+        // This sub-query could easily be extracted into a semantic helper method
+        // e.g. `TaskStatusRequest::build_count_stats()` for reuse across the app
         Q::task_status().comment("Count status").count_tasks()
     );
 
@@ -117,6 +113,24 @@ if let Some(facet_list) = all_tasks.facet("status_stats") {
     }
 }
 ```
+
+> **💡 Pro Tip (Semantic Encapsulation):** Notice how `Q::task_status().count_tasks()` is passed directly. Because TeaQL queries are strongly-typed data structures, you can effortlessly extract these aggregations into reusable, semantic helper methods.
+> 
+> ```rust
+> // 1. Encapsulate the query logic into a reusable semantic method
+> impl TaskStatusRequest {
+>     pub fn build_count_stats() -> Self {
+>         Q::task_status().comment("Count status").count_tasks()
+>     }
+> }
+> 
+> // 2. Compose it cleanly in your main business logic
+> let select = Q::tasks()
+>     .filter_with_json(&search_json)
+>     .facet_by_status_as("status_stats", TaskStatusRequest::build_count_stats());
+> ```
+> 
+> This allows you to compose massive, multi-layered TeaQL queries dynamically without polluting your business logic. *(Note: The `E::` Expression API provides the exact same composability for field-level conditions and evaluations!)*
 
 **Generated SQL (3 queries in one round-trip):**
 
@@ -361,16 +375,25 @@ Defined in `models/model.xml`, the TeaQL domain model declares two entities with
     _features="custom" />
 ```
 
-### 🤖 AI-Friendly Domain Modeling via Service-Generated APIs
+### 🤖 Taming AI via Service-Generated APIs
 
-A hidden paradigm shift in this architecture is how naturally it guides AI coding assistants. 
+A hidden paradigm shift in this architecture is how naturally it tames AI coding assistants. The workflow forms a highly predictable closed loop:
 
-The workflow forms a highly predictable closed loop:
 1. **AI Generation:** An AI easily drafts the declarative domain model (`model.xml`) from raw business requirements. To automate this process entirely, we built the [teaql-agent-kit](https://github.com/teaql/teaql-agent-kit).
 2. **Translation Service:** A dedicated background service takes this model and translates it into a dense, strictly-typed Rust API layer.
-3. **High-Obedience Implementation:** When the AI assistant helps you write the actual application logic (like in `service.rs`), it is fed these compiler-enforced APIs as context. 
+3. **High-Obedience Implementation:** When the AI helps you write application logic, it relies entirely on these generated, compiler-enforced APIs.
 
-Because the AI is bounded by strict generated types rather than scattered database migrations, it has far less room to hallucinate raw SQL strings or guess table schemas. The result is a higher-obedience workflow where AI-generated application logic is more likely to compile, align with the domain model, and stay understandable to humans.
+This generated layer acts as an absolute guardrail against common AI hallucinations:
+
+- **Safe Setters (No Magic Numbers):** Instead of `task.update_status_id(1)` (which is natively blocked by the compiler), the AI is forced to use the semantic `task.update_status_to_planned()`. It cannot hallucinate invalid foreign keys.
+- **Safe Getters (The `E::` Expression API):** Deeply nested or nullable data retrieval in Rust often causes AI to write buggy `.unwrap()` chains. TeaQL provides a monadic expression API:
+  ```rust
+  use robot_kanban::E;
+  
+  // Safe optional-chaining: swallows nulls gracefully and eliminates type mismatch
+  let name = E::task_status(status).get_name().eval().unwrap_or(raw_str);
+  ```
+  The AI gets perfect auto-completion for legitimate fields (`.get_name()`) and produces zero runtime panics.
 
 ---
 
@@ -399,7 +422,7 @@ Commands use a slash (`/`) prefix. **Any bare text (without a slash) is treated 
 > **A Note on Open Source:** The TeaQL *runtime* (which executes the queries, handles concurrency, audits, and powers the TUI) is open source. The *generator* that compiles `model.xml` into the Rust code found in `generate-lib/lib/` is currently closed-source while we refine it. However, we have **checked in the generated code** so you can compile, run, and modify this demo app immediately using only the open-source runtime components!
 - **For cross-compilation**: `cargo-zigbuild` and the `armv7-unknown-linux-musleabihf` target
 
-> **Note:** `Cargo.toml` uses absolute paths to the TeaQL workspace. Adjust these paths if building on a different machine.
+> **Note:** `Cargo.toml` expects TeaQL crates at `../teaql-rs/`. Clone [teaql-rs](https://teaql.io/) alongside this repo, or adjust the paths to match your local setup.
 
 ---
 

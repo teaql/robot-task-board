@@ -36,22 +36,24 @@ fn format_entity_id(val: &Value) -> String {
     }
 }
 
-fn map_field_and_value(field: &str, val: &Option<Value>) -> (String, String) {
+async fn map_field_and_value_async(ctx: &UserContext, field: &str, val: &Option<Value>) -> (String, String) {
     let raw_str = format_teaql_value(val);
     if field == "status_id" {
-        let mapped_val = match raw_str.as_str() {
-            "1001" => "Planned".to_owned(),
-            "1002" => "Process".to_owned(),
-            "1003" => "Done".to_owned(),
-            other => other.to_owned(),
-        };
-        ("status".to_owned(), mapped_val)
+        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
+            if let Ok(Some(status)) = Q::task_status().execute_by_id(ctx, id).await {
+                let name = robot_kanban::E::task_status(status).get_name().eval().unwrap_or(raw_str.clone());
+                return ("status".to_owned(), name);
+            }
+        }
+        ("status".to_owned(), raw_str)
     } else if field == "platform_id" {
-        let mapped_val = match raw_str.as_str() {
-            "1" => "Robot System".to_owned(),
-            other => other.to_owned(),
-        };
-        ("platform".to_owned(), mapped_val)
+        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
+            if let Ok(Some(platform)) = Q::platforms().execute_by_id(ctx, id).await {
+                let name = robot_kanban::E::platform(platform).get_name().eval().unwrap_or(raw_str.clone());
+                return ("platform".to_owned(), name);
+            }
+        }
+        ("platform".to_owned(), raw_str)
     } else {
         (field.to_owned(), raw_str)
     }
@@ -64,7 +66,7 @@ pub struct AuditLogSink;
 impl EntityEventSink for AuditLogSink {
     fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
         let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-        let user = ctx.user_identifier().unwrap_or("anonymous");
+        let user = ctx.user_identifier().unwrap_or("anonymous").to_string();
 
         let action_name = match event.kind {
             EntityEventKind::Created => "CREATED",
@@ -78,59 +80,58 @@ impl EntityEventSink for AuditLogSink {
             Some(id_val) => format_entity_id(id_val),
             None => "UNKNOWN".to_owned(),
         };
-        let entity_identity = format!("{}({})", event.entity, entity_id_str);
+        let entity_identity = format!("{}:{}", event.entity, entity_id_str);
 
-        // Include comment lineage if present
         let comment_part = if let Some(ref comment) = event.comment {
             format!(" [{}]", comment)
         } else {
             "".to_owned()
         };
 
-        // Original layout format with spaces and date
-        let header_line = format!(
+        let header = format!(
             "[{}] - [{}] - [AUDIT] Entity [{}] was {}.{}",
             timestamp, user, entity_identity, action_name, comment_part
         );
 
-        let mut lines = vec![header_line];
+        let mut lines = vec![header];
+        let divider = format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp, user);
 
         for change in &event.changes {
-            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
-            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
+            let old_str = format_teaql_value(&change.old_value);
+            let new_str = format_teaql_value(&change.new_value);
+            
             if old_str != new_str {
-                let detail_line = format!(
+                let detail = format!(
                     "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
-                    timestamp, user, mapped_field, old_str, new_str
+                    timestamp, user, change.field, old_str, new_str
                 );
-                lines.push(detail_line);
+                lines.push(detail);
             }
         }
 
-        // Print and save all lines
+        // Output to console and log file
         for line in &lines {
-            println!("{line}");
+            // Print to console
+            println!("{}", line);
 
+            // Write to local audit file
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open("audit.log")
+                .open("audit_example.log")
             {
                 use std::io::Write;
                 let _ = writeln!(file, "{}", line);
             }
         }
 
-        // Add a visual divider and a blank line to audit.log and stdout
-        let divider = format!(
-            "[{}] - [{}] - [AUDIT] ------------------------------------------------------------",
-            timestamp, user
-        );
-        println!("{divider}");
+        // Print a dividing line after each event batch
+        println!("{}", divider);
+        println!();
         if let Ok(mut file) = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open("audit.log")
+            .open("audit_example.log")
         {
             use std::io::Write;
             let _ = writeln!(file, "{}", divider);
