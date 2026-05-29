@@ -1,40 +1,72 @@
 use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 
 use crate::App;
 
 pub fn parse_log_line(line: &str) -> Line<'_> {
-    if line.len() < 23 || !line.starts_with("202") {
-        return Line::from(line.cyan());
-    }
-
     let mut spans = Vec::new();
-    
-    // 1. Timestamp (Slate gray)
-    let timestamp = &line[..23];
-    spans.push(Span::styled(timestamp, Style::default().fg(Color::Indexed(244))));
+    let mut rest = line;
 
-    let mut rest = &line[23..];
+    // Detect aligned format: e.g. [08:32:31.456]-[user]-[DEBUG/AUDIT]-message
+    if line.starts_with('[') && line.len() > 15 {
+        if let Some(time_end) = line.find(']') {
+            let timestamp = &line[1..time_end];
+            // Only match if the bracket contents look like a time (contains colon)
+            if timestamp.contains(':') {
+                spans.push(Span::styled(format!("[{}]", timestamp), Style::default().fg(Color::Indexed(244))));
+                rest = &line[time_end+1..];
 
-    // 2. User ID bracket e.g. -[philip@pid-xxx.tid-x] (Neon Violet)
-    if rest.starts_with("-[") {
-        if let Some(end) = rest.find(']') {
-            let user_part = &rest[..end+1];
-            spans.push(Span::styled(user_part, Style::default().fg(Color::Rgb(155, 89, 182)).add_modifier(Modifier::BOLD)));
-            rest = &rest[end+1..];
+                // 2. User ID bracket e.g. -[user]
+                if rest.starts_with("-[") {
+                    if let Some(end) = rest[2..].find(']') {
+                        let user_part = &rest[2..end+2];
+                        spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
+                        spans.push(Span::styled(format!("[{}]", user_part), Style::default().fg(Color::Rgb(155, 89, 182)).add_modifier(Modifier::BOLD)));
+                        rest = &rest[end+3..];
+                    }
+                }
+
+                // 3. Severity Level bracket e.g. -[AUDIT], -[INFO], or -[DEBUG]
+                if rest.starts_with("-[") {
+                    if let Some(end) = rest[2..].find(']') {
+                        let level = &rest[2..end+2];
+                        spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
+                        if level == "AUDIT" {
+                            spans.push(Span::styled(format!("[{}]", level), Style::default().fg(Color::Rgb(230, 126, 34)).add_modifier(Modifier::BOLD)));
+                        } else if level == "INFO" {
+                            spans.push(Span::styled(format!("[{}]", level), Style::default().fg(Color::Rgb(46, 204, 113)).add_modifier(Modifier::BOLD)));
+                        } else {
+                            spans.push(Span::styled(format!("[{}]", level), Style::default().fg(Color::Indexed(242))));
+                        }
+                        rest = &rest[end+3..];
+                    }
+                }
+
+                if rest.starts_with('-') {
+                    spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
+                    rest = &rest[1..];
+                }
+            } else {
+                // Fallback for indented lines or others
+                spans.push(Span::styled(line, Style::default().fg(Color::White)));
+                return Line::from(spans);
+            }
         }
+    } else {
+        // Fallback for other lines
+        spans.push(Span::styled(line, Style::default().fg(Color::White)));
+        return Line::from(spans);
     }
 
-    // 3. Severity e.g. --DEBUG - SqlLogEntry
-    if rest.starts_with("--DEBUG - SqlLogEntry") {
-        spans.push(Span::styled("--DEBUG - SqlLogEntry", Style::default().fg(Color::Indexed(242))));
-        rest = &rest[21..];
+    // Now highlight the rest of the message!
+    if rest.starts_with("SqlLogEntry") {
+        spans.push(Span::styled("SqlLogEntry", Style::default().fg(Color::Indexed(242))));
+        rest = &rest[11..];
     }
 
     // 4. Comment part and Result summary part
-    // Dynamically distinguish between log entries that have comments vs. those that do not.
     if rest.starts_with(" - [") {
         if let Some(end) = rest[4..].find(']') {
             let first_segment = &rest[..end+5];
@@ -59,8 +91,13 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
         }
     }
 
-    // 6. SQL statement and elapsed time
-    if let Some(took_idx) = rest.rfind(" (took ") {
+    // 5. Highlight Changes in Audit logs or SQL / elapsed time
+    if let Some(changes_idx) = rest.find(" Changes: ") {
+        let main_msg = &rest[..changes_idx];
+        let changes = &rest[changes_idx..];
+        spans.push(Span::styled(main_msg, Style::default().fg(Color::White)));
+        spans.push(Span::styled(changes, Style::default().fg(Color::Cyan)));
+    } else if let Some(took_idx) = rest.rfind(" (took ") {
         let sql = &rest[..took_idx];
         let took = &rest[took_idx..];
         spans.push(Span::styled(sql, Style::default().fg(Color::White)));
@@ -75,20 +112,35 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
 pub fn ui(f: &mut ratatui::Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(50), // 1. Log area
-            Constraint::Length(3),      // 2. Status statistics
-            Constraint::Min(5),         // 3. Columns (Planned, Process, Done)
-            Constraint::Length(3),      // 4. Command Line Area
-            Constraint::Length(9),      // 5. Command Help Area
-        ])
+        .constraints(if app.hide_logs {
+            vec![
+                Constraint::Length(3),      // 1. System Info area
+                Constraint::Length(3),      // 2. Status statistics
+                Constraint::Min(5),         // 3. Columns (Planned, Process, Done)
+                Constraint::Length(3),      // 4. Command Line Area
+                Constraint::Length(3),      // 5. Command Help Area
+            ]
+        } else {
+            vec![
+                Constraint::Percentage(60), // 1. Log area
+                Constraint::Length(3),      // 2. Status statistics
+                Constraint::Min(5),         // 3. Columns (Planned, Process, Done)
+                Constraint::Length(3),      // 4. Command Line Area
+                Constraint::Length(3),      // 5. Command Help Area
+            ]
+        })
         .split(f.size());
 
     // 1. Render Log Area (Keeps beautiful syntax-highlighted logs)
     let log_height = chunks[0].height as usize - 2; // Subtract borders
-    let skip_count = app.logs.len().saturating_sub(log_height);
+    let total_logs = app.logs.len();
+    let max_scroll = total_logs.saturating_sub(log_height);
+    let scroll_offset = app.log_scroll_offset.min(max_scroll);
+
+    let skip_count = total_logs.saturating_sub(log_height + scroll_offset);
     let log_lines: Vec<Line> = app.logs.iter()
         .skip(skip_count)
+        .take(log_height)
         .map(|l| parse_log_line(l))
         .collect();
 
@@ -97,12 +149,20 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     } else {
         "None"
     };
-    let title_str = format!(
-        " Action Logs & Executed SQL | CPU: {} | MEM: {} | Search: {} ",
-        app.cpu_model, app.mem_size, search_str
-    );
 
-    let log_paragraph = Paragraph::new(log_lines)
+    let scroll_str = if scroll_offset == 0 {
+        "Bottom".to_owned()
+    } else {
+        format!("Up {}/{}", scroll_offset, max_scroll)
+    };
+
+    let title_str = if app.hide_logs {
+        format!(" System Info | CPU: {} | MEM: {} | Search: {} ", app.cpu_model, app.mem_size, search_str)
+    } else {
+        format!(" Action Logs & Executed SQL | Scroll: {} | CPU: {} | MEM: {} | Search: {} ", scroll_str, app.cpu_model, app.mem_size, search_str)
+    };
+
+    let log_paragraph = Paragraph::new(if app.hide_logs { vec![] } else { log_lines })
     .block(
         Block::default()
             .borders(Borders::ALL)
@@ -183,7 +243,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         .planned_tasks
         .iter()
         .map(|t| Line::from(vec![
-            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::Indexed(243))),
+            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::LightGreen)),
             Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
         ]))
         .collect::<Vec<Line>>();
@@ -202,7 +262,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         .process_tasks
         .iter()
         .map(|t| Line::from(vec![
-            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::Indexed(243))),
+            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::LightGreen)),
             Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
         ]))
         .collect::<Vec<Line>>();
@@ -221,7 +281,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         .done_tasks
         .iter()
         .map(|t| Line::from(vec![
-            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::Indexed(243))),
+            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::LightGreen)),
             Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
         ]))
         .collect::<Vec<Line>>();
@@ -259,38 +319,20 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     let help_text = vec![
         Line::from(vec![
             Span::raw("  "),
-            Span::styled("add <name>           ", Style::default().fg(Color::White)),
-            Span::raw("- Create a new task in Planned status"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("move <id> [s]        ", Style::default().fg(Color::White)),
-            Span::raw("- Change status to planned/process/done (default next)"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("delete <id>          ", Style::default().fg(Color::White)),
-            Span::raw("- Permanently delete task from database"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("search <kw>          ", Style::default().fg(Color::White)),
-            Span::raw("- Search tasks by keyword using JSON dynamic EXPR"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("s <kw>               ", Style::default().fg(Color::White)),
-            Span::raw("- Shortcut for search (empty keyword to clear search)"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("exit | quit          ", Style::default().fg(Color::White)),
-            Span::raw("- Quit the application dashboard"),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled("ESC                  ", Style::default().fg(Color::White)),
-            Span::raw("- Immediate escape"),
+            Span::styled("<name>", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Add  "),
+            Span::styled("/mv <id> [status]", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Move  "),
+            Span::styled("/del <id>", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Delete  "),
+            Span::styled("/s <kw>", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Search  "),
+            Span::styled("/q", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw("|"),
+            Span::styled("ESC", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Quit  "),
+            Span::styled("↑↓/PgUp/PgDn", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Scroll logs"),
         ]),
     ];
     let help_box = Paragraph::new(help_text).block(

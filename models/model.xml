@@ -1,21 +1,49 @@
-<root name="robot_kanban" org="doublechain" version="1.0.0">
+<root name="robot-kanban-service" org="doublechaintech" version="1.0.0">
     <platform
         name="Robot System"
-        founded="now()"
+        founded="createTime()"
+        _name="Platform"
+        _module="Task"
+        _module_key="task"
     />
 
     <task_status
-        name="Planned|Process|Done"
-        code="PLANNED|PROCESS|DONE"
-        platform="platform()"
+        id="id()"
+        name="string()"
+        code="string()"
+        color="string()"
+        display_order="number()"
+        progress="number()"
         _features="status"
-        _identified_by="code"
-    />
+        _identifier="code"
+        _constant="true"
+        _name="Task Status"
+        _module="Task"
+        _module_key="task"
+    >
+        <_value id="1001" name="Planned" code="PLANNED" color="#94A3B8" display_order="10" progress="0"/>
+        <_value id="1002" name="Process" code="PROCESS" color="#F59E0B" display_order="20" progress="50"/>
+        <_value id="1003" name="Done" code="DONE" color="#16A34A" display_order="30" progress="100"/>
+    </task_status>
 
     <task
         name="Task Name|[1,200]"
         status="task_status()"
         platform="platform()"
         _features="custom"
+        _name="Task"
+        _module="Task"
+        _module_key="task"
+    />
+
+    <task_execution_log
+        task="task()"
+        action="string()"
+        detail="string()"
+        _features="custom"
+        _name="Task Execution Log"
+        _module="Task"
+        _module_key="task"
     />
 </root>
+

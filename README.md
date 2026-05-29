@@ -1,117 +1,357 @@
 # Robot Task Board TUI 🚀
 
-A state-of-the-art, premium terminal user interface (TUI) Robot Task Kanban Board designed to demonstrate the advanced capabilities and robust engineering of the **TeaQL (TK) query framework**. 
+A terminal-based Kanban board for robot task management, built to showcase the **TeaQL query framework** in a real-world Rust application.
 
-Written in Rust using **Ratatui + Crossterm**, this application connects to a synchronous SQLite database via the `teaql-provider-rusqlite` adapter and is fully cross-compiled as a standalone statically-linked binary for `armv7` router environments (zero external system dependencies).
+Written in Rust using **Ratatui + Crossterm**, backed by SQLite via `teaql-provider-rusqlite`. Cross-compiles as a standalone statically-linked binary for `armv7` router environments — zero external runtime dependencies.
 
 ---
 
-## 🌟 Key Features
+## 📁 Project Structure
 
-### 1. Single-Query Facet Aggregation (`facet_by`)
-In conventional ORMs, loading a Kanban board with active tasks while simultaneously displaying aggregate statistics for different task statuses requires executing multiple separate queries (or parsing a heavy dataset in memory). 
+```
+robot-task-board/
+├── src/
+│   ├── main.rs          # App state, command parsing, event loop
+│   ├── service.rs       # TaskService, DomainTask aggregate root, TeaQL queries
+│   ├── ui.rs            # Ratatui layout, syntax-highlighted log rendering
+│   └── utils.rs         # System info (CPU/memory) from /proc
+├── models/
+│   └── model.xml        # TeaQL domain model definition
+├── generate-lib/
+│   └── lib/             # Auto-generated TeaQL domain library (robot-kanban)
+├── Cargo.toml
+└── README.md
+```
 
-This application fetches both the active tasks and their respective status count facets in a **single, highly-optimized TeaQL query**:
+---
+
+## 🔬 TeaQL Applied Scenarios
+
+This application exercises **8 distinct TeaQL capabilities** across its CRUD and query workflows. Each scenario maps a TeaQL API to its concrete usage and the SQL it produces.
+
+---
+
+### Scenario 1: Schema Bootstrap (`ensure_rusqlite_schema_for`)
+
+**What it does:** Automatically creates or migrates all database tables and seeds initial reference data (status values, platform) from the domain model — zero manual SQL.
+
 ```rust
-// Fetch all active tasks and aggregate status facets in a single database round-trip
+// service.rs — One-line schema setup
+let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
+ctx.use_rusqlite_provider(inner_executor.clone());
+ensure_rusqlite_schema_for(&ctx)?;
+```
+
+**Applied in:** `TaskService::new()` — on first run, creates `task_data`, `task_status_data`, and `platform_data` tables with seed data; on subsequent runs, applies any schema changes from the model.
+
+---
+
+### Scenario 2: JSON-Based Dynamic Filtering (`find_with_json`)
+
+**What it does:** Accepts a JSON object to dynamically construct WHERE clauses at runtime. An empty `{}` acts as a wildcard (no filter), enabling a single code path for both search and full-load.
+
+```rust
+// service.rs — Unified search/load query
+let search_json = if let Some(ref term) = search_term {
+    let escaped_name = serde_json::Value::String(term.clone());
+    format!(r#"{{"name": {}}}"#, escaped_name)   // → {"name": "calibrate"}
+} else {
+    r#"{}"#.to_owned()                            // → {} (wildcard)
+};
+
 let select = Q::tasks()
-    .find_with_json(self.build_search_json())
-    .facet_by_status_as("status_stats", Q::task_status().count_tasks().comment("Count status"))
-    .comment(self.build_search_comment());
+    .find_with_json(&search_json);
+```
+
+| Input | JSON | Generated SQL |
+|:---|:---|:---|
+| No search | `{}` | `SELECT ... FROM task_data WHERE (version > 0)` |
+| `calibrate` | `{"name": "calibrate"}` | `SELECT ... FROM task_data WHERE (version > 0) AND (name LIKE '%calibrate%')` |
+
+**Applied in:** `search` / `s` command — filters the Kanban board in real-time.
+
+---
+
+### Scenario 3: Faceted Aggregation (`facet_by_status_as`)
+
+**What it does:** Attaches a sub-query that computes aggregate counts grouped by a relation (status), all within a single database round-trip alongside the main entity query.
+
+```rust
+// service.rs — Single query fetches tasks + status counts
+let select = Q::tasks()
+    .comment(search_comment)
+    .find_with_json(&search_json)
+    .facet_by_status_as("status_stats",
+        Q::task_status().comment("Count status").count_tasks()
+    );
 
 let all_tasks = select.execute_for_list(&self.ctx).await?;
+
+// Access facet results from the same SmartList
+if let Some(facet_list) = all_tasks.facet("status_stats") {
+    for record in facet_list.iter() {
+        let status_id = record.get("id");
+        let count = record.get("count_tasks");
+    }
+}
 ```
-TeaQL's aggregate engine handles the sub-selection natively and delivers populated relation counts directly within the returned `SmartList` container.
 
-### 2. DDD Clean Architecture & Return Type Conversions (`return_type`)
-To prevent the anti-pattern of anemic domain models, this project separates database transfer records from rich domain behaviors:
-* **Rich Domain Aggregate Root**: Encapsulates status flow logic inside a custom `DomainTask` wrapper wrapping the generated entity `Task`.
-* **Behavior Command Pattern**: Integrates a `TransitionCommand` object to handle task status transitions. The rule for automatically moving a task to its next chronological status (e.g., Planned → Process → Done) when no target status is provided is fully encapsulated within the aggregate root.
-* **Return Type Binding**: Uses TeaQL's `.return_type::<DomainTask>()` selection API to let the repository natively fetch and map custom domain behaviors directly at database extraction.
+**Generated SQL (3 queries in one round-trip):**
 
-### 3. Native Tracing & Comment Stack Propagation (TeaQL v0.9.2)
-Leveraging the industry-leading query tracing and diagnostic capabilities in **TeaQL v0.9.2**:
-* **Native PID/TID Resolution**: By utilizing `UserContext::new()` natively, the context auto-resolves the OS user, Process ID (PID), and Thread ID (TID) to establish a unique diagnostic trace header: `philip@pid-{pid}.tid-{tid}`.
-* **Dynamic Comment Chain Propagation (`->`)**: Parent query comments are dynamically combined and propagated down to nested facets and relation aggregate sub-queries, creating a structured intent chain (e.g. `-[Get all tasks->Count status->count_tasks]-`).
-* **SQL Comment Stripping**: Query intent comments are isolated into dedicated metadata fields (`CompiledQuery.comment`), eliminating raw duplication inside SQL queries and keeping query text completely clean.
+```sql
+-- 1. Main entity query
+SELECT id, name, version, status AS status_id, platform AS platform_id
+  FROM task_data WHERE (version > 0)
+-- 2. Facet: load status reference data
+SELECT id, name, code, version, platform AS platform_id
+  FROM task_status_data WHERE (version > 0)
+-- 3. Facet: aggregate task counts per status
+SELECT status, COUNT(*) AS count_tasks
+  FROM task_data WHERE (version > 0) AND (status IN (1, 2, 3)) GROUP BY status
+```
 
-The TUI SQL log panel natively intercepts and renders these rich, fully-traceable log lines in real-time:
+**Applied in:** Board reload — the Planned/Process/Done count badges and task lists are all populated from this single query.
+
+---
+
+### Scenario 4: Entity Factory (`Q::tasks().new_entity()`)
+
+**What it does:** Creates a new entity instance pre-wired with the runtime context, ready for field population and persistence.
+
+```rust
+// service.rs — DomainTask::create()
+let mut task = Q::tasks().new_entity(ctx);
+task.update_id(next_id)
+    .update_name(cmd.name.clone())
+    .update_version(1_i64)
+    .update_status_id(1_u64)
+    .update_platform_id(1_u64);
+```
+
+**Generated SQL:**
+
+```sql
+INSERT INTO task_data (id, name, version, status, platform)
+  VALUES (1, 'calibrate sensor', 1, 1, 1)
+```
+
+**Applied in:** `add` command — creates a new task in Planned status.
+
+---
+
+### Scenario 5: ID Space Generation (`RusqliteIdSpaceGenerator`)
+
+**What it does:** Generates globally unique, monotonically increasing IDs per entity type using a dedicated SQLite sequence table — no auto-increment column needed.
+
+```rust
+// service.rs — add_task()
+let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
+let next_id = id_gen.next_id("Task")?;
+```
+
+**Applied in:** `add` command — each new task receives a unique ID from the `Task` ID space.
+
+---
+
+### Scenario 6: Custom Return Type Mapping (`return_type::<DomainTask>()`)
+
+**What it does:** Tells TeaQL to deserialize query results into a custom domain type instead of the default generated entity. The custom type must implement the `Entity` and `TeaqlEntity` traits.
+
+```rust
+// service.rs — DomainTask wraps the generated Task with business logic
+pub struct DomainTask {
+    pub task: Task,
+}
+
+impl Entity for DomainTask {
+    fn from_record(record: Record) -> Result<Self, EntityError> {
+        let task = Task::from_record(record)?;
+        Ok(Self { task })
+    }
+}
+
+// Fetch as DomainTask instead of raw Task
+let select = Q::tasks()
+    .comment("Get task for DDD")
+    .filter_by_id(id)
+    .return_type::<DomainTask>();
+
+let found_tasks = select.execute_for_list(&self.ctx).await?;
+// found_tasks contains DomainTask instances with business methods attached
+```
+
+**Applied in:** `move` / `mv` and `delete` / `del` commands — the fetched `DomainTask` carries `transition_status()` and `delete()` domain methods that raw `Task` entities don't have.
+
+---
+
+### Scenario 7: Optimistic Concurrency (`DeleteCommand` with `expected_version`)
+
+**What it does:** Deletes an entity only if its current version matches the expected version, preventing concurrent modification conflicts.
+
+```rust
+// service.rs — delete_task()
+let repo = self.ctx.task_repository()?;
+repo.delete(
+    &DeleteCommand::new("Task", id)
+        .expected_version(domain_task.task.version())
+)?;
+```
+
+**Generated SQL:**
+
+```sql
+UPDATE task_data SET version = -2 WHERE id = 1 AND version = 1
+```
+
+TeaQL uses a soft-delete pattern — `version` is set to a negative value rather than removing the row, preserving audit history.
+
+**Applied in:** `delete` / `del` command.
+
+---
+
+### Scenario 8: Comment Chain Propagation (`.comment()`)
+
+**What it does:** Attaches human-readable intent annotations to queries. When queries have nested sub-queries (e.g., facets), comments propagate down the chain with `->` separators, creating a full trace of query intent.
+
+```rust
+// service.rs — Comments propagate through facet sub-queries
+let select = Q::tasks()
+    .comment("Get active tasks")                       // Parent comment
+    .find_with_json(&search_json)
+    .facet_by_status_as("status_stats",
+        Q::task_status().comment("Count status")       // Child comment
+            .count_tasks()
+    );
+```
+
+**Resulting log trace chain:**
+
 ```text
-2026-05-26 12:06:00.225-[philip@pid-2007633.tid-1]--DEBUG - SqlLogEntry - [Get all tasks] - [5*Task] SELECT id, name, version, status_id, platform_id FROM task_data WHERE (version > 0) (took 0.184ms)
-2026-05-26 12:06:00.226-[philip@pid-2007633.tid-1]--DEBUG - SqlLogEntry - [Get all tasks->Count status] - [3*TaskStatus] SELECT id, name, code, version, platform_id FROM task_status_data WHERE (version > 0) (took 0.138ms)
+[Get active tasks]                                → main task query
+[Get active tasks->status_stats->Count status]    → facet status lookup
+[Get active tasks->status_stats->Count status]    → facet aggregate count
 ```
 
-### 4. Interactive Blinking Input Cursor & Premium Aesthetics
-* **Dynamic Blinking Cursor**: Crossterm's `Show` and `EnableBlinking` parameters are activated at startup. The rendering loop tracks active cursor characters dynamically (`chunks[3].x + 3 + input.chars().count()`) to present an elegant input cursor.
-* **Subtle Indentation Padding**: Left margins on the Command Input box and the bottom Help menu are padded by 2 spaces to separate UI borders from text, providing a highly premium terminal experience.
-* **Real-time SQL Audits**: The upper 50% of the screen features a dedicated action logging area, allowing developers to audit live SQL execution times, comment stacks, and query results.
+The TUI renders these traces in real-time with syntax-highlighted colors — timestamp, user context (`philip@pid-{pid}.tid-{tid}`), comment chains, result summaries, and elapsed times are each distinctly colored:
 
-### 5. Zero-Dependency Standalone Static Binary
-Using a cross-compilation pipeline powered by `cargo-zigbuild`, the application compiles statically with a musl-based toolchain, linking both the SQLite engine and the TUI backend into a single, standalone binary for `armv7` router environments.
+```text
+2026-05-26 12:06:00.225-[philip@pid-2007633.tid-1]--DEBUG - SqlLogEntry - [Get active tasks] - [5*Task] SELECT ... (took 0.184ms)
+2026-05-26 12:06:00.226-[philip@pid-2007633.tid-1]--DEBUG - SqlLogEntry - [Get active tasks->status_stats->Count status] - [3*TaskStatus] SELECT ... (took 0.138ms)
+```
+
+**Applied in:** Every query in the application — enables real-time SQL auditing from the TUI log panel.
 
 ---
 
-## 📐 Design Considerations
+### Scenario Summary
 
-### 1. Separation of Concerns
-Generated structures act strictly as data transfer records. Rich business validation and state rules are isolated within the `DomainTask` behavior aggregate root.
+| # | TeaQL API | App Feature | Command |
+|:---|:---|:---|:---|
+| 1 | `ensure_rusqlite_schema_for` | Auto-create tables & seed data | Startup |
+| 2 | `find_with_json` | Dynamic search / wildcard load | `search` |
+| 3 | `facet_by_status_as` | Status count aggregation | Board reload |
+| 4 | `Q::tasks().new_entity()` | Create task with defaults | `add` |
+| 5 | `RusqliteIdSpaceGenerator` | Unique ID generation | `add` |
+| 6 | `.return_type::<DomainTask>()` | Custom domain type mapping | `move`, `delete` |
+| 7 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `delete` |
+| 8 | `.comment()` | Query intent tracing | All queries |
 
-### 2. Unified Wildcard Searching
-Instead of branching the query generation between searching and full loading, the search query leverages TeaQL's native capability to accept an empty JSON object `{}` inside `find_with_json` (which acts as a wildcard, bypassing filters natively):
-```rust
-fn build_search_json(&self) -> String {
-    if let Some(ref term) = self.search_term {
-        format!(r#"{{"name": "{}"}}"#, term)
-    } else {
-        r#"{}"#.to_owned()
-    }
-}
-```
-This isolates the JSON tree assembly from the database reload logic, resulting in highly clean and readable code.
+---
 
-### 3. Dynamic Comment Resolution
-The programmer's intent comment is dynamically resolved based on the active search state to supply rich trace capabilities within diagnostic channels:
-```rust
-fn build_search_comment(&self) -> &'static str {
-    if self.search_term.is_some() {
-        "Search by JSON"
-    } else {
-        "Get all tasks"
-    }
-}
+## 📐 Architecture
+
+### 3-Layer Separation
+
+| Layer | File | Responsibility |
+|:---|:---|:---|
+| **UI** | `ui.rs` | Ratatui layout, log syntax highlighting, cursor management |
+| **Application** | `main.rs` | App state, command parsing, event loop |
+| **Service/Domain** | `service.rs` | TeaQL queries, DDD aggregate root, domain logic |
+
+`main.rs` has no direct dependency on TeaQL types — it only interacts with `TaskService`, `TaskModel`, and `MoveResult`.
+
+### DDD Aggregate Root
+
+Generated `Task` entities act strictly as data transfer records. Rich business logic is encapsulated within the `DomainTask` aggregate root:
+
+- **`DomainTask::create()`** — factory method with validation
+- **`DomainTask::transition_status()`** — automatic next-status resolution (Planned → Process → Done)
+- **`DomainTask::delete()`** — deletion validation hook
+
+### Domain Model
+
+Defined in `models/model.xml`, the TeaQL domain model declares two entities with a status relation:
+
+```xml
+<task_status
+    name="Planned|Process|Done"
+    code="PLANNED|PROCESS|DONE"
+    _features="status"
+    _identified_by="code" />
+
+<task
+    name="Task Name|[1,200]"
+    status="task_status()"
+    _features="custom" />
 ```
 
 ---
 
-## 🛠 Command Line Guidelines
+## 🛠 Commands
 
 | Command | Shortcut | Description | Example |
-| :--- | :--- | :--- | :--- |
-| **`add <name>`** | - | Creates a new task in Planned status | `add calibrate sensor` |
-| **`move <id> [status]`** | **`mv`** | Transitions task status (planned/process/done, default is next chronological state) | `move 3` or `mv 3 process` |
-| **`search <keyword>`** | **`s`** | Filters Kanban board dynamically using JSON-EXPR (empty keyword clears search) | `search calibrate` or `s` |
-| **`delete <id>`** | **`del`** | Permanently deletes a task from the database | `delete 3` |
-| **`exit`** | **`q`** | Quits the Kanban board application | `exit` |
+|:---|:---|:---|:---|
+| `add <name>` | — | Create a new task in Planned status | `add calibrate sensor` |
+| `move <id> [status]` | `mv` | Transition task status (planned/process/done; default: next) | `move 3` or `mv 3 done` |
+| `search <keyword>` | `s` | Filter tasks by keyword (empty to clear) | `search calibrate` or `s` |
+| `delete <id>` | `del` | Permanently delete a task | `delete 3` |
+| `exit` / `quit` | `q` | Quit the application | `exit` |
+| — | `ESC` | Immediate exit | — |
 
 ---
 
-## 🚀 Compilation & Deployment
+## ⚙️ Prerequisites
 
-### Local Native Build
+- **Rust toolchain** (1.70+)
+- **TeaQL workspace packages** — the following crates are expected at `/home/philip/teaql-home/teaql-rs/`:
+  - `teaql-core`, `teaql-runtime`, `teaql-macros`, `teaql-sql`, `teaql-provider-rusqlite`
+- **For cross-compilation**: `cargo-zigbuild` and the `armv7-unknown-linux-musleabihf` target
+
+> **Note:** `Cargo.toml` uses absolute paths to the TeaQL workspace. Adjust these paths if building on a different machine.
+
+---
+
+## 🚀 Build & Run
+
+### Local Development
+
 ```bash
-# Verify compilation
+# Check compilation
 cargo check
 
-# Run local development TUI
+# Run the TUI
 cargo run
 
-# Compile local optimized Release binary
+# Build optimized release binary
 cargo build --release
 ```
 
 ### ARMv7 Cross-Compilation
+
 ```bash
-# Statically cross-compile release binary for armv7 routers
+# Static cross-compile for armv7 routers
 cargo zigbuild --release --target armv7-unknown-linux-musleabihf
 ```
-The compiled standalone release binary is located at `target/armv7-unknown-linux-musleabihf/release/robot-task-board`. Upload it directly to your router to run instantly with zero dependencies!
+
+The output binary is at `target/armv7-unknown-linux-musleabihf/release/robot-task-board` — upload directly to a router and run with zero dependencies.
+
+### Running Tests
+
+```bash
+cargo test
+```
+
+Tests cover:
+- **Comment propagation** — verifies TeaQL comment chains propagate through facet sub-queries
+- **CRUD lifecycle** — add → reload → verify → delete → verify
+- **DDD transitions** — Planned → Process → Done with automatic and explicit status moves

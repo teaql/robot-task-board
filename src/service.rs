@@ -1,15 +1,219 @@
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{Q, Task, TeaqlRuntimeContext, TeaqlRuntime};
+use robot_kanban::{Q, Task, TaskExecutionLog, TeaqlRuntime};
 use teaql_provider_rusqlite::{
-    ensure_rusqlite_schema_for, RusqliteDialect, RusqliteIdSpaceGenerator,
+    ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
     RusqliteMutationExecutor, RusqliteProviderExt, MutationExecutorError,
 };
 use teaql_runtime::{
-    UserContext, QueryExecutor, GraphTransactionBoundary,
+    UserContext, QueryExecutor, GraphTransactionBoundary, EntityEvent,
+    EntityEventKind, EntityEventSink, RuntimeError, TuiLogEntry, TuiLogBuffer,
 };
-use teaql_core::{Entity, EntityDescriptor, EntityError, DeleteCommand, Record, TeaqlEntity};
+use teaql_core::{Entity, EntityDescriptor, EntityError, DeleteCommand, Record, TeaqlEntity, Value};
 use teaql_sql::CompiledQuery;
+
+/// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
+fn short_user(ctx: &UserContext) -> String {
+    let full = ctx.user_identifier().unwrap_or("unknown");
+    full.split('@').next().unwrap_or(full).to_owned()
+}
+
+/// Post-process a log line from teaql-runtime:
+/// 1. Shorten [philip@pid-xxx.tid-x] → [philip]
+/// 2. Move (took X.XXXms) from end to after username: [philip]-[0.231ms]
+fn reformat_log_line(line: &str) -> String {
+    let mut result = line.to_owned();
+
+    // 1. Shorten user identifier: [philip@pid-xxx.tid-x] → [philip]
+    if let Some(start) = result.find("]-[") {
+        let user_start = start + 3; // skip "]-["
+        if let Some(at_pos) = result[user_start..].find('@') {
+            let at_abs = user_start + at_pos;
+            if let Some(end_bracket) = result[at_abs..].find(']') {
+                let end_abs = at_abs + end_bracket;
+                // Extract the took time from end of line
+                let took_str = if let Some(took_start) = result.rfind("(took ") {
+                    if result.ends_with(')') {
+                        let took = &result[took_start+6..result.len()-1]; // "0.231ms"
+                        let took_val = took.to_owned();
+                        result = format!("{}{}", &result[..took_start].trim_end(), "");
+                        Some(took_val)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                // Replace @pid-xxx.tid-x with took time or nothing
+                let replacement = if let Some(ref took) = took_str {
+                    format!("]-[{}", took)
+                } else {
+                    String::new()
+                };
+                result = format!("{}{}{}", &result[..at_abs], replacement, &result[end_abs..]);
+            }
+        }
+    }
+
+    result
+}
+
+fn format_val_helper(val: &Option<Value>) -> String {
+    match val {
+        Some(Value::Null) | None => "NULL".to_owned(),
+        Some(Value::Text(s)) => format!("'{}'", s),
+        Some(Value::I64(n)) => n.to_string(),
+        Some(Value::U64(n)) => n.to_string(),
+        Some(Value::Bool(b)) => b.to_string(),
+        Some(Value::Timestamp(t)) => t.format("%Y-%m-%d %H:%M:%S").to_string(),
+        Some(other) => format!("{:?}", other),
+    }
+}
+
+fn map_field_and_value(field: &str, val: &Option<Value>) -> (String, String) {
+    let raw_str = format_val_helper(val);
+    if field == "status_id" {
+        let mapped_val = match raw_str.as_str() {
+            "1001" => "Planned".to_owned(),
+            "1002" => "Process".to_owned(),
+            "1003" => "Done".to_owned(),
+            other => other.to_owned(),
+        };
+        ("status".to_owned(), mapped_val)
+    } else if field == "platform_id" {
+        let mapped_val = match raw_str.as_str() {
+            "1" => "Robot System".to_owned(),
+            other => other.to_owned(),
+        };
+        ("platform".to_owned(), mapped_val)
+    } else {
+        (field.to_owned(), raw_str)
+    }
+}
+
+pub struct AppAuditSink;
+
+impl EntityEventSink for AppAuditSink {
+    fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
+        let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        let user = short_user(ctx);
+
+        let action_name = match event.kind {
+            EntityEventKind::Created => "CREATED",
+            EntityEventKind::Updated => "UPDATED",
+            EntityEventKind::Deleted => "DELETED",
+            EntityEventKind::Recovered => "RECOVERED",
+        };
+
+        let entity_id_str = match event.values.get("id") {
+            Some(id_val) => match id_val {
+                Value::Text(s) => s.clone(),
+                Value::I64(n) => n.to_string(),
+                Value::U64(n) => n.to_string(),
+                Value::Null => "NULL".to_owned(),
+                other => format!("{:?}", other),
+            },
+            None => "UNKNOWN".to_owned(),
+        };
+        let entity_identity = format!("{}({})", event.entity, entity_id_str);
+
+        let mut changes_list = Vec::new();
+        for change in &event.changes {
+            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
+            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
+            if old_str != new_str {
+                changes_list.push(format!("{}: {} ➔ {}", mapped_field, old_str, new_str));
+            }
+        }
+
+
+        // Include comment lineage if present
+        let comment_part = if let Some(ref comment) = event.comment {
+            format!(" [{}]", comment)
+        } else {
+            "".to_owned()
+        };
+
+        // Header line
+        let header_line = format!(
+            "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}",
+            timestamp, user, entity_identity, action_name, comment_part
+        );
+
+        let mut lines = vec![header_line];
+
+        for change in &event.changes {
+            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
+            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
+            if old_str != new_str {
+                let detail_line = format!(
+                    "[{}]-[{}]-[AUDIT]-  -> Field [{}]: {} ➔ {}",
+                    timestamp, user, mapped_field, old_str, new_str
+                );
+                lines.push(detail_line);
+            }
+        }
+
+
+        // Write all lines to app.log and TUI buffer
+        for line in &lines {
+            // 1. Write to app.log
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("app.log")
+            {
+                use std::io::Write;
+                let _ = writeln!(file, "{}", line);
+            }
+
+            // 2. Write to TUI buffer
+            if let Some(buf) = ctx.get_resource::<TuiLogBuffer>() {
+                if let Ok(mut entries) = buf.entries.lock() {
+                    entries.push(TuiLogEntry {
+                        timestamp: std::time::SystemTime::now(),
+                        line: line.clone(),
+                    });
+                }
+            }
+        }
+
+        // Also write to audit.log in the original detailed multi-line format with date, spaces, and a divider
+        let timestamp_with_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        let audit_header = format!(
+            "[{}] - [{}] - [AUDIT] Entity [{}] was {}.{}",
+            timestamp_with_date, user, entity_identity, action_name, comment_part
+        );
+        let mut audit_lines = vec![audit_header];
+        for change in &event.changes {
+            let (mapped_field, old_str) = map_field_and_value(&change.field, &change.old_value);
+            let (_, new_str) = map_field_and_value(&change.field, &change.new_value);
+            if old_str != new_str {
+                let detail = format!(
+                    "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
+                    timestamp_with_date, user, mapped_field, old_str, new_str
+                );
+                audit_lines.push(detail);
+            }
+        }
+        // Add a visual divider and a blank line to audit.log
+        audit_lines.push(format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp_with_date, user));
+
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("audit.log")
+        {
+            use std::io::Write;
+            for line in audit_lines {
+                let _ = writeln!(file, "{}", line);
+            }
+            let _ = writeln!(file, ""); // empty line separator
+        }
+
+        Ok(())
+    }
+}
 
 #[derive(Clone)]
 pub struct LoggingExecutor {
@@ -56,6 +260,7 @@ pub struct DeleteTaskCommand;
 #[derive(Debug, Clone)]
 pub struct DomainTask {
     pub task: Task,
+    pub logs: Vec<(TaskExecutionLog, String)>,
 }
 
 impl TeaqlEntity for DomainTask {
@@ -67,17 +272,30 @@ impl TeaqlEntity for DomainTask {
 impl Entity for DomainTask {
     fn from_record(record: Record) -> Result<Self, EntityError> {
         let task = Task::from_record(record)?;
-        Ok(Self { task })
+        Ok(Self { task, logs: Vec::new() })
     }
 
     fn into_record(self) -> Record {
-        self.task.into_record()
+        let mut record = self.task.into_record();
+        if !self.logs.is_empty() {
+            let mut list_values = match record.remove("task_execution_log_list") {
+                Some(Value::List(list)) => list,
+                _ => Vec::new(),
+            };
+            for (log, comment) in self.logs {
+                let mut log_record = log.into_record();
+                log_record.insert("_comment".to_owned(), Value::Text(comment));
+                list_values.push(Value::object(log_record));
+            }
+            record.insert("task_execution_log_list".to_owned(), Value::List(list_values));
+        }
+        record
     }
 }
 
 impl DomainTask {
     /// Domain factory method to create a new DomainTask.
-    pub fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>) -> Result<Self, String> {
+    pub fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> {
         if cmd.name.trim().is_empty() {
             return Err("Task name cannot be empty".to_owned());
         }
@@ -85,9 +303,19 @@ impl DomainTask {
         task.update_id(next_id)
             .update_name(cmd.name.clone())
             .update_version(1_i64)
-            .update_status_id(1_u64) // Default status: Planned (1)
+            .update_status_to_planned()
             .update_platform_id(1_u64);
-        Ok(Self { task })
+        Ok(Self { task, logs: Vec::new() })
+    }
+
+    pub fn add_execution_log(&mut self, log_id: u64, action: &str, detail: &str, comment: &str, ctx: &UserContext) {
+        let mut log = Q::task_execution_logs().new_entity(ctx);
+        log.update_id(log_id)
+            .update_action(action.to_owned())
+            .update_detail(detail.to_owned())
+            .update_version(1_i64)
+            .update_task_id(self.task.id());
+        self.logs.push((log, comment.to_owned()));
     }
 
     /// Domain method to execute aggregate deletion validation.
@@ -105,18 +333,18 @@ impl DomainTask {
 
         let next_status_id = if target.is_empty() {
             // Planned -> Process -> Done
-            if current_status == 1 {
-                Some(2_u64)
-            } else if current_status == 2 {
-                Some(3_u64)
+            if current_status == 1001 {
+                Some(1002_u64)
+            } else if current_status == 1002 {
+                Some(1003_u64)
             } else {
                 None
             }
         } else {
             match target.as_str() {
-                "planned" => Some(1_u64),
-                "process" => Some(2_u64),
-                "done" => Some(3_u64),
+                "planned" => Some(1001_u64),
+                "process" => Some(1002_u64),
+                "done" => Some(1003_u64),
                 _ => return Err(format!("Invalid status '{}'. Use planned, process, done, or empty to move next.", cmd.target_status)),
             }
         };
@@ -158,7 +386,7 @@ pub enum MoveResult {
 }
 
 pub struct TaskService {
-    ctx: TeaqlRuntimeContext<RusqliteDialect, LoggingExecutor>,
+    ctx: UserContext,
     inner_executor: RusqliteMutationExecutor,
     last_log_index: Mutex<usize>,
 }
@@ -176,6 +404,11 @@ impl TaskService {
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
 
+        // Register custom TUI log buffer and audit event sink
+        let log_buffer = TuiLogBuffer::default();
+        ctx.insert_resource(log_buffer);
+        ctx.set_event_sink(AppAuditSink);
+
         // Register synchronous executors
         ctx.use_rusqlite_provider(inner_executor.clone());
         ctx.insert_resource(logging_executor.clone());
@@ -183,17 +416,41 @@ impl TaskService {
         // Build Schema & seed initial values if missing
         ensure_rusqlite_schema_for(&ctx)?;
 
-        let rt_ctx = TeaqlRuntimeContext::<RusqliteDialect, LoggingExecutor>::new(ctx);
-
         Ok(Self {
-            ctx: rt_ctx,
+            ctx,
             inner_executor,
             last_log_index: Mutex::new(0),
         })
     }
 
     pub fn context(&self) -> &UserContext {
-        self.ctx.context()
+        &self.ctx
+    }
+
+    pub fn log_info(&self, message: &str) {
+        let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        let user = short_user(&self.ctx);
+        let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
+        
+        // Write to TUI buffer
+        if let Some(buf) = self.ctx.get_resource::<TuiLogBuffer>() {
+            if let Ok(mut entries) = buf.entries.lock() {
+                entries.push(TuiLogEntry {
+                    timestamp: std::time::SystemTime::now(),
+                    line: log_line.clone(),
+                });
+            }
+        }
+
+        // Also write to app.log for completeness
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("app.log")
+        {
+            use std::io::Write;
+            let _ = writeln!(file, "{}", log_line);
+        }
     }
 
     pub async fn reload_data(
@@ -215,14 +472,17 @@ impl TaskService {
 
         let select = Q::tasks()
             .comment(search_comment)
-            .find_with_json(&search_json)
+            .filter_with_json(&search_json)
             .facet_by_status_as("status_stats", Q::task_status().comment("Count status").count_tasks());
 
         let query_trace = format!(
-            "Q: Q::tasks().comment(\"{}\").find_with_json(\"{}\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())",
+            "Q: Q::tasks().comment(\"{}\").filter_with_json(\"{}\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())",
             search_comment,
             search_json.replace('"', "\\\"")
         );
+
+        // Unified logging: Log the query trace before running the query
+        self.log_info(&query_trace);
 
         let all_tasks = select.execute_for_list(&self.ctx).await?;
 
@@ -233,19 +493,19 @@ impl TaskService {
         if let Some(facet_list) = all_tasks.facet("status_stats") {
             for record in facet_list.iter() {
                 let status_id = match record.get("id") {
-                    Some(teaql_core::Value::U64(id)) => *id,
-                    Some(teaql_core::Value::I64(id)) => *id as u64,
+                    Some(&teaql_core::Value::U64(id)) => id,
+                    Some(&teaql_core::Value::I64(id)) => id as u64,
                     _ => 0,
                 };
                 let count = match record.get("count_tasks") {
-                    Some(teaql_core::Value::U64(c)) => *c as usize,
-                    Some(teaql_core::Value::I64(c)) => *c as usize,
+                    Some(&teaql_core::Value::U64(c)) => c as usize,
+                    Some(&teaql_core::Value::I64(c)) => c as usize,
                     _ => 0,
                 };
                 match status_id {
-                    1 => planned_count = count,
-                    2 => process_count = count,
-                    3 => done_count = count,
+                    1001 => planned_count = count,
+                    1002 => process_count = count,
+                    1003 => done_count = count,
                     _ => {}
                 }
             }
@@ -261,9 +521,9 @@ impl TaskService {
                 name: task.name().to_string(),
             };
             match task.status_id() {
-                1 => planned_tasks.push(task_model),
-                2 => process_tasks.push(task_model),
-                3 => done_tasks.push(task_model),
+                1001 => planned_tasks.push(task_model),
+                1002 => process_tasks.push(task_model),
+                1003 => done_tasks.push(task_model),
                 _ => {}
             }
         }
@@ -286,16 +546,31 @@ impl TaskService {
         let cmd = CreateTaskCommand {
             name: name.to_owned(),
         };
-        let domain_task = DomainTask::create(&cmd, next_id, &self.ctx)?;
-        domain_task.task.save(&self.ctx).await?;
+        let mut domain_task = DomainTask::create(&cmd, next_id, &self.ctx)?;
+
+        let log_id = id_gen.next_id("TaskExecutionLog")?;
+        domain_task.add_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), "CREATED", &self.ctx);
+
+        let comment = format!("Create task '{}'", name);
+        let repo = self.ctx.task_repository()?;
+        repo.create_entity_graph_with_comment(domain_task, comment)?;
+
+        self.log_info(&format!("Created task [ID: {}] '{}'", next_id, name));
 
         Ok(next_id)
     }
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
         let select = Q::tasks()
-            .filter_by_id(id)
+            .comment(&format!("Get task {} for deletion", id))
+            .with_id_is(id)
+            .select_task_execution_log_list()
             .return_type::<DomainTask>();
+
+        self.log_info(&format!(
+            "Q: Q::tasks().comment(\"Get task {} for deletion\").with_id_is({}).select_task_execution_log_list().return_type::<DomainTask>()",
+            id, id
+        ));
 
         let found_tasks = select.execute_for_list(&self.ctx).await?;
 
@@ -303,10 +578,27 @@ impl TaskService {
             let cmd = DeleteTaskCommand;
             domain_task.delete(&cmd)?;
 
+            let comment = format!("Delete task '{}'", domain_task.task.name());
             let repo = self.ctx.task_repository()?;
-            repo.delete(&DeleteCommand::new("Task", id).expected_version(domain_task.task.version()))?;
+            repo.delete_scoped(
+                &DeleteCommand::new("Task", id).expected_version(domain_task.task.version()),
+                Some(comment.clone()),
+            )?;
+
+            // Cascade soft-delete all related task execution logs
+            let log_repo = self.ctx.task_execution_log_repository()?;
+            for log in domain_task.task.task_execution_log_list() {
+                log_repo.delete_scoped(
+                    &DeleteCommand::new("TaskExecutionLog", log.id()).expected_version(log.version()),
+                    Some(comment.clone()),
+                )?;
+            }
+
+            self.log_info(&format!("Deleted task [ID: {}]", id));
+
             Ok(true)
         } else {
+            self.log_info(&format!("Error: Task with ID {} not found", id));
             Ok(false)
         }
     }
@@ -318,13 +610,15 @@ impl TaskService {
     ) -> Result<MoveResult, Box<dyn Error>> {
         let select = Q::tasks()
             .comment("Get task for DDD")
-            .filter_by_id(id)
+            .with_id_is(id)
             .return_type::<DomainTask>();
 
         let query_trace = format!(
-            "Q: Q::tasks().comment(\"Get task for DDD\").filter_by_id({}).return_type::<DomainTask>()",
+            "Q: Q::tasks().comment(\"Get task for DDD\").with_id_is({}).return_type::<DomainTask>()",
             id
         );
+
+        self.log_info(&query_trace);
 
         let found_tasks = select.execute_for_list(&self.ctx).await?;
 
@@ -336,51 +630,69 @@ impl TaskService {
 
             match transition_result {
                 Ok(Some(new_status)) => {
-                    domain_task.task.update_status_id(new_status);
-                    domain_task.task.save(&self.ctx).await?;
-
+                    let old_status_id = domain_task.task.status_id();
+                    match new_status {
+                        1001 => { domain_task.task.update_status_to_planned(); }
+                        1002 => { domain_task.task.update_status_to_process(); }
+                        1003 => { domain_task.task.update_status_to_done(); }
+                        _ => {}
+                    }
                     let status_name = match new_status {
-                        1 => "Planned",
-                        2 => "Process",
-                        3 => "Done",
+                        1001 => "Planned",
+                        1002 => "Process",
+                        1003 => "Done",
                         _ => "Unknown",
                     };
+                    let old_status_name = match old_status_id {
+                        1001 => "Planned",
+                        1002 => "Process",
+                        1003 => "Done",
+                        _ => "Unknown",
+                    };
+                    let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
+                    
+                    let id_gen = RusqliteIdSpaceGenerator::from_executor(self.inner_executor.clone());
+                    let log_id = id_gen.next_id("TaskExecutionLog")?;
+                    domain_task.add_execution_log(log_id, "STATUS_CHANGED", &detail, "STATUS_CHANGED", &self.ctx);
+
+                    let comment = format!("Move task '{}' to {}", domain_task.task.name(), status_name);
+                    let repo = self.ctx.task_repository()?;
+                    repo.save_entity_graph_with_comment(domain_task, comment)?;
+
+                    self.log_info(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
                         status_name: status_name.to_owned(),
                         query_trace,
                     })
                 }
-                Ok(None) => Ok(MoveResult::AlreadyDone { query_trace }),
-                Err(err_msg) => Ok(MoveResult::Error { err_msg, query_trace }),
+                Ok(None) => {
+                    self.log_info(&format!("Task {} is already in 'Done' status", id));
+                    Ok(MoveResult::AlreadyDone { query_trace })
+                }
+                Err(err_msg) => {
+                    self.log_info(&format!("Error: {}", err_msg));
+                    Ok(MoveResult::Error { err_msg, query_trace })
+                }
             }
         } else {
+            self.log_info(&format!("Error: Task with ID {} not found", id));
             Ok(MoveResult::NotFound { query_trace })
         }
     }
 
     pub fn check_sql_logs(&self) -> Vec<String> {
         let mut new_logs = Vec::new();
-        let sql_logs = self.ctx.context().sql_logs();
-        if let Ok(mut last_log) = self.last_log_index.lock() {
-            if sql_logs.len() > *last_log {
-                for entry in &sql_logs[*last_log..] {
-                    let local_time: chrono::DateTime<chrono::Local> = entry.started_at.into();
-                    let timestamp_str = local_time.format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-                    let user_id_str = entry.user_identifier.as_deref().unwrap_or("");
-                    let comment_part = if let Some(ref c) = entry.comment {
-                        format!(" - [{c}]")
-                    } else {
-                        "".to_owned()
-                    };
-                    let elapsed_ms = entry.elapsed.as_secs_f64() * 1000.0;
-                    let log_line = format!(
-                        "{timestamp_str}-[{user_id_str}]--DEBUG - SqlLogEntry{} - [{}] {} (took {:.3}ms)",
-                        comment_part, entry.result_summary, entry.debug_sql, elapsed_ms
-                    );
-                    new_logs.push(log_line);
+        if let Some(buf) = self.ctx.get_resource::<TuiLogBuffer>() {
+            if let Ok(mut last_log) = self.last_log_index.lock() {
+                if let Ok(entries) = buf.entries.lock() {
+                    if entries.len() > *last_log {
+                        for entry in &entries[*last_log..] {
+                            new_logs.push(reformat_log_line(&entry.line));
+                        }
+                        *last_log = entries.len();
+                    }
                 }
-                *last_log = sql_logs.len();
             }
         }
         new_logs

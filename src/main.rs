@@ -19,7 +19,7 @@ pub mod service;
 // Import our decoupled submodules' types (no direct TeaQL references!)
 use service::{TaskService, TaskModel, MoveResult};
 
-const MAX_LOGS: usize = 40;
+const MAX_LOGS: usize = 1000;
 
 pub struct App {
     pub input: String,
@@ -35,12 +35,14 @@ pub struct App {
     pub should_quit: bool,
     pub cpu_model: String,
     pub mem_size: String,
+    pub log_scroll_offset: usize,
+    pub hide_logs: bool,
 }
 
 impl App {
     pub fn new(service: TaskService) -> Self {
         let sys_info = utils::get_system_info();
-        let mut app = Self {
+        let app = Self {
             input: String::new(),
             logs: VecDeque::new(),
             planned_tasks: Vec::new(),
@@ -54,18 +56,27 @@ impl App {
             should_quit: false,
             cpu_model: sys_info.cpu_model,
             mem_size: sys_info.mem_size,
+            log_scroll_offset: 0,
+            hide_logs: std::env::args().any(|arg| arg == "-c"),
         };
-        app.add_log("System successfully initialized.");
-        app.add_log("Pre-loaded SQLite database 'robot_kanban.db'.");
-        app.add_log("TeaQL v0.9.3: Comment Propagation is fully active.");
+        app.service.log_info("System successfully initialized.");
+        app.service.log_info("Pre-loaded SQLite database 'robot_kanban.db'.");
+        app.service.log_info("TeaQL v0.9.3: Comment Propagation is fully active.");
         app
     }
 
     pub fn add_log(&mut self, msg: &str) {
+        let was_scrolled = self.log_scroll_offset > 0;
         if self.logs.len() >= MAX_LOGS {
             self.logs.pop_front();
+            if self.log_scroll_offset > 0 {
+                self.log_scroll_offset -= 1;
+            }
         }
         self.logs.push_back(msg.to_owned());
+        if was_scrolled {
+            self.log_scroll_offset += 1;
+        }
     }
 
     pub fn check_sql_logs(&mut self) {
@@ -85,105 +96,97 @@ impl App {
         self.process_count = res.process_count;
         self.done_count = res.done_count;
 
-        self.add_log(&res.query_trace);
-
         Ok(())
     }
 
     pub async fn execute_command(&mut self) -> Result<(), Box<dyn Error>> {
+        self.log_scroll_offset = 0;
         let trimmed = self.input.trim();
         if trimmed.is_empty() {
             return Ok(());
         }
 
-        let parts: Vec<&str> = trimmed.splitn(2, ' ').collect();
-        let cmd = parts[0].to_lowercase();
-        let args = if parts.len() > 1 { parts[1].trim() } else { "" };
+        // Slash-prefixed commands; bare input defaults to add task
+        if trimmed.starts_with('/') {
+            let without_slash = &trimmed[1..];
+            let parts: Vec<&str> = without_slash.splitn(2, ' ').collect();
+            let cmd = parts[0].to_lowercase();
+            let args = if parts.len() > 1 { parts[1].trim() } else { "" };
 
-        match cmd.as_str() {
-            "exit" | "quit" | "q" => {
-                self.should_quit = true;
-                self.add_log("Exiting application...");
-            }
-            "search" | "s" => {
-                if args.is_empty() {
-                    self.search_term = None;
-                    self.add_log("Cleared active search query.");
-                } else {
-                    self.search_term = Some(args.to_owned());
-                    self.add_log(&format!("Searching for tasks by keyword: '{}'", args));
+            match cmd.as_str() {
+                "exit" | "quit" | "q" => {
+                    self.should_quit = true;
+                    self.service.log_info("Exiting application...");
                 }
-                self.reload_data().await?;
-            }
-            "add" => {
-                if args.is_empty() {
-                    self.add_log("Error: Task name cannot be empty. Usage: add <task name>");
-                } else {
-                    let next_id = self.service.add_task(args).await?;
-                    self.add_log(&format!("Created task [ID: {}] '{}'", next_id, args));
+                "search" | "s" => {
+                    if args.is_empty() {
+                        self.search_term = None;
+                        self.service.log_info("Cleared active search query.");
+                    } else {
+                        self.search_term = Some(args.to_owned());
+                        self.service.log_info(&format!("Searching for tasks by keyword: '{}'", args));
+                    }
                     self.reload_data().await?;
                 }
-            }
-            "delete" | "del" => {
-                if args.is_empty() {
-                    self.add_log("Error: Missing task ID. Usage: delete <id>");
-                } else if let Ok(id) = args.parse::<u64>() {
-                    if self.service.delete_task(id).await? {
-                        self.add_log(&format!("Deleted task [ID: {}]", id));
+                "add" => {
+                    if args.is_empty() {
+                        self.service.log_info("Error: Task name cannot be empty. Usage: /add <task name>");
+                    } else {
+                        let _next_id = self.service.add_task(args).await?;
                         self.reload_data().await?;
-                    } else {
-                        self.add_log(&format!("Error: Task with ID {} not found", id));
                     }
-                } else {
-                    self.add_log(&format!("Error: Invalid task ID '{}'", args));
                 }
-            }
-            "move" | "mv" => {
-                if args.is_empty() {
-                    self.add_log("Error: Missing arguments. Usage: move <id> [planned|process|done|next]");
-                    self.input.clear();
-                    return Ok(());
-                }
-
-                let move_parts: Vec<&str> = args.split_whitespace().collect();
-
-                if let Ok(id) = move_parts[0].parse::<u64>() {
-                    let target_status = if move_parts.len() > 1 {
-                        move_parts[1].to_lowercase()
-                    } else {
-                        "".to_owned() // Triggers next transition
-                    };
-
-                    let res = self.service.move_task(id, &target_status).await?;
-                    match res {
-                        MoveResult::Moved { status_name, query_trace } => {
-                            self.add_log(&query_trace);
-                            self.add_log(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
+                "delete" | "del" => {
+                    if args.is_empty() {
+                        self.service.log_info("Error: Missing task ID. Usage: /del <id>");
+                    } else if let Ok(id) = args.parse::<u64>() {
+                        if self.service.delete_task(id).await? {
                             self.reload_data().await?;
                         }
-                        MoveResult::AlreadyDone { query_trace } => {
-                            self.add_log(&query_trace);
-                            self.add_log(&format!("Task {} is already in 'Done' status", id));
-                        }
-                        MoveResult::Error { err_msg, query_trace } => {
-                            self.add_log(&query_trace);
-                            self.add_log(&format!("Error: {}", err_msg));
-                        }
-                        MoveResult::NotFound { query_trace } => {
-                            self.add_log(&query_trace);
-                            self.add_log(&format!("Error: Task with ID {} not found", id));
-                        }
+                    } else {
+                        self.service.log_info(&format!("Error: Invalid task ID '{}'", args));
                     }
-                } else {
-                    self.add_log(&format!("Error: Invalid task ID '{}'", move_parts[0]));
+                }
+                "move" | "mv" => {
+                    if args.is_empty() {
+                        self.service.log_info("Error: Missing arguments. Usage: /mv <id> [planned|process|done|next]");
+                        self.input.clear();
+                        return Ok(());
+                    }
+
+                    let move_parts: Vec<&str> = args.split_whitespace().collect();
+
+                    if let Ok(id) = move_parts[0].parse::<u64>() {
+                        let target_status = if move_parts.len() > 1 {
+                            move_parts[1].to_lowercase()
+                        } else {
+                            "".to_owned()
+                        };
+
+                        let res = self.service.move_task(id, &target_status).await?;
+                        match res {
+                            MoveResult::Moved { .. } => {
+                                self.reload_data().await?;
+                            }
+                            _ => {}
+                        }
+                    } else {
+                        self.service.log_info(&format!("Error: Invalid task ID '{}'", move_parts[0]));
+                    }
+                }
+                _ => {
+                    self.service.log_info(&format!("Unknown command: '/{}'. Type a task name directly or use /mv, /del, /s, /q", cmd));
                 }
             }
-            _ => {
-                self.add_log(&format!("Unknown command: '{}'. Valid commands: add, delete (del), move (mv), search (s), exit (q)", cmd));
-            }
+        } else {
+            // Default: bare input = add task
+            let _next_id = self.service.add_task(trimmed).await?;
+            self.reload_data().await?;
         }
 
         self.input.clear();
+        self.check_sql_logs();
+        self.add_log("--------------------------------------------------------------------------------");
         Ok(())
     }
 }
@@ -251,6 +254,30 @@ async fn run_app<B: ratatui::backend::Backend>(
                         KeyCode::Esc => {
                             app.should_quit = true;
                         }
+                        KeyCode::Up => {
+                            let log_height = if let Ok(size) = terminal.size() {
+                                ((size.height / 2) as usize).saturating_sub(2)
+                            } else {
+                                10
+                            };
+                            let max_scroll = app.logs.len().saturating_sub(log_height);
+                            app.log_scroll_offset = (app.log_scroll_offset + 1).min(max_scroll);
+                        }
+                        KeyCode::PageUp => {
+                            let log_height = if let Ok(size) = terminal.size() {
+                                ((size.height / 2) as usize).saturating_sub(2)
+                            } else {
+                                10
+                            };
+                            let max_scroll = app.logs.len().saturating_sub(log_height);
+                            app.log_scroll_offset = (app.log_scroll_offset + 10).min(max_scroll);
+                        }
+                        KeyCode::Down => {
+                            app.log_scroll_offset = app.log_scroll_offset.saturating_sub(1);
+                        }
+                        KeyCode::PageDown => {
+                            app.log_scroll_offset = app.log_scroll_offset.saturating_sub(10);
+                        }
                         _ => {}
                     }
                 }
@@ -271,7 +298,6 @@ mod tests {
     async fn test_comment_propagation() -> Result<(), Box<dyn std::error::Error>> {
         // 1. Delete old test files if present
         let _ = std::fs::remove_file("test_propagation.db");
-        let _ = std::fs::remove_file("app.log");
 
         // 2. Initialize service directly
         let db = TaskService::new("test_propagation.db").await?;
@@ -299,7 +325,6 @@ mod tests {
 
         // Cleanup test db and log
         let _ = std::fs::remove_file("test_propagation.db");
-        let _ = std::fs::remove_file("app.log");
 
         assert!(
             found_facet_status_query,
@@ -390,4 +415,102 @@ mod tests {
         let _ = std::fs::remove_file(db_file);
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_task_execution_log_lineage() -> Result<(), Box<dyn std::error::Error>> {
+        let db_file = "test_execution_log_lineage.db";
+        let _ = std::fs::remove_file(db_file);
+
+        let db = TaskService::new(db_file).await?;
+        let task_id = db.add_task("Lineage Test Task").await?;
+
+        // Move task to Process
+        let _ = db.move_task(task_id, "process").await?;
+
+        // Delete task (which explicitly cascade soft-deletes the related logs)
+        let _ = db.delete_task(task_id).await?;
+
+        // Retrieve SQL logs from the context to check for the lineage comment
+        let sql_logs = db.context().sql_logs();
+        
+        println!("=== SQL Logs for Lineage Test ===");
+        let mut found_created_log_lineage = false;
+        let mut found_status_changed_log_lineage = false;
+        let mut found_cascade_delete_lineage = false;
+
+        for entry in &sql_logs {
+            let sql = entry.debug_sql.to_lowercase();
+            if let Some(ref comment) = entry.comment {
+                println!("SQL: {} - Comment: {}", sql, comment);
+                if sql.contains("insert into task_execution_log_data") {
+                    if comment == "Task(1): Create task 'Lineage Test Task' -> TaskExecutionLog(1): CREATED" {
+                        found_created_log_lineage = true;
+                    }
+                    if comment == "Task(1): Move task 'Lineage Test Task' to Process -> TaskExecutionLog(2): STATUS_CHANGED" {
+                        found_status_changed_log_lineage = true;
+                    }
+                }
+                if sql.contains("update task_execution_log_data") && sql.contains("version = -2") {
+                    if comment == "Delete task 'Lineage Test Task'" || comment == "TaskExecutionLog(1): Delete task 'Lineage Test Task'" {
+                        found_cascade_delete_lineage = true;
+                    }
+                }
+            }
+        }
+
+        let _ = std::fs::remove_file(db_file);
+
+        assert!(
+            found_created_log_lineage,
+            "Hierarchical lineage comment not propagated to SQL insert log for task creation execution log!"
+        );
+        assert!(
+            found_status_changed_log_lineage,
+            "Hierarchical lineage comment not propagated to SQL insert log for status transition execution log!"
+        );
+        assert!(
+            found_cascade_delete_lineage,
+            "Hierarchical lineage comment not propagated to cascade soft-deletion UPDATE on child execution logs!"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_unified_log_order() -> Result<(), Box<dyn std::error::Error>> {
+        let db_file = "test_unified_log_order.db";
+        let _ = std::fs::remove_file(db_file);
+
+        let db = TaskService::new(db_file).await?;
+
+        // 1. Initial reload (simulates app startup)
+        let _ = db.reload_data(&None).await?;
+        let startup_logs = db.check_sql_logs();
+        println!("=== STARTUP RELOAD ===");
+        for (i, log) in startup_logs.iter().enumerate() {
+            println!("{:02}: {}", i, log);
+        }
+
+        // 2. Add a task + reload
+        let _ = db.add_task("My New Task").await?;
+        let _ = db.reload_data(&None).await?;
+        let add_logs = db.check_sql_logs();
+        println!("\n=== ADD TASK + RELOAD ===");
+        for (i, log) in add_logs.iter().enumerate() {
+            println!("{:02}: {}", i, log);
+        }
+
+        // 3. Move task + reload
+        let _ = db.move_task(1, "Process").await?;
+        let _ = db.reload_data(&None).await?;
+        let move_logs = db.check_sql_logs();
+        println!("\n=== MOVE TASK + RELOAD ===");
+        for (i, log) in move_logs.iter().enumerate() {
+            println!("{:02}: {}", i, log);
+        }
+
+        let _ = std::fs::remove_file(db_file);
+        Ok(())
+    }
 }
+

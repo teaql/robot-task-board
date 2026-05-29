@@ -1,7 +1,6 @@
 *.db
 *.log
 *.lock
-generate-lib/
 /robot-task-board
 /robot-task-board-release
 

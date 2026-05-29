@@ -2,6 +2,7 @@
 name = "robot-task-board"
 version = "0.1.0"
 edition = "2021"
+default-run = "robot-task-board"
 
 [dependencies]
 crossterm = { version = "0.27", features = ["event-stream"] }
@@ -21,7 +22,7 @@ teaql-sql = { path = "/home/philip/teaql-home/teaql-rs/teaql-sql" }
 teaql-provider-rusqlite = { path = "/home/philip/teaql-home/teaql-rs/teaql-provider-rusqlite" }
 
 # Our generated TeaQL domain logic library
-robot-kanban = { path = "./generate-lib/lib" }
+robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
 
 [patch.teaql]
 teaql-core = { path = "/home/philip/teaql-home/teaql-rs/teaql-core" }
