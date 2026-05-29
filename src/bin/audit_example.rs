@@ -185,7 +185,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if let Some(latest_task) = found_tasks.into_iter().next() {
         let repo = ctx.task_repository()?;
         // Deleting via repository emits the DELETED event
-        repo.delete(&DeleteCommand::new("Task", next_id).expected_version(latest_task.version()))?;
+        repo.save_entity_with_comment(latest_task.clone(), teaql_runtime::EntityStatus::UpdatedDeleted, "Soft delete the test task".to_string())?;
     } else {
         println!("[ERROR] Task with ID {} could not be found for deletion.", next_id);
     }

@@ -251,16 +251,17 @@ let stats = Q::tasks()
 
 ---
 
-### Scenario 8: Optimistic Concurrency (`DeleteCommand` with `expected_version`)
+### Scenario 8: Audited Soft-Delete (`EntityStatus::UpdatedDeleted`)
 
-**What it does:** Deletes an entity only if its current version matches the expected version, preventing concurrent modification conflicts.
+**What it does:** Deletes an entity using the rich domain object rather than raw IDs. By changing the entity's persistence state to `UpdatedDeleted`, TeaQL enforces optimistic concurrency (via the entity's current `version`) and gracefully propagates the deletion to the `EntityEventSink` for audit logging.
 
 ```rust
 // service.rs — delete_task()
 let repo = self.ctx.task_repository()?;
-repo.delete(
-    &DeleteCommand::new("Task", id)
-        .expected_version(task.version())
+repo.save_entity_with_comment(
+    task,
+    teaql_runtime::EntityStatus::UpdatedDeleted,
+    format!("Delete task '{}'", task.name())
 )?;
 ```
 
@@ -362,7 +363,7 @@ In the next phase, we will introduce the **`audit ignore`** feature. By adding a
 | 5 | `RusqliteIdSpaceGenerator` | Unique ID generation | `<name>` |
 | 6 | `Extension Traits` | Domain Behavior Injection (DDD) | `/mv`, `/del` |
 | 7 | `.return_type::<T>()` | Custom partial projection & stats DTOs | Optimization |
-| 8 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `/del` |
+| 8 | `EntityStatus::UpdatedDeleted` | Audited soft-delete with concurrency | `/del` |
 | 9 | `.comment()` | Query intent tracing | All queries |
 | 10 | `EntityEventSink` | Field-level lifecycle diffs & Audit | All mutations |
 
