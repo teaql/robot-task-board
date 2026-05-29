@@ -46,7 +46,7 @@ ensure_rusqlite_schema_for(&ctx)?;
 
 ---
 
-### Scenario 2: JSON-Based Dynamic Filtering (`find_with_json`)
+### Scenario 2: JSON-Based Dynamic Filtering (`filter_with_json`)
 
 **What it does:** Accepts a JSON object to dynamically construct WHERE clauses at runtime. An empty `{}` acts as a wildcard (no filter), enabling a single code path for both search and full-load.
 
@@ -60,7 +60,7 @@ let search_json = if let Some(ref term) = search_term {
 };
 
 let select = Q::tasks()
-    .find_with_json(&search_json);
+    .filter_with_json(&search_json);
 ```
 
 | Input | JSON | Generated SQL |
@@ -80,7 +80,7 @@ let select = Q::tasks()
 // service.rs — Single query fetches tasks + status counts
 let select = Q::tasks()
     .comment(search_comment)
-    .find_with_json(&search_json)
+    .filter_with_json(&search_json)
     .facet_by_status_as("status_stats",
         Q::task_status().comment("Count status").count_tasks()
     );
@@ -173,7 +173,7 @@ impl Entity for DomainTask {
 // Fetch as DomainTask instead of raw Task
 let select = Q::tasks()
     .comment("Get task for DDD")
-    .filter_by_id(id)
+    .with_id_is(id)
     .return_type::<DomainTask>();
 
 let found_tasks = select.execute_for_list(&self.ctx).await?;
@@ -217,7 +217,7 @@ TeaQL uses a soft-delete pattern — `version` is set to a negative value rather
 // service.rs — Comments propagate through facet sub-queries
 let select = Q::tasks()
     .comment("Get active tasks")                       // Parent comment
-    .find_with_json(&search_json)
+    .filter_with_json(&search_json)
     .facet_by_status_as("status_stats",
         Q::task_status().comment("Count status")       // Child comment
             .count_tasks()
@@ -248,7 +248,7 @@ The TUI renders these traces in real-time with syntax-highlighted colors — tim
 | # | TeaQL API | App Feature | Command |
 |:---|:---|:---|:---|
 | 1 | `ensure_rusqlite_schema_for` | Auto-create tables & seed data | Startup |
-| 2 | `find_with_json` | Dynamic search / wildcard load | `search` |
+| 2 | `filter_with_json` | Dynamic search / wildcard load | `search` |
 | 3 | `facet_by_status_as` | Status count aggregation | Board reload |
 | 4 | `Q::tasks().new_entity()` | Create task with defaults | `add` |
 | 5 | `RusqliteIdSpaceGenerator` | Unique ID generation | `add` |
