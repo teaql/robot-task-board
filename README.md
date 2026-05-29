@@ -232,11 +232,11 @@ let select = Q::tasks()
 [Get active tasks->status_stats->Count status]    → facet aggregate count
 ```
 
-The TUI renders these traces in real-time with syntax-highlighted colors — timestamp, user context (`philip@pid-{pid}.tid-{tid}`), comment chains, result summaries, and elapsed times are each distinctly colored:
+The TUI renders these traces in real-time with syntax-highlighted colors — timestamp, user context (`[philip]`), comment chains, result summaries, and elapsed times are each distinctly colored:
 
 ```text
-2026-05-26 12:06:00.225-[philip@pid-2007633.tid-1]--DEBUG - SqlLogEntry - [Get active tasks] - [5*Task] SELECT ... (took 0.184ms)
-2026-05-26 12:06:00.226-[philip@pid-2007633.tid-1]--DEBUG - SqlLogEntry - [Get active tasks->status_stats->Count status] - [3*TaskStatus] SELECT ... (took 0.138ms)
+[12:06:00.225]-[philip]-[0.184ms]-[DEBUG]-SqlLogEntry - [Get active tasks] - [5*Task] SELECT ... 
+[12:06:00.226]-[philip]-[0.138ms]-[DEBUG]-SqlLogEntry - [Get active tasks->status_stats->Count status] - [3*TaskStatus] SELECT ... 
 ```
 
 **Applied in:** Every query in the application — enables real-time SQL auditing from the TUI log panel.
@@ -299,14 +299,17 @@ Defined in `models/model.xml`, the TeaQL domain model declares two entities with
 
 ## 🛠 Commands
 
+Commands use a slash (`/`) prefix. **Any bare text (without a slash) is treated as a quick-add for a new task.**
+
 | Command | Shortcut | Description | Example |
 |:---|:---|:---|:---|
-| `add <name>` | — | Create a new task in Planned status | `add calibrate sensor` |
-| `move <id> [status]` | `mv` | Transition task status (planned/process/done; default: next) | `move 3` or `mv 3 done` |
-| `search <keyword>` | `s` | Filter tasks by keyword (empty to clear) | `search calibrate` or `s` |
-| `delete <id>` | `del` | Permanently delete a task | `delete 3` |
-| `exit` / `quit` | `q` | Quit the application | `exit` |
+| `<name>` / `/add <name>` | — | Create a new task in Planned status | `calibrate sensor` or `/add calibrate` |
+| `/move <id> [status]` | `/mv` | Transition task status (planned/process/done; default: next) | `/move 3` or `/mv 3 done` |
+| `/search <keyword>` | `/s` | Filter tasks by keyword (empty to clear) | `/search calibrate` or `/s` |
+| `/delete <id>` | `/del` | Permanently delete a task | `/delete 3` |
+| `/exit` / `/quit` | `/q` | Quit the application | `/exit` |
 | — | `ESC` | Immediate exit | — |
+| — | `Up/Dn` | Scroll Action Logs viewport | — |
 
 ---
 
@@ -331,6 +334,9 @@ cargo check
 
 # Run the TUI
 cargo run
+
+# Run the TUI in compact mode (hides the SQL log area)
+cargo run -- -c
 
 # Build optimized release binary
 cargo build --release
