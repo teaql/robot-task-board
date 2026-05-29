@@ -251,18 +251,15 @@ let stats = Q::tasks()
 
 ---
 
-### Scenario 8: Audited Soft-Delete (`EntityStatus::UpdatedDeleted`)
+### Scenario 8: Audited Soft-Delete (mark_as_delete)
 
-**What it does:** Deletes an entity using the rich domain object rather than raw IDs. By changing the entity's persistence state to `UpdatedDeleted`, TeaQL enforces optimistic concurrency (via the entity's current `version`) and gracefully propagates the deletion to the `EntityEventSink` for audit logging.
+**What it does:** Deletes an entity using the rich domain object rather than raw IDs. By chaining `mark_as_delete()` and `set_comment()` directly on the entity, TeaQL enforces optimistic concurrency (via the entity's current `version`) and gracefully propagates the deletion context to the `EntityEventSink` for audit logging.
 
 ```rust
 // service.rs — delete_task()
-let repo = self.ctx.task_repository()?;
-repo.save_entity_with_comment(
-    task,
-    teaql_runtime::EntityStatus::UpdatedDeleted,
-    format!("Delete task '{}'", task.name())
-)?;
+let task_name = task.name().to_string();
+task.mark_as_delete().set_comment(format!("Delete task '{}'", task_name));
+task.save(&self.ctx).await?;
 ```
 
 **Generated SQL:**
