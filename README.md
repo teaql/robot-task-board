@@ -2,13 +2,17 @@
 
 > **TeaQL Website**: [https://teaql.io/](https://teaql.io/)
 
-This repository is a real-world demonstration of **TeaQL**, a Rust query framework and domain modeling tool designed to make business logic observable.
+TeaQL is a Rust query framework and domain modeling tool for making business logic observable.
 
-Instead of hiding database behavior behind an opaque ORM, this demo shows the full execution path of a domain action:
+This demo is a tiny terminal Kanban board, but it exercises the same runtime features TeaQL was built for in much larger business domains:
 
 `Command` → `Domain transition` → `SQL` → `Audit diff` → `Event log` → `UI projection`
 
-The task board intentionally uses a tiny domain model so the runtime behavior is easy to follow. TeaQL itself is designed for significantly larger business domains, where understanding domain transitions, generated SQL, audit trails and query execution paths becomes even more important.
+![TeaQL task board demo](./assets/teaql-task-board.gif)
+
+Instead of hiding database behavior behind an opaque ORM, this showcase lets you follow the full execution path of a domain action: from command input, to domain transition, to generated SQL, to audit diff, to UI refresh.
+
+The task board intentionally uses a tiny domain model so the runtime behavior is easy to follow. In real systems, TeaQL is meant for much larger business domains, where domain transitions, generated SQL, audit trails, query paths, and lifecycle events quickly become difficult to reason about without framework-level visibility.
 
 To make the idea concrete, we built a terminal-based Kanban board using Ratatui + SQLite. When you move a task from *Planned* to *Process*, TeaQL shows the generated SQL, optimistic concurrency update, audit trail, lifecycle event, and refreshed status facets in real time.
 
@@ -123,6 +127,8 @@ SELECT status, COUNT(*) AS count_tasks
 ```
 
 **Applied in:** Board reload — the Planned/Process/Done count badges and task lists are all populated from this single query.
+
+![TeaQL facet aggregation demo](./assets/teaql-facet-aggregation.gif)
 
 ---
 
@@ -289,6 +295,8 @@ ctx.set_event_sink(AppAuditSink);
 [12:04:23.529]-[philip]-[AUDIT]-  -> Field [version]: 1 ➔ 2
 ```
 
+![TeaQL audit trail demo](./assets/teaql-audit-trail.gif)
+
 **Next Steps / Coming Soon:** 
 In the next phase, we will introduce the **`audit ignore`** feature. By adding an attribute in the `model.xml`, developers will be able to explicitly exclude sensitive data (like passwords, PII, or internal tokens) from being captured or diffed by the audit subsystem.
 
@@ -347,16 +355,16 @@ Defined in `models/model.xml`, the TeaQL domain model declares two entities with
     _features="custom" />
 ```
 
-### 🤖 Taming AI via Service-Generated APIs
+### 🤖 AI-Friendly Domain Modeling via Service-Generated APIs
 
-A hidden paradigm shift in this architecture is how naturally it tames AI coding assistants. 
+A hidden paradigm shift in this architecture is how naturally it guides AI coding assistants. 
 
 The workflow forms a highly predictable closed loop:
 1. **AI Generation:** An AI easily drafts the declarative domain model (`model.xml`) from raw business requirements. To automate this process entirely, we built the [teaql-agent-kit](https://github.com/teaql/teaql-agent-kit).
 2. **Translation Service:** A dedicated background service takes this model and translates it into a dense, strictly-typed Rust API layer.
 3. **High-Obedience Implementation:** When the AI assistant helps you write the actual application logic (like in `service.rs`), it is fed these compiler-enforced APIs as context. 
 
-Because the AI is bounded by these strict types rather than scattered database migrations, it cannot hallucinate raw SQL strings or guess table schemas. It is forced into high obedience, consistently producing compile-ready, accurate business logic.
+Because the AI is bounded by strict generated types rather than scattered database migrations, it has far less room to hallucinate raw SQL strings or guess table schemas. The result is a higher-obedience workflow where AI-generated application logic is more likely to compile, align with the domain model, and stay understandable to humans.
 
 ---
 
