@@ -347,6 +347,17 @@ Defined in `models/model.xml`, the TeaQL domain model declares two entities with
     _features="custom" />
 ```
 
+### 🤖 Taming AI via Service-Generated APIs
+
+A hidden paradigm shift in this architecture is how naturally it tames AI coding assistants. 
+
+The workflow forms a highly predictable closed loop:
+1. **AI Generation:** An AI easily drafts the declarative domain model (`model.xml`) from raw business requirements. To automate this process entirely, we built the [teaql-agent-kit](https://github.com/teaql/teaql-agent-kit).
+2. **Translation Service:** A dedicated background service takes this model and translates it into a dense, strictly-typed Rust API layer.
+3. **High-Obedience Implementation:** When the AI assistant helps you write the actual application logic (like in `service.rs`), it is fed these compiler-enforced APIs as context. 
+
+Because the AI is bounded by these strict types rather than scattered database migrations, it cannot hallucinate raw SQL strings or guess table schemas. It is forced into high obedience, consistently producing compile-ready, accurate business logic.
+
 ---
 
 ## 🛠 Commands
