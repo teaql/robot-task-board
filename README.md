@@ -142,7 +142,7 @@ let mut task = Q::tasks().new_entity(ctx);
 task.update_id(next_id)
     .update_name(cmd.name.clone())
     .update_version(1_i64)
-    .update_status_id(1_u64)
+    .update_status_to_planned()  // Safe API: raw update_status_id(1) is blocked by the compiler
     .update_platform_id(1_u64);
 ```
 
