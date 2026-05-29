@@ -205,7 +205,13 @@ pub trait TaskDomainBehavior {
 
 impl TaskDomainBehavior for Task {
     fn transition_status(&mut self, next_status_id: u64) -> Result<(), AppError> {
-        self.update_status_id(next_status_id);
+        // Safe APIs generated for constant enums
+        match next_status_id {
+            1001 => self.update_status_to_planned(),
+            1002 => self.update_status_to_process(),
+            1003 => self.update_status_to_done(),
+            _ => return Err(AppError::InvalidStatus),
+        };
         Ok(())
     }
 }
