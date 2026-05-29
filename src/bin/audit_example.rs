@@ -36,28 +36,6 @@ fn format_entity_id(val: &Value) -> String {
     }
 }
 
-async fn map_field_and_value_async(ctx: &UserContext, field: &str, val: &Option<Value>) -> (String, String) {
-    let raw_str = format_teaql_value(val);
-    if field == "status_id" {
-        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
-            if let Ok(Some(status)) = Q::task_status().execute_by_id(ctx, id).await {
-                let name = robot_kanban::E::task_status(status).get_name().eval().unwrap_or(raw_str.clone());
-                return ("status".to_owned(), name);
-            }
-        }
-        ("status".to_owned(), raw_str)
-    } else if field == "platform_id" {
-        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
-            if let Ok(Some(platform)) = Q::platforms().execute_by_id(ctx, id).await {
-                let name = robot_kanban::E::platform(platform).get_name().eval().unwrap_or(raw_str.clone());
-                return ("platform".to_owned(), name);
-            }
-        }
-        ("platform".to_owned(), raw_str)
-    } else {
-        (field.to_owned(), raw_str)
-    }
-}
 
 /// Custom EntityEventSink that captures object modifications in real-time.
 /// It prints logs in English with the current local timestamp and the custom user identifier.
@@ -166,7 +144,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let executor = RusqliteMutationExecutor::new(conn);
     ctx.use_rusqlite_provider(executor.clone());
 
-    // 5. Ensure Schema is bootsrapped
+    // 5. Ensure Schema is bootstrapped
     ensure_rusqlite_schema_for(&ctx)?;
 
     // 6. Action 1: Create a new Task
@@ -213,7 +191,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!("============================================================");
-    println!("Audit Log Demonstration Completed. Logs saved to 'audit.log'.");
+    println!("Audit Log Demonstration Completed. Logs saved to 'audit_example.log'.");
     println!("============================================================");
 
     Ok(())

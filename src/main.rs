@@ -61,7 +61,7 @@ impl App {
         };
         app.service.log_info("System successfully initialized.");
         app.service.log_info("Pre-loaded SQLite database 'robot_kanban.db'.");
-        app.service.log_info("TeaQL v0.9.3: Comment Propagation is fully active.");
+        app.service.log_info("TeaQL v0.9.9: Comment Propagation is fully active.");
         app
     }
 

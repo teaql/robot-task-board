@@ -422,7 +422,7 @@ Commands use a slash (`/`) prefix. **Any bare text (without a slash) is treated 
 > **A Note on Open Source:** The TeaQL *runtime* (which executes the queries, handles concurrency, audits, and powers the TUI) is open source. The *generator* that compiles `model.xml` into the Rust code found in `generate-lib/lib/` is currently closed-source while we refine it. However, we have **checked in the generated code** so you can compile, run, and modify this demo app immediately using only the open-source runtime components!
 - **For cross-compilation**: `cargo-zigbuild` and the `armv7-unknown-linux-musleabihf` target
 
-> **Note:** `Cargo.toml` expects TeaQL crates at `../teaql-rs/`. Clone [teaql-rs](https://teaql.io/) alongside this repo, or adjust the paths to match your local setup.
+> **Note:** TeaQL runtime crates are published on [crates.io](https://crates.io/crates/teaql-core). No local checkout is needed — `cargo build` will fetch them automatically.
 
 ---
 

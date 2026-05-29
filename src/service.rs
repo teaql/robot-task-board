@@ -70,28 +70,6 @@ fn format_val_helper(val: &Option<Value>) -> String {
     }
 }
 
-async fn map_field_and_value_async(ctx: &UserContext, field: &str, val: &Option<Value>) -> (String, String) {
-    let raw_str = format_val_helper(val);
-    if field == "status_id" {
-        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
-            if let Ok(Some(status)) = Q::task_status().execute_by_id(ctx, id).await {
-                let name = robot_kanban::E::task_status(status).get_name().eval().unwrap_or(raw_str.clone());
-                return ("status".to_owned(), name);
-            }
-        }
-        ("status".to_owned(), raw_str)
-    } else if field == "platform_id" {
-        if let Some(id) = val.as_ref().and_then(|v| v.try_u64()) {
-            if let Ok(Some(platform)) = Q::platforms().execute_by_id(ctx, id).await {
-                let name = robot_kanban::E::platform(platform).get_name().eval().unwrap_or(raw_str.clone());
-                return ("platform".to_owned(), name);
-            }
-        }
-        ("platform".to_owned(), raw_str)
-    } else {
-        (field.to_owned(), raw_str)
-    }
-}
 
 pub struct AppAuditSink;
 

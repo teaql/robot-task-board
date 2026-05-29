@@ -1,6 +1,7 @@
 *.db
 *.log
 *.lock
+/target
 /robot-task-board
 /robot-task-board-release
 
