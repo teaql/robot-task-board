@@ -1,8 +1,8 @@
-# Robot Task Board TUI 🚀
+# Show HN: TeaQL Showcase – Robot Task Board TUI 🚀
 
-A terminal-based Kanban board for robot task management, built to showcase the **TeaQL query framework** in a real-world Rust application.
+This repository is a real-world demonstration of **TeaQL**—a Rust query framework and domain modeling tool designed to bridge the gap between pure Domain-Driven Design (DDD) and raw SQL. 
 
-Written in Rust using **Ratatui + Crossterm**, backed by SQLite via `teaql-provider-rusqlite`. Cross-compiles as a standalone statically-linked binary for `armv7` router environments — zero external runtime dependencies.
+To prove it isn't just theory, we built a terminal-based Kanban board (using Ratatui & SQLite) that exercises the framework's core features. Instead of hiding what the database is doing behind an opaque ORM, TeaQL provides deep introspection, automatic single-roundtrip faceting, optimistic concurrency, and lifecycle auditing. It's also completely `no_std`/embedded friendly—this app cross-compiles as a standalone, statically-linked binary for `armv7` router environments with zero external runtime dependencies.
 
 ---
 
@@ -16,7 +16,7 @@ robot-task-board/
 │   ├── ui.rs            # Ratatui layout, syntax-highlighted log rendering
 │   └── utils.rs         # System info (CPU/memory) from /proc
 ├── models/
-│   └── model.xml        # TeaQL domain model definition
+│   └── model.xml        # TeaQL declarative domain model definition
 ├── generate-lib/
 │   └── lib/             # Auto-generated TeaQL domain library (robot-kanban)
 ├── Cargo.toml
@@ -25,9 +25,9 @@ robot-task-board/
 
 ---
 
-## 🔬 TeaQL Applied Scenarios
+## 🔬 Why TeaQL? (9 Applied Scenarios)
 
-This application exercises **8 distinct TeaQL capabilities** across its CRUD and query workflows. Each scenario maps a TeaQL API to its concrete usage and the SQL it produces.
+This application exercises **9 distinct TeaQL capabilities** across its CRUD and query workflows. Each scenario below maps a TeaQL API to its concrete usage in this app and the exact SQL it produces.
 
 ---
 
