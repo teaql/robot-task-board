@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{Q, Task, TaskExecutionLog, TeaqlRuntime};
+use robot_kanban::{Q, Task, TaskExecutionLog};
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
     RusqliteMutationExecutor, RusqliteProviderExt, MutationExecutorError,
@@ -9,7 +9,7 @@ use teaql_runtime::{
     UserContext, QueryExecutor, GraphTransactionBoundary, EntityEvent,
     EntityEventKind, EntityEventSink, RuntimeError, TuiLogEntry, TuiLogBuffer,
 };
-use teaql_core::{Entity, EntityDescriptor, EntityError, DeleteCommand, Record, TeaqlEntity, Value};
+use teaql_core::{Record, Value};
 use teaql_sql::CompiledQuery;
 
 /// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
@@ -486,14 +486,8 @@ impl TaskService {
         let log_id = id_gen.next_id("TaskExecutionLog")?;
         let log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
-        let comment = format!("Create task '{}'", name);
-        let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        repo.save_entity_with_comment(task.clone(), teaql_runtime::EntityStatus::Persisted, comment.clone())
-            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-        let log_repo = self.ctx.task_execution_log_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        log_repo.save_entity_with_comment(log.clone(), teaql_runtime::EntityStatus::Persisted, comment)
-            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Created task [ID: {}] '{}'", next_id, name));
 
@@ -512,10 +506,10 @@ impl TaskService {
 
         let task_opt = select.execute_for_one(&self.ctx).await?;
 
-        if let Some(task) = task_opt {
-            let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-            repo.save_entity_with_comment(task.clone(), teaql_runtime::EntityStatus::UpdatedDeleted, format!("Delete task '{}'", task.name()))
-                .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        if let Some(mut task) = task_opt {
+            // Soft-delete by setting version to a negative value
+            task.update_version(-2);
+            task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Deleted task [ID: {}]", id));
 
@@ -577,15 +571,8 @@ impl TaskService {
                     let log_id = id_gen.next_id("TaskExecutionLog")?;
                     let log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
 
-                    let comment = format!("Move task '{}' to {}", task.name(), status_name);
-                    let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    repo.save_entity_with_comment(task.clone(), teaql_runtime::EntityStatus::Persisted, comment.clone())
-                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                        
-                    let log_repo = self.ctx.task_execution_log_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    log_repo.save_entity_with_comment(log.clone(), teaql_runtime::EntityStatus::Persisted, comment)
-                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
+                    task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     self.log_info(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {

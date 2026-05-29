@@ -2,7 +2,7 @@ use std::error::Error;
 use chrono::Local;
 
 use robot_kanban::{Q, TeaqlRuntime};
-use teaql_core::{Value, DeleteCommand};
+use teaql_core::Value;
 use teaql_runtime::{
     EntityEvent, EntityEventKind, EntityEventSink, UserContext, RuntimeError,
     QueryCommentGuard,
