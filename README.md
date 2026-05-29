@@ -37,9 +37,9 @@ robot-task-board/
 
 ---
 
-## 🔬 Why TeaQL? (9 Applied Scenarios)
+## 🔬 Why TeaQL? (10 Applied Scenarios)
 
-This application exercises **9 distinct TeaQL capabilities** across its CRUD and query workflows. Each scenario below maps a TeaQL API to its concrete usage in this app and the exact SQL it produces.
+This application exercises **10 distinct TeaQL capabilities** across its CRUD and query workflows. Each scenario below maps a TeaQL API to its concrete usage in this app and the exact SQL it produces.
 
 ---
 
@@ -193,38 +193,59 @@ let next_id = id_gen.next_id("Task")?;
 
 ---
 
-### Scenario 6: Custom Return Type Mapping (`return_type::<DomainTask>()`)
+### Scenario 6: Domain Behavior Injection (Extension Traits)
 
-**What it does:** Tells TeaQL to deserialize query results into a custom domain type instead of the default generated entity. The custom type must implement the `Entity` and `TeaqlEntity` traits.
+**What it does:** Allows attaching rich domain logic directly to generated entities using Rust's Native Extension Traits, ensuring zero-overhead and highly ergonomic DDD (Domain-Driven Design).
 
 ```rust
-// service.rs — DomainTask wraps the generated Task with business logic
-pub struct DomainTask {
-    pub task: Task,
+// service.rs — TaskDomainBehavior extends the generated Task entity
+pub trait TaskDomainBehavior {
+    fn transition_status(&mut self, next_status_id: u64) -> Result<(), AppError>;
 }
 
-impl Entity for DomainTask {
-    fn from_record(record: Record) -> Result<Self, EntityError> {
-        let task = Task::from_record(record)?;
-        Ok(Self { task })
+impl TaskDomainBehavior for Task {
+    fn transition_status(&mut self, next_status_id: u64) -> Result<(), AppError> {
+        self.update_status_id(next_status_id);
+        Ok(())
     }
 }
 
-// Fetch as DomainTask instead of raw Task
-let select = Q::tasks()
-    .comment("Get task for DDD")
-    .with_id_is(id)
-    .return_type::<DomainTask>();
-
-let found_tasks = select.execute_for_list(&self.ctx).await?;
-// found_tasks contains DomainTask instances with business methods attached
+// Directly call domain methods on the generated entity
+let mut task = Q::tasks().with_id_is(id).execute_for_one(&self.ctx).await?;
+task.transition_status(next_status_id)?;
+task.save(&self.ctx).await?;
 ```
 
-**Applied in:** `/mv` and `/del` commands — the fetched `DomainTask` carries `transition_status()` and `delete()` domain methods that raw `Task` entities don't have.
+**Applied in:** `/mv` command — enabling clean, expressive state mutations directly on `Task` objects.
 
 ---
 
-### Scenario 7: Optimistic Concurrency (`DeleteCommand` with `expected_version`)
+### Scenario 7: Partial Projections & Aggregations (`return_type::<T>()`)
+
+**What it does:** Tells TeaQL to deserialize query results into a custom data transfer object (DTO) instead of the default generated entity. This is vital when executing partial selects or complex groupings where the returned shape no longer matches the full entity.
+
+```rust
+// Define a custom DTO for aggregations or partial fields
+#[derive(TeaqlEntity)]
+pub struct StatusStats {
+    pub status: i32,
+    pub task_count: i64,
+}
+
+// Fetch custom projection instead of raw Task
+let stats = Q::tasks()
+    .select_status()
+    .count_id_as("task_count")
+    .group_by_status()
+    .return_type::<StatusStats>()
+    .execute_for_list(&ctx).await?;
+```
+
+**Applied in:** High-performance dashboard rendering — avoids full-entity deserialization overhead when projecting lightweight summaries or grouped counts.
+
+---
+
+### Scenario 8: Optimistic Concurrency (`DeleteCommand` with `expected_version`)
 
 **What it does:** Deletes an entity only if its current version matches the expected version, preventing concurrent modification conflicts.
 
@@ -233,7 +254,7 @@ let found_tasks = select.execute_for_list(&self.ctx).await?;
 let repo = self.ctx.task_repository()?;
 repo.delete(
     &DeleteCommand::new("Task", id)
-        .expected_version(domain_task.task.version())
+        .expected_version(task.version())
 )?;
 ```
 
@@ -249,7 +270,7 @@ TeaQL uses a soft-delete pattern — `version` is set to a negative value rather
 
 ---
 
-### Scenario 8: Comment Chain Propagation (`.comment()`)
+### Scenario 9: Comment Chain Propagation (`.comment()`)
 
 **What it does:** Attaches human-readable intent annotations to queries. When queries have nested sub-queries (e.g., facets), comments propagate down the chain with `->` separators, creating a full trace of query intent.
 
@@ -283,7 +304,7 @@ The TUI renders these traces in real-time with syntax-highlighted colors — tim
 
 ---
 
-### Scenario 9: Entity Audit Subsystem (`EntityEventSink`)
+### Scenario 10: Entity Audit Subsystem (`EntityEventSink`)
 
 **What it does:** TeaQL automatically hooks into the persistence lifecycle to track fine-grained Entity Events (Create, Update, Delete, Recover) and computes precise field-level diffs (`old_value` ➔ `new_value`).
 
@@ -333,10 +354,11 @@ In the next phase, we will introduce the **`audit ignore`** feature. By adding a
 | 3 | `facet_by_status_as` | Status count aggregation | Board reload |
 | 4 | `Q::tasks().new_entity()` | Create task with defaults | `<name>` |
 | 5 | `RusqliteIdSpaceGenerator` | Unique ID generation | `<name>` |
-| 6 | `.return_type::<DomainTask>()` | Custom domain type mapping | `/mv`, `/del` |
-| 7 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `/del` |
-| 8 | `.comment()` | Query intent tracing | All queries |
-| 9 | `EntityEventSink` | Field-level lifecycle diffs & Audit | All mutations |
+| 6 | `Extension Traits` | Domain Behavior Injection (DDD) | `/mv`, `/del` |
+| 7 | `.return_type::<T>()` | Custom partial projection & stats DTOs | Optimization |
+| 8 | `DeleteCommand.expected_version()` | Optimistic concurrency delete | `/del` |
+| 9 | `.comment()` | Query intent tracing | All queries |
+| 10 | `EntityEventSink` | Field-level lifecycle diffs & Audit | All mutations |
 
 ---
 
