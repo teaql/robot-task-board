@@ -146,16 +146,6 @@ modules, update the KSML model first and regenerate the crate.
 Do not manually edit generated entity/request/expression files. Treat generated
 files as disposable.
 
-## Internationalization (i18n) Guidance
-
-For multilingual support and translation of domain terms (e.g. validation error messages) when using non-English locales (such as Chinese, Spanish, etc.), TeaQL provides a clean, offline i18n translation dictionary workflow:
-
-1. **Locate the Sample File**: Find the auto-generated `teaql-i18n.sample.json` file in the project root. It contains all unique domain entity and property vocabulary keys.
-2. **Translate via AI**: Paste the contents of `teaql-i18n.sample.json` into your AI tool, or instruct this AI agent to translate it. Use the following prompt:
-   > **Prompt**: "Translate this JSON file containing TeaQL domain vocabulary keys into 15 languages: Arabic (ar), Simplified Chinese (zh_CN), Traditional Chinese (zh_TW), Spanish (es), French (fr), German (de), Japanese (ja), Korean (ko), Portuguese (pt), Thai (th), Ukrainian (uk), Filipino (fil), Indonesian (id), English (en) under each key. Return only the valid JSON result."
-3. **Save the JSON**: Save the translated JSON result as `teaql-i18n.json` externally or on the classpath.
-4. **Configure JVM Parameter**: Set the JVM property `-Dteaql.i18n.path=/path/to/teaql-i18n.json` pointing to your translated file.
-5. **Runtime Validation Rule**: If a non-English translator is instantiated at runtime and `-Dteaql.i18n.path` is unconfigured, invalid, or the file is empty, the starter throws a strict `IllegalStateException` to prevent unlocalized output.
 
 ## Domain Context
 
