@@ -1,8 +1,16 @@
-# Show HN: TeaQL Showcase – Robot Task Board TUI 🚀
+# Show HN: TeaQL Showcase – See What Your Business Code Actually Does
 
-This repository is a real-world demonstration of **TeaQL**—a Rust query framework and domain modeling tool designed to bridge the gap between pure Domain-Driven Design (DDD) and raw SQL. 
+This repository is a real-world demonstration of **TeaQL**, a Rust query framework and domain modeling tool designed to make business logic observable.
 
-To prove it isn't just theory, we built a terminal-based Kanban board (using Ratatui & SQLite) that exercises the framework's core features. Instead of hiding what the database is doing behind an opaque ORM, TeaQL provides deep introspection, automatic single-roundtrip faceting, optimistic concurrency, and lifecycle auditing. It's also completely `no_std`/embedded friendly—this app cross-compiles as a standalone, statically-linked binary for `armv7` router environments with zero external runtime dependencies.
+Instead of hiding database behavior behind an opaque ORM, this demo shows the full execution path of a domain action:
+
+`Command` → `Domain transition` → `SQL` → `Audit diff` → `Event log` → `UI projection`
+
+To make the idea concrete, we built a terminal-based Kanban board using Ratatui + SQLite. When you move a task from *Planned* to *Process*, TeaQL shows the generated SQL, optimistic concurrency update, audit trail, lifecycle event, and refreshed status facets in real time.
+
+This is not just a task board. It is a small showcase of how TeaQL bridges Domain-Driven Design, raw SQL transparency, query introspection, faceted aggregation, lifecycle auditing, and embedded-friendly Rust deployment.
+
+The app can also cross-compile as a standalone statically linked binary for `armv7` router environments, with no external runtime dependencies.
 
 ---
 
