@@ -60,7 +60,11 @@ ensure_rusqlite_schema_for(&ctx)?;
 
 **Applied in:** `TaskService::new()` — on first run, creates `task_data`, `task_status_data`, and `platform_data` tables with seed data; on subsequent runs, applies any schema changes from the model.
 
-> **Bonus (Sample Data):** Beyond schema creation, the framework also auto-generates a `sample_data` module from your model. This allows developers to inject structured, type-safe mock entities with a single function call for rapid prototyping and unit testing, without writing a single raw `INSERT` statement.
+> **Bonus (Sample Data):** Beyond schema creation, the framework also auto-generates a `sample_data` module from your model. This allows developers to inject structured, type-safe mock entities with a single function call for rapid prototyping and unit testing, without writing a single raw `INSERT` statement:
+> ```rust
+> // Scaffold a batch of dummy tasks and execution logs in one line
+> robot_kanban::generate_sample_data(&ctx, SampleDataPlan::small()).await?;
+> ```
 
 ---
 
