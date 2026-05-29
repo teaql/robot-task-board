@@ -6,6 +6,8 @@ Instead of hiding database behavior behind an opaque ORM, this demo shows the fu
 
 `Command` → `Domain transition` → `SQL` → `Audit diff` → `Event log` → `UI projection`
 
+The task board intentionally uses a tiny domain model so the runtime behavior is easy to follow. TeaQL itself is designed for significantly larger business domains, where understanding domain transitions, generated SQL, audit trails and query execution paths becomes even more important.
+
 To make the idea concrete, we built a terminal-based Kanban board using Ratatui + SQLite. When you move a task from *Planned* to *Process*, TeaQL shows the generated SQL, optimistic concurrency update, audit trail, lifecycle event, and refreshed status facets in real time.
 
 This is not just a task board. It is a small showcase of how TeaQL bridges Domain-Driven Design, raw SQL transparency, query introspection, faceted aggregation, lifecycle auditing, and embedded-friendly Rust deployment.
