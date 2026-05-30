@@ -50,6 +50,7 @@ impl EntityEventSink for AuditLogSink {
             EntityEventKind::Updated => "UPDATED",
             EntityEventKind::Deleted => "DELETED",
             EntityEventKind::Recovered => "RECOVERED",
+            EntityEventKind::SchemaCreated | EntityEventKind::DataSeeded => return Ok(()),
         };
 
         // Extract ID value from event record to represent entity as Type:ID

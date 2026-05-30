@@ -186,15 +186,3 @@ pub struct BootstrapStep {
     pub completed: bool,
     pub elapsed_ms: Option<f64>,
 }
-
-/// Bootstrap step labels matching the real operations
-pub const BOOTSTRAP_LABELS: &[&str] = &[
-    "Open SQLite database",
-    "Create platform_data table",
-    "Create task_status_data table",
-    "Create task_data table",
-    "Create task_execution_log_data table",
-    "Seed platform_data",
-    "Seed task_status_data",
-    "Startup complete",
-];

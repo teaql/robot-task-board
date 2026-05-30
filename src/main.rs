@@ -210,69 +210,96 @@ async fn main() -> Result<(), Box<dyn Error>> {
     startup::draw_welcome(&mut terminal)?;
     startup::wait_for_key()?;
 
-    // 3. Screen 2: Bootstrap Trace — show initial empty state
-    let num_steps = startup::BOOTSTRAP_LABELS.len();
-    let initial_steps: Vec<startup::BootstrapStep> = startup::BOOTSTRAP_LABELS
-        .iter()
-        .map(|label| startup::BootstrapStep { label, completed: false, elapsed_ms: None })
-        .collect();
-    startup::draw_bootstrap(&mut terminal, &initial_steps, false, None)?;
-
-    // 4. Initialize service with progress callback that tracks real elapsed times
-    use std::sync::{Arc, Mutex as StdMutex};
+    // 3. Bootstrap: show "Bootstrapping..." while initializing
     use std::time::Instant;
-
-    let step_times: Arc<StdMutex<Vec<Option<f64>>>> = Arc::new(StdMutex::new(vec![None; num_steps]));
-    let step_times_clone = step_times.clone();
     let boot_start = Instant::now();
-    let last_step_time: Arc<StdMutex<Instant>> = Arc::new(StdMutex::new(boot_start));
-    let last_step_clone = last_step_time.clone();
 
-    let service = TaskService::new_with_progress("robot_kanban.db", move |step_index| {
-        let now = Instant::now();
-        if let (Ok(mut times), Ok(mut last)) = (step_times_clone.lock(), last_step_clone.lock()) {
-            if step_index < times.len() {
-                let elapsed = now.duration_since(*last).as_secs_f64() * 1000.0;
-                times[step_index] = Some(elapsed);
-                *last = now;
-            }
-        }
-    }).await?;
+    // Show a minimal bootstrap screen while the service initializes
+    startup::draw_bootstrap(&mut terminal, &[
+        startup::BootstrapStep { label: "Open SQLite database", completed: false, elapsed_ms: None },
+    ], false, None)?;
 
+    // 4. Initialize service — real SchemaCreated/DataSeeded events are fired
+    //    through ctx.send_event() and captured in the UnifiedLogBuffer.
+    let db_open_start = Instant::now();
+    let service = TaskService::new("robot_kanban.db").await?;
     let total_elapsed = boot_start.elapsed();
 
-    // 5. Show final bootstrap state with all steps checked and times
-    {
-        let times = step_times.lock().unwrap();
-        let final_steps: Vec<startup::BootstrapStep> = startup::BOOTSTRAP_LABELS
+    // 5. Collect real bootstrap events and build the step list dynamically
+    let bootstrap_events = service.drain_bootstrap_events();
+    let db_open_ms = db_open_start.elapsed().as_secs_f64() * 1000.0;
+
+    // Build steps from real events: "Open SQLite database" + events from EntityEventSink + "Startup complete"
+    let per_step_ms = if !bootstrap_events.is_empty() {
+        let schema_seed_ms = total_elapsed.as_secs_f64() * 1000.0 - 0.1; // rough: total minus overhead
+        schema_seed_ms / bootstrap_events.len() as f64
+    } else {
+        0.0
+    };
+
+    let mut final_steps: Vec<startup::BootstrapStep> = Vec::new();
+    final_steps.push(startup::BootstrapStep {
+        label: "Open SQLite database",
+        completed: true,
+        elapsed_ms: Some(db_open_ms),
+    });
+
+    // Leak the strings so we can use &'static str in BootstrapStep
+    // (these live for the rest of the program anyway)
+    for event_msg in &bootstrap_events {
+        let label: &'static str = Box::leak(event_msg.clone().into_boxed_str());
+        final_steps.push(startup::BootstrapStep {
+            label,
+            completed: true,
+            elapsed_ms: Some(per_step_ms),
+        });
+    }
+    final_steps.push(startup::BootstrapStep {
+        label: "Startup complete",
+        completed: true,
+        elapsed_ms: Some(0.0),
+    });
+
+    // 6. Animate the bootstrap steps with checkmarks one by one
+    for i in 0..final_steps.len() {
+        let display_steps: Vec<startup::BootstrapStep> = final_steps
             .iter()
-            .zip(times.iter())
-            .map(|(label, elapsed)| startup::BootstrapStep {
-                label,
-                completed: true,
-                elapsed_ms: *elapsed,
+            .enumerate()
+            .map(|(j, s)| startup::BootstrapStep {
+                label: s.label,
+                completed: j <= i,
+                elapsed_ms: if j <= i { s.elapsed_ms } else { None },
             })
             .collect();
-        startup::draw_bootstrap(&mut terminal, &final_steps, true, Some(total_elapsed))?;
+        let all_done = i == final_steps.len() - 1;
+        startup::draw_bootstrap(
+            &mut terminal,
+            &display_steps,
+            all_done,
+            if all_done { Some(total_elapsed) } else { None },
+        )?;
+        if !all_done {
+            std::thread::sleep(Duration::from_millis(80));
+        }
     }
     startup::wait_for_key()?;
 
-    // 6. Transition: show cursor for TUI input
+    // 7. Transition: show cursor for TUI input
     execute!(
         terminal.backend_mut(),
         crossterm::cursor::Show,
         crossterm::cursor::EnableBlinking
     )?;
 
-    // 7. Initialize app state
+    // 8. Initialize app state
     let mut app = App::new(service);
     app.reload_data().await?;
     app.service.log_info("=================================================================================================");
 
-    // 8. Main application loop
+    // 9. Main application loop
     let loop_res = run_app(&mut terminal, &mut app).await;
 
-    // 9. Cleanup terminal
+    // 10. Cleanup terminal
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
@@ -495,17 +522,15 @@ mod tests {
 
         for entry in &sql_logs {
             let sql = entry.debug_sql.to_lowercase();
-            if let Some(ref comment) = entry.comment {
-                println!("SQL: {} - Comment: {}", sql, comment);
-                if sql.contains("insert into task_execution_log_data") {
-                    // EntityGraph produces hierarchical trace chains:
-                    // "Task(1): Create task '...' -> TaskExecutionLog(1): Create task '...'"
-                    if comment.contains("TaskExecutionLog(1)") && comment.contains("Create task") {
-                        found_created_log_lineage = true;
-                    }
-                    if comment.contains("TaskExecutionLog(2)") && comment.contains("Move task") {
-                        found_status_changed_log_lineage = true;
-                    }
+            println!("SQL: {}", sql);
+            if sql.contains("insert into task_execution_log_data") {
+                // EntityGraph produces hierarchical trace chains embedded as SQL comments:
+                // "Task(1): Create task '...' -> TaskExecutionLog(1): Create task '...'"
+                if sql.contains("taskexecutionlog(1)") && sql.contains("create task") {
+                    found_created_log_lineage = true;
+                }
+                if sql.contains("taskexecutionlog(2)") && sql.contains("move task") {
+                    found_status_changed_log_lineage = true;
                 }
             }
         }

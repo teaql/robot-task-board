@@ -87,6 +87,35 @@ pub struct AppAuditSink;
 
 impl EntityEventSink for AppAuditSink {
     fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
+        // Bootstrap events (SchemaCreated, DataSeeded) are handled separately —
+        // they are written to the UnifiedLogBuffer for the startup screen to observe.
+        match event.kind {
+            EntityEventKind::SchemaCreated | EntityEventKind::DataSeeded => {
+                let table_name = event.values.get("table_name")
+                    .map(|v| match v { Value::Text(s) => s.as_str(), _ => "unknown" })
+                    .unwrap_or("unknown");
+                let action = match event.kind {
+                    EntityEventKind::SchemaCreated => "Create",
+                    EntityEventKind::DataSeeded => "Seed",
+                    _ => unreachable!(),
+                };
+                let message = format!("{} {} ({})", action, table_name, event.entity);
+
+                if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+                    if let Ok(mut entries) = buf.entries.lock() {
+                        entries.push(UnifiedLogEntry {
+                            timestamp: std::time::SystemTime::now(),
+                            user_identifier: None,
+                            trace_chain: Vec::new(),
+                            payload: LogPayload::Info(teaql_runtime::InfoLogEntry { message }),
+                        });
+                    }
+                }
+                return Ok(());
+            }
+            _ => {}
+        }
+
         let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
         let user = short_user(ctx);
 
@@ -95,6 +124,7 @@ impl EntityEventSink for AppAuditSink {
             EntityEventKind::Updated => "UPDATED",
             EntityEventKind::Deleted => "DELETED",
             EntityEventKind::Recovered => "RECOVERED",
+            _ => unreachable!(),
         };
 
         let entity_id_str = match event.values.get("id") {
@@ -360,27 +390,13 @@ pub struct TaskService {
 impl TaskService {
     /// Initializes SQLite database, creates/updates schemas, seeds initial data,
     /// constructs the thread-safe UserContext, and returns the fully configured TaskService.
+    ///
+    /// Bootstrap progress is observable through `EntityEventSink`:
+    /// - `SchemaCreated` events are fired for each table created
+    /// - `DataSeeded` events are fired for each entity type seeded
     pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
-        Self::new_with_progress(db_path, |_step| {}).await
-    }
-
-    /// Like `new`, but calls `on_step(step_index)` after completing each bootstrap phase:
-    ///   0 = Open SQLite database
-    ///   1 = Create platform_data table
-    ///   2 = Create task_status_data table
-    ///   3 = Create task_data table
-    ///   4 = Create task_execution_log_data table
-    ///   5 = Seed platform_data
-    ///   6 = Seed task_status_data
-    ///   7 = Startup complete
-    pub async fn new_with_progress<F>(db_path: &str, on_step: F) -> Result<Self, Box<dyn Error>>
-    where
-        F: Fn(usize),
-    {
-        // Step 0: Open SQLite database
         let conn = rusqlite::Connection::open(db_path)?;
         let inner_executor = RusqliteMutationExecutor::new(conn);
-        on_step(0);
 
         let logging_executor = LoggingExecutor {
             inner: inner_executor.clone(),
@@ -402,26 +418,47 @@ impl TaskService {
         let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
         ctx.insert_resource(service_runtime_executor);
 
-        // Build Schema & seed initial values if missing
-        // We call ensure_rusqlite_schema_for but report per-table progress
-        // by reporting steps 1..4 for table creation, 5..6 for seeding
+        // Build Schema & seed initial values if missing.
+        // This now fires SchemaCreated and DataSeeded events through the EntityEventSink,
+        // which are captured in the UnifiedLogBuffer for the startup screen to observe.
         ensure_rusqlite_schema_for(&ctx)?;
-
-        // Report table creation steps (1-4) and seed steps (5-6) after schema is done
-        for step in 1..=6 {
-            on_step(step);
-            // Small delay so the user can see each checkmark appear
-            std::thread::sleep(std::time::Duration::from_millis(120));
-        }
-
-        // Step 7: Startup complete
-        on_step(7);
 
         Ok(Self {
             ctx,
             inner_executor,
             last_log_index: Mutex::new(0),
         })
+    }
+
+    /// Returns bootstrap events (SchemaCreated/DataSeeded messages) captured
+    /// in the UnifiedLogBuffer during initialization, then clears them.
+    pub fn drain_bootstrap_events(&self) -> Vec<String> {
+        let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() else {
+            return Vec::new();
+        };
+        let Ok(mut entries) = buf.entries.lock() else {
+            return Vec::new();
+        };
+        let events: Vec<String> = entries
+            .iter()
+            .filter_map(|entry| {
+                if let LogPayload::Info(info) = &entry.payload {
+                    if info.message.starts_with("Create ") || info.message.starts_with("Seed ") {
+                        return Some(info.message.clone());
+                    }
+                }
+                None
+            })
+            .collect();
+        // Remove bootstrap entries from the buffer so they don't appear in the TUI logs
+        entries.retain(|entry| {
+            if let LogPayload::Info(info) = &entry.payload {
+                !info.message.starts_with("Create ") && !info.message.starts_with("Seed ")
+            } else {
+                true
+            }
+        });
+        events
     }
 
     pub fn context(&self) -> &UserContext {
