@@ -26,11 +26,12 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
         let area = f.size();
         f.render_widget(Clear, area);
 
-        let box_width: u16 = 62;
-        let box_height: u16 = 17;
+        let box_width: u16 = 74;
+        let box_height: u16 = 20;
         let center = centered_rect(box_width, box_height, area);
 
         let lines = vec![
+            Line::from(""),
             Line::from(""),
             Line::from(Span::styled(
                 "TeaQL Robot Task Board",
@@ -66,6 +67,7 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 Style::default().fg(DIM_GRAY).add_modifier(Modifier::ITALIC),
             )),
             Line::from(""),
+            Line::from(""),
         ];
 
         let block = Block::default()
@@ -81,23 +83,32 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
     Ok(())
 }
 
-/// Screen 2: Bootstrap trace screen — draws the current state of bootstrap steps
-/// Steps are left-aligned with elapsed time shown for completed steps.
+/// Format microseconds into a right-aligned 5-digit string with µs suffix.
+/// e.g. "12345µs", " 1234µs", "  567µs"
+fn format_us(elapsed_ms: f64) -> String {
+    let us = (elapsed_ms * 1000.0).round() as u64;
+    format!("{:>5}µs", us)
+}
+
+/// Screen 2: Bootstrap trace screen — draws the current state of bootstrap steps.
+/// Format: [✓] 12345µs - label
 pub fn draw_bootstrap<B: Backend>(
     terminal: &mut Terminal<B>,
     steps: &[BootstrapStep],
     all_done: bool,
     total_elapsed: Option<std::time::Duration>,
+    summary_line: Option<&str>,
 ) -> io::Result<()> {
     terminal.draw(|f| {
         let area = f.size();
         f.render_widget(Clear, area);
 
-        let box_width: u16 = 62;
-        let box_height: u16 = (steps.len() as u16) + 10;
+        let box_width: u16 = 74;
+        let box_height: u16 = (steps.len() as u16) + 12;
         let center = centered_rect(box_width, box_height, area);
 
         let mut lines: Vec<Line> = Vec::new();
+        lines.push(Line::from(""));
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
             "TeaQL Runtime Bootstrap",
@@ -107,21 +118,30 @@ pub fn draw_bootstrap<B: Backend>(
 
         for step in steps {
             if step.completed {
-                let time_str = if let Some(elapsed) = step.elapsed_ms {
-                    format!("  ({:.1}ms)", elapsed)
+                if let Some(ms) = step.elapsed_ms {
+                    // [✓] 12345µs - label
+                    let time_str = format_us(ms);
+                    lines.push(Line::from(vec![
+                        Span::styled("  [", Style::default().fg(DIM_GRAY)),
+                        Span::styled("✓", Style::default().fg(TEAQL_GREEN).add_modifier(Modifier::BOLD)),
+                        Span::styled("] ", Style::default().fg(DIM_GRAY)),
+                        Span::styled(time_str, Style::default().fg(TEAQL_GREEN)),
+                        Span::styled(" - ", Style::default().fg(DIM_GRAY)),
+                        Span::styled(step.label.to_string(), Style::default().fg(SOFT_WHITE)),
+                    ]));
                 } else {
-                    String::new()
-                };
-                lines.push(Line::from(vec![
-                    Span::styled("  [", Style::default().fg(DIM_GRAY)),
-                    Span::styled("✓", Style::default().fg(TEAQL_GREEN).add_modifier(Modifier::BOLD)),
-                    Span::styled("] ", Style::default().fg(DIM_GRAY)),
-                    Span::styled(step.label.to_string(), Style::default().fg(SOFT_WHITE)),
-                    Span::styled(time_str, Style::default().fg(DIM_GRAY)),
-                ]));
+                    // [✓]          label  (no time, e.g. "Startup complete")
+                    lines.push(Line::from(vec![
+                        Span::styled("  [", Style::default().fg(DIM_GRAY)),
+                        Span::styled("✓", Style::default().fg(TEAQL_GREEN).add_modifier(Modifier::BOLD)),
+                        Span::styled("]            ", Style::default().fg(DIM_GRAY)),
+                        Span::styled(step.label.to_string(), Style::default().fg(SOFT_WHITE)),
+                    ]));
+                }
             } else {
+                // [ ]          label  (not completed yet)
                 lines.push(Line::from(vec![
-                    Span::styled("  [ ] ", Style::default().fg(DIM_GRAY)),
+                    Span::styled("  [ ]            ", Style::default().fg(DIM_GRAY)),
                     Span::styled(step.label.to_string(), Style::default().fg(DIM_GRAY)),
                 ]));
             }
@@ -130,8 +150,14 @@ pub fn draw_bootstrap<B: Backend>(
         lines.push(Line::from(""));
 
         if let Some(total) = total_elapsed {
+            let total_us = (total.as_secs_f64() * 1_000_000.0).round() as u64;
+            let footer = if let Some(summary) = summary_line {
+                format!("{}  —  {}µs total", summary, total_us)
+            } else {
+                format!("Powered by TeaQL (@teaqlio)  —  {}µs total", total_us)
+            };
             lines.push(Line::from(Span::styled(
-                format!("Powered by TeaQL (@teaqlio)  —  {:.0}ms total", total.as_secs_f64() * 1000.0),
+                footer,
                 Style::default().fg(DIM_GRAY).add_modifier(Modifier::ITALIC),
             )).alignment(Alignment::Center));
         } else {
@@ -154,6 +180,7 @@ pub fn draw_bootstrap<B: Backend>(
                 Style::default().fg(DIM_GRAY).add_modifier(Modifier::ITALIC),
             )).alignment(Alignment::Center));
         }
+        lines.push(Line::from(""));
         lines.push(Line::from(""));
 
         let block = Block::default()
@@ -180,7 +207,7 @@ pub fn wait_for_key() -> io::Result<()> {
     }
 }
 
-/// A single bootstrap step with label, completion state, and optional elapsed time
+/// A single bootstrap step with label, completion state, and optional elapsed time (in ms)
 pub struct BootstrapStep {
     pub label: &'static str,
     pub completed: bool,

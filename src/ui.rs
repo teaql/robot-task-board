@@ -65,11 +65,35 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
     }
 
     // Now highlight the rest of the message!
-    // Handle extra bracket after timing (e.g. [DEBUG] in reformatted SQL logs)
+    // Handle extra bracket after timing (e.g. [1234µs] or [DEBUG] in reformatted SQL logs)
     if rest.starts_with("[") {
         if let Some(end) = rest[1..].find(']') {
             let tag = &rest[1..end+1];
-            spans.push(Span::styled(format!("[{}]", tag), Style::default().fg(Color::Indexed(242))));
+            // Highlight µs timing in red, other tags in gray
+            let tag_style = if tag.ends_with("µs") {
+                Style::default().fg(Color::Rgb(231, 76, 60)).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::Indexed(242))
+            };
+            spans.push(Span::styled(format!("[{}]", tag), tag_style));
+            rest = &rest[end+2..];
+            if rest.starts_with('-') {
+                spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
+                rest = &rest[1..];
+            }
+        }
+    }
+
+    // Parse the next bracket too (e.g. [DEBUG] after [µs])
+    if rest.starts_with("[") {
+        if let Some(end) = rest[1..].find(']') {
+            let tag = &rest[1..end+1];
+            let tag_style = if tag.ends_with("µs") {
+                Style::default().fg(Color::Rgb(231, 76, 60)).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::Indexed(242))
+            };
+            spans.push(Span::styled(format!("[{}]", tag), tag_style));
             rest = &rest[end+2..];
             if rest.starts_with('-') {
                 spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
@@ -114,25 +138,14 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
         }
     }
 
-    // 5. Highlight Changes in Audit logs or SQL / elapsed time
+    // 5. Highlight Changes in Audit logs or remaining SQL
     if let Some(changes_idx) = rest.find(" Changes: ") {
         let main_msg = &rest[..changes_idx];
         let changes = &rest[changes_idx..];
         spans.push(Span::styled(main_msg, Style::default().fg(Color::White)));
         spans.push(Span::styled(changes, Style::default().fg(Color::Cyan)));
-    } else if rest.ends_with("ms]") && rest.rfind(" - [").is_some() {
-        let took_idx = rest.rfind(" - [").unwrap();
-        let sql = &rest[..took_idx];
-        let took = &rest[took_idx..];
-        colorize_sql(sql, &mut spans);
-        spans.push(Span::styled(took, Style::default().fg(Color::Rgb(231, 76, 60))));
-    } else if let Some(took_idx) = rest.rfind(" (took ") {
-        let sql = &rest[..took_idx];
-        let took = &rest[took_idx..];
-        colorize_sql(sql, &mut spans);
-        spans.push(Span::styled(took, Style::default().fg(Color::Rgb(231, 76, 60))));
     } else {
-        spans.push(Span::styled(rest, Style::default().fg(Color::White)));
+        colorize_sql(rest, &mut spans);
     }
 
     Line::from(spans)

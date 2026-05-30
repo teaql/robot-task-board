@@ -82,24 +82,62 @@ fn format_val_helper(val: &Option<Value>) -> String {
     }
 }
 
+/// Check if a log message is a bootstrap event (schema or seed).
+fn is_bootstrap_message(msg: &str) -> bool {
+    msg.starts_with("Create ")
+        || msg.starts_with("Seed ")
+        || msg.ends_with(" fields)")  // "xxx exists (N fields)"
+        || msg.starts_with("  + field ")
+}
 
 pub struct AppAuditSink;
 
 impl EntityEventSink for AppAuditSink {
     fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
-        // Bootstrap events (SchemaCreated, DataSeeded) are handled separately —
+        // Bootstrap events are handled separately —
         // they are written to the UnifiedLogBuffer for the startup screen to observe.
         match event.kind {
-            EntityEventKind::SchemaCreated | EntityEventKind::DataSeeded => {
+            EntityEventKind::SchemaCreated
+            | EntityEventKind::SchemaVerified
+            | EntityEventKind::FieldAdded
+            | EntityEventKind::DataSeeded => {
                 let table_name = event.values.get("table_name")
                     .map(|v| match v { Value::Text(s) => s.as_str(), _ => "unknown" })
                     .unwrap_or("unknown");
-                let action = match event.kind {
-                    EntityEventKind::SchemaCreated => "Create",
-                    EntityEventKind::DataSeeded => "Seed",
+                let field_count = event.values.get("field_count")
+                    .map(|v| match v { Value::I64(n) => *n as usize, _ => 0 })
+                    .unwrap_or(0);
+
+                let message = match event.kind {
+                    EntityEventKind::SchemaCreated => {
+                        format!("Create {} ({} fields)", table_name, field_count)
+                    }
+                    EntityEventKind::SchemaVerified => {
+                        format!("{} exists ({} fields)", table_name, field_count)
+                    }
+                    EntityEventKind::FieldAdded => {
+                        let field_name = event.values.get("field_name")
+                            .map(|v| match v { Value::Text(s) => s.as_str(), _ => "?" })
+                            .unwrap_or("?");
+                        format!("  + field {} on {}", field_name, table_name)
+                    }
+                    EntityEventKind::DataSeeded => {
+                        let inserted = event.values.get("inserted")
+                            .map(|v| match v { Value::I64(n) => *n as usize, _ => 0 })
+                            .unwrap_or(0);
+                        let updated = event.values.get("updated")
+                            .map(|v| match v { Value::I64(n) => *n as usize, _ => 0 })
+                            .unwrap_or(0);
+                        if updated > 0 && inserted > 0 {
+                            format!("Seed {} ({} inserted, {} updated)", table_name, inserted, updated)
+                        } else if updated > 0 {
+                            format!("Seed {} ({} verified)", table_name, updated)
+                        } else {
+                            format!("Seed {} ({} inserted)", table_name, inserted)
+                        }
+                    }
                     _ => unreachable!(),
                 };
-                let message = format!("{} {} ({})", action, table_name, event.entity);
 
                 if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
                     if let Ok(mut entries) = buf.entries.lock() {
@@ -430,35 +468,53 @@ impl TaskService {
         })
     }
 
-    /// Returns bootstrap events (SchemaCreated/DataSeeded messages) captured
-    /// in the UnifiedLogBuffer during initialization, then clears them.
-    pub fn drain_bootstrap_events(&self) -> Vec<String> {
+    /// Returns bootstrap events captured in the UnifiedLogBuffer during initialization,
+    /// with real per-step elapsed times. Each entry is (message, elapsed_ms).
+    /// Then clears them from the buffer.
+    pub fn drain_bootstrap_events(&self) -> Vec<(String, f64)> {
         let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() else {
             return Vec::new();
         };
         let Ok(mut entries) = buf.entries.lock() else {
             return Vec::new();
         };
-        let events: Vec<String> = entries
+
+        // Collect bootstrap entries with their timestamps
+        let boot_entries: Vec<(String, std::time::SystemTime)> = entries
             .iter()
             .filter_map(|entry| {
                 if let LogPayload::Info(info) = &entry.payload {
-                    if info.message.starts_with("Create ") || info.message.starts_with("Seed ") {
-                        return Some(info.message.clone());
+                    if is_bootstrap_message(&info.message) {
+                        return Some((info.message.clone(), entry.timestamp));
                     }
                 }
                 None
             })
             .collect();
+
+        // Compute per-step elapsed times from consecutive timestamps
+        let mut results = Vec::new();
+        for i in 0..boot_entries.len() {
+            let elapsed_ms = if i == 0 {
+                0.0
+            } else {
+                boot_entries[i].1
+                    .duration_since(boot_entries[i - 1].1)
+                    .unwrap_or_default()
+                    .as_secs_f64() * 1000.0
+            };
+            results.push((boot_entries[i].0.clone(), elapsed_ms));
+        }
+
         // Remove bootstrap entries from the buffer so they don't appear in the TUI logs
         entries.retain(|entry| {
             if let LogPayload::Info(info) = &entry.payload {
-                !info.message.starts_with("Create ") && !info.message.starts_with("Seed ")
+                !is_bootstrap_message(&info.message)
             } else {
                 true
             }
         });
-        events
+        results
     }
 
     pub fn context(&self) -> &UserContext {
@@ -740,7 +796,8 @@ impl TaskService {
                                     } else {
                                         format!(" - [{}]", entry.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> "))
                                     };
-                                    let line = format!("[{}]-[{}]-[DEBUG]-SqlLogEntry{} - [{}] {} - [{:.3}ms]", ts, uid, trace, sql_entry.result_summary, sql_entry.pretty_sql.replace("\n", " "), sql_entry.elapsed.as_secs_f64() * 1000.0);
+                                    let elapsed_us = (sql_entry.elapsed.as_secs_f64() * 1_000_000.0).round() as u64;
+                                    let line = format!("[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}] {}", ts, uid, elapsed_us, trace, sql_entry.result_summary, sql_entry.pretty_sql.replace("\n", " "));
                                     new_logs.push(line);
                                 }
                                 LogPayload::Info(info) => {

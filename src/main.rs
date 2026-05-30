@@ -217,10 +217,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Show a minimal bootstrap screen while the service initializes
     startup::draw_bootstrap(&mut terminal, &[
         startup::BootstrapStep { label: "Open SQLite database", completed: false, elapsed_ms: None },
-    ], false, None)?;
+    ], false, None, None)?;
 
-    // 4. Initialize service — real SchemaCreated/DataSeeded events are fired
-    //    through ctx.send_event() and captured in the UnifiedLogBuffer.
+    // 4. Initialize service — real events are fired through ctx.send_event()
+    //    and captured in the UnifiedLogBuffer.
     let db_open_start = Instant::now();
     let service = TaskService::new("robot_kanban.db").await?;
     let total_elapsed = boot_start.elapsed();
@@ -229,14 +229,40 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let bootstrap_events = service.drain_bootstrap_events();
     let db_open_ms = db_open_start.elapsed().as_secs_f64() * 1000.0;
 
-    // Build steps from real events: "Open SQLite database" + events from EntityEventSink + "Startup complete"
-    let per_step_ms = if !bootstrap_events.is_empty() {
-        let schema_seed_ms = total_elapsed.as_secs_f64() * 1000.0 - 0.1; // rough: total minus overhead
-        schema_seed_ms / bootstrap_events.len() as f64
-    } else {
-        0.0
-    };
+    // Compute summary counts from event messages
+    let mut tables_created = 0usize;
+    let mut tables_verified = 0usize;
+    let mut fields_added = 0usize;
+    let mut seeds = 0usize;
+    for (msg, _) in &bootstrap_events {
+        if msg.starts_with("Create ") {
+            tables_created += 1;
+        } else if msg.contains(" exists ") {
+            tables_verified += 1;
+        } else if msg.starts_with("  + field ") {
+            fields_added += 1;
+        } else if msg.starts_with("Seed ") {
+            seeds += 1;
+        }
+    }
+    let entity_count = tables_created + tables_verified;
+    let mut summary_parts = Vec::new();
+    summary_parts.push(format!("{} entities", entity_count));
+    if tables_created > 0 {
+        summary_parts.push(format!("{} tables created", tables_created));
+    }
+    if tables_verified > 0 {
+        summary_parts.push(format!("{} tables verified", tables_verified));
+    }
+    if fields_added > 0 {
+        summary_parts.push(format!("{} fields added", fields_added));
+    }
+    if seeds > 0 {
+        summary_parts.push(format!("{} seeds", seeds));
+    }
+    let summary = summary_parts.join(", ");
 
+    // Build steps: "Open SQLite database" + events + "Startup complete"
     let mut final_steps: Vec<startup::BootstrapStep> = Vec::new();
     final_steps.push(startup::BootstrapStep {
         label: "Open SQLite database",
@@ -245,19 +271,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     });
 
     // Leak the strings so we can use &'static str in BootstrapStep
-    // (these live for the rest of the program anyway)
-    for event_msg in &bootstrap_events {
+    for (event_msg, elapsed_ms) in &bootstrap_events {
         let label: &'static str = Box::leak(event_msg.clone().into_boxed_str());
         final_steps.push(startup::BootstrapStep {
             label,
             completed: true,
-            elapsed_ms: Some(per_step_ms),
+            elapsed_ms: Some(*elapsed_ms),
         });
     }
     final_steps.push(startup::BootstrapStep {
         label: "Startup complete",
         completed: true,
-        elapsed_ms: Some(0.0),
+        elapsed_ms: None,
     });
 
     // 6. Animate the bootstrap steps with checkmarks one by one
@@ -277,6 +302,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             &display_steps,
             all_done,
             if all_done { Some(total_elapsed) } else { None },
+            if all_done { Some(&summary) } else { None },
         )?;
         if !all_done {
             std::thread::sleep(Duration::from_millis(80));
