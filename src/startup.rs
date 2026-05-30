@@ -20,6 +20,28 @@ fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
     Rect::new(x, y, width.min(area.width), height.min(area.height))
 }
 
+fn get_arch_display() -> String {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(output) = std::process::Command::new("uname").arg("-m").output() {
+            if let Ok(arch) = String::from_utf8(output.stdout) {
+                let arch = arch.trim();
+                if !arch.is_empty() {
+                    if arch == "armv7l" || arch.starts_with("armv7") {
+                        return "armv7".to_string();
+                    } else if arch == "aarch64" {
+                        return "arm64".to_string();
+                    }
+                    return arch.to_string();
+                }
+            }
+        }
+    }
+    
+    let arch = std::env::consts::ARCH;
+    if arch == "arm" { "armv7".to_string() } else { arch.to_string() }
+}
+
 /// Screen 1: Welcome screen
 pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
     terminal.draw(|f| {
@@ -82,7 +104,7 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
         // Render sysinfo above the box (e.g. root@MainRouter (armv7))
         if center.y >= 2 {
-            let arch_display = if std::env::consts::ARCH == "arm" { "armv7" } else { std::env::consts::ARCH };
+            let arch_display = get_arch_display();
             let sysinfo_str = format!("{}@{} ({})", 
                 whoami::username().unwrap_or_else(|_| "user".to_string()), 
                 whoami::hostname().unwrap_or_else(|_| "host".to_string()), 
@@ -209,7 +231,7 @@ pub fn draw_bootstrap<B: Backend>(
 
         // Render sysinfo above the box
         if center.y >= 2 {
-            let arch_display = if std::env::consts::ARCH == "arm" { "armv7" } else { std::env::consts::ARCH };
+            let arch_display = get_arch_display();
             let sysinfo_str = format!("{}@{} ({})", 
                 whoami::username().unwrap_or_else(|_| "user".to_string()), 
                 whoami::hostname().unwrap_or_else(|_| "host".to_string()), 
