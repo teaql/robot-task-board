@@ -289,7 +289,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     let title_str = if app.hide_logs {
         format!(" System Info | CPU: {} | MEM: {} | Search: {} ", app.cpu_model, app.mem_size, search_str)
     } else {
-        format!(" Business Trace & SQL Logs | Scroll: {} | CPU: {} | MEM: {} | Search: {} ", scroll_str, app.cpu_model, app.mem_size, search_str)
+        format!(" TeaQL Business Trace & SQL Introspection | Scroll: {} | CPU: {} | MEM: {} | Search: {} ", scroll_str, app.cpu_model, app.mem_size, search_str)
     };
 
     let log_paragraph = Paragraph::new(if app.hide_logs { vec![] } else { log_lines })

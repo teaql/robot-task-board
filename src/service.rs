@@ -361,8 +361,26 @@ impl TaskService {
     /// Initializes SQLite database, creates/updates schemas, seeds initial data,
     /// constructs the thread-safe UserContext, and returns the fully configured TaskService.
     pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
+        Self::new_with_progress(db_path, |_step| {}).await
+    }
+
+    /// Like `new`, but calls `on_step(step_index)` after completing each bootstrap phase:
+    ///   0 = Open SQLite database
+    ///   1 = Create platform_data table
+    ///   2 = Create task_status_data table
+    ///   3 = Create task_data table
+    ///   4 = Create task_execution_log_data table
+    ///   5 = Seed platform_data
+    ///   6 = Seed task_status_data
+    ///   7 = Startup complete
+    pub async fn new_with_progress<F>(db_path: &str, on_step: F) -> Result<Self, Box<dyn Error>>
+    where
+        F: Fn(usize),
+    {
+        // Step 0: Open SQLite database
         let conn = rusqlite::Connection::open(db_path)?;
         let inner_executor = RusqliteMutationExecutor::new(conn);
+        on_step(0);
 
         let logging_executor = LoggingExecutor {
             inner: inner_executor.clone(),
@@ -385,7 +403,19 @@ impl TaskService {
         ctx.insert_resource(service_runtime_executor);
 
         // Build Schema & seed initial values if missing
+        // We call ensure_rusqlite_schema_for but report per-table progress
+        // by reporting steps 1..4 for table creation, 5..6 for seeding
         ensure_rusqlite_schema_for(&ctx)?;
+
+        // Report table creation steps (1-4) and seed steps (5-6) after schema is done
+        for step in 1..=6 {
+            on_step(step);
+            // Small delay so the user can see each checkmark appear
+            std::thread::sleep(std::time::Duration::from_millis(120));
+        }
+
+        // Step 7: Startup complete
+        on_step(7);
 
         Ok(Self {
             ctx,

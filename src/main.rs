@@ -14,6 +14,7 @@ use ratatui::Terminal;
 // Declare submodules
 mod utils;
 mod ui;
+mod startup;
 pub mod service;
 
 // Import our decoupled submodules' types (no direct TeaQL references!)
@@ -59,6 +60,7 @@ impl App {
             log_scroll_offset: 0,
             hide_logs: std::env::args().any(|arg| arg == "-c"),
         };
+        app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
         app.service.log_info("System successfully initialized.");
         app.service.log_info("Pre-loaded SQLite database 'robot_kanban.db'.");
         app.service.log_info("TeaQL v0.9.9: Comment Propagation is fully active.");
@@ -193,31 +195,84 @@ impl App {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // 1. Initialize SQLite Database, Schema & seed initial values
-    let service = TaskService::new("robot_kanban.db").await?;
-
-    // 2. Initialize terminal and ratatui backend
+    // 1. Initialize terminal and ratatui backend (needed for startup screens)
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(
         stdout,
         EnterAlternateScreen,
-        crossterm::cursor::Show,
-        crossterm::cursor::EnableBlinking
+        crossterm::cursor::Hide,
     )?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    terminal.show_cursor()?;
 
-    // 3. Initialize app state
+    // 2. Screen 1: Welcome
+    startup::draw_welcome(&mut terminal)?;
+    startup::wait_for_key()?;
+
+    // 3. Screen 2: Bootstrap Trace — show initial empty state
+    let num_steps = startup::BOOTSTRAP_LABELS.len();
+    let initial_steps: Vec<startup::BootstrapStep> = startup::BOOTSTRAP_LABELS
+        .iter()
+        .map(|label| startup::BootstrapStep { label, completed: false, elapsed_ms: None })
+        .collect();
+    startup::draw_bootstrap(&mut terminal, &initial_steps, false, None)?;
+
+    // 4. Initialize service with progress callback that tracks real elapsed times
+    use std::sync::{Arc, Mutex as StdMutex};
+    use std::time::Instant;
+
+    let step_times: Arc<StdMutex<Vec<Option<f64>>>> = Arc::new(StdMutex::new(vec![None; num_steps]));
+    let step_times_clone = step_times.clone();
+    let boot_start = Instant::now();
+    let last_step_time: Arc<StdMutex<Instant>> = Arc::new(StdMutex::new(boot_start));
+    let last_step_clone = last_step_time.clone();
+
+    let service = TaskService::new_with_progress("robot_kanban.db", move |step_index| {
+        let now = Instant::now();
+        if let (Ok(mut times), Ok(mut last)) = (step_times_clone.lock(), last_step_clone.lock()) {
+            if step_index < times.len() {
+                let elapsed = now.duration_since(*last).as_secs_f64() * 1000.0;
+                times[step_index] = Some(elapsed);
+                *last = now;
+            }
+        }
+    }).await?;
+
+    let total_elapsed = boot_start.elapsed();
+
+    // 5. Show final bootstrap state with all steps checked and times
+    {
+        let times = step_times.lock().unwrap();
+        let final_steps: Vec<startup::BootstrapStep> = startup::BOOTSTRAP_LABELS
+            .iter()
+            .zip(times.iter())
+            .map(|(label, elapsed)| startup::BootstrapStep {
+                label,
+                completed: true,
+                elapsed_ms: *elapsed,
+            })
+            .collect();
+        startup::draw_bootstrap(&mut terminal, &final_steps, true, Some(total_elapsed))?;
+    }
+    startup::wait_for_key()?;
+
+    // 6. Transition: show cursor for TUI input
+    execute!(
+        terminal.backend_mut(),
+        crossterm::cursor::Show,
+        crossterm::cursor::EnableBlinking
+    )?;
+
+    // 7. Initialize app state
     let mut app = App::new(service);
     app.reload_data().await?;
-    app.service.log_info("=========================================================================================================");
+    app.service.log_info("=================================================================================================");
 
-    // 4. Main application loop
+    // 8. Main application loop
     let loop_res = run_app(&mut terminal, &mut app).await;
 
-    // 5. Cleanup terminal
+    // 9. Cleanup terminal
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
