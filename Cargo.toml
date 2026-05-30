@@ -23,6 +23,7 @@ teaql-provider-rusqlite = "1.0.1"
 
 # Our generated TeaQL domain logic library
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
+whoami = "2.1.2"
 
 # Patch teaql crates to use local source (for EntityGraph support)
 [patch.crates-io]

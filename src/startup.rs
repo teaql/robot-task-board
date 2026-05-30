@@ -79,6 +79,19 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             .alignment(Alignment::Center);
 
         f.render_widget(paragraph, center);
+
+        // Render sysinfo above the box (e.g. root@MainRouter (armv7))
+        if center.y >= 2 {
+            let sysinfo_str = format!("{}@{} ({})", 
+                whoami::username().unwrap_or_else(|_| "user".to_string()), 
+                whoami::hostname().unwrap_or_else(|_| "host".to_string()), 
+                std::env::consts::ARCH
+            );
+            let sysinfo_rect = Rect::new(center.x, center.y - 2, center.width, 1);
+            let sysinfo_paragraph = Paragraph::new(sysinfo_str)
+                .style(Style::default().fg(DIM_GRAY));
+            f.render_widget(sysinfo_paragraph, sysinfo_rect);
+        }
     })?;
     Ok(())
 }
@@ -192,6 +205,19 @@ pub fn draw_bootstrap<B: Backend>(
             .alignment(Alignment::Left);
 
         f.render_widget(paragraph, center);
+
+        // Render sysinfo above the box
+        if center.y >= 2 {
+            let sysinfo_str = format!("{}@{} ({})", 
+                whoami::username().unwrap_or_else(|_| "user".to_string()), 
+                whoami::hostname().unwrap_or_else(|_| "host".to_string()), 
+                std::env::consts::ARCH
+            );
+            let sysinfo_rect = Rect::new(center.x, center.y - 2, center.width, 1);
+            let sysinfo_paragraph = Paragraph::new(sysinfo_str)
+                .style(Style::default().fg(DIM_GRAY));
+            f.render_widget(sysinfo_paragraph, sysinfo_rect);
+        }
     })?;
     Ok(())
 }
