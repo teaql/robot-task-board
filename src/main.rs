@@ -237,7 +237,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for (msg, _) in &bootstrap_events {
         if msg.starts_with("Create ") {
             tables_created += 1;
-        } else if msg.contains(" exists ") {
+        } else if msg.starts_with("Verified ") {
             tables_verified += 1;
         } else if msg.starts_with("  + field ") {
             fields_added += 1;
@@ -262,12 +262,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     let summary = summary_parts.join(", ");
 
-    // Build steps: "Open SQLite database" + events + "Startup complete"
+    // Build steps: "Open SQLite database" + "N entities discovered" + events + "Startup complete"
     let mut final_steps: Vec<startup::BootstrapStep> = Vec::new();
     final_steps.push(startup::BootstrapStep {
         label: "Open SQLite database",
         completed: true,
         elapsed_ms: Some(db_open_ms),
+    });
+
+    // Insert "N entities discovered" step
+    let discovered_label: &'static str = Box::leak(
+        format!("{} entities discovered", entity_count).into_boxed_str()
+    );
+    final_steps.push(startup::BootstrapStep {
+        label: discovered_label,
+        completed: true,
+        elapsed_ms: None,
     });
 
     // Leak the strings so we can use &'static str in BootstrapStep
@@ -280,7 +290,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         });
     }
     final_steps.push(startup::BootstrapStep {
-        label: "Startup complete",
+        label: "TeaQL Runtime ready",
         completed: true,
         elapsed_ms: None,
     });

@@ -85,9 +85,10 @@ fn format_val_helper(val: &Option<Value>) -> String {
 /// Check if a log message is a bootstrap event (schema or seed).
 fn is_bootstrap_message(msg: &str) -> bool {
     msg.starts_with("Create ")
+        || msg.starts_with("Verified ")
         || msg.starts_with("Seed ")
-        || msg.ends_with(" fields)")  // "xxx exists (N fields)"
         || msg.starts_with("  + field ")
+        || msg.ends_with(" entities discovered")
 }
 
 pub struct AppAuditSink;
@@ -113,7 +114,7 @@ impl EntityEventSink for AppAuditSink {
                         format!("Create {} ({} fields)", table_name, field_count)
                     }
                     EntityEventKind::SchemaVerified => {
-                        format!("{} exists ({} fields)", table_name, field_count)
+                        format!("Verified {} ({} fields)", table_name, field_count)
                     }
                     EntityEventKind::FieldAdded => {
                         let field_name = event.values.get("field_name")
@@ -131,9 +132,11 @@ impl EntityEventSink for AppAuditSink {
                         if updated > 0 && inserted > 0 {
                             format!("Seed {} ({} inserted, {} updated)", table_name, inserted, updated)
                         } else if updated > 0 {
-                            format!("Seed {} ({} verified)", table_name, updated)
+                            let word = if updated == 1 { "record" } else { "records" };
+                            format!("Seed {} ({} {})", table_name, updated, word)
                         } else {
-                            format!("Seed {} ({} inserted)", table_name, inserted)
+                            let word = if inserted == 1 { "record" } else { "records" };
+                            format!("Seed {} ({} {} inserted)", table_name, inserted, word)
                         }
                     }
                     _ => unreachable!(),
