@@ -85,7 +85,7 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
 
     // Use AUDIT orange for the entire message body if this is an AUDIT line
     if is_audit {
-        spans.push(Span::styled(rest, Style::default().fg(Color::Rgb(230, 126, 34))));
+        colorize_comment_segment(rest, &mut spans, Style::default().fg(Color::Rgb(230, 126, 34)));
         return Line::from(spans);
     }
 
@@ -97,7 +97,7 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
             
             if after_first.starts_with(" - [") {
                 // If there is another " - [" immediately following, then the first one is the comment!
-                spans.push(Span::styled(first_segment, Style::default().fg(Color::Rgb(230, 126, 34)).add_modifier(Modifier::BOLD)));
+                colorize_comment_segment(first_segment, &mut spans, Style::default().fg(Color::Rgb(230, 126, 34)).add_modifier(Modifier::BOLD));
                 rest = after_first;
                 
                 // Now parse the second one as the result summary
@@ -136,6 +136,31 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
     }
 
     Line::from(spans)
+}
+
+fn colorize_comment_segment<'a>(text: &'a str, spans: &mut Vec<Span<'a>>, base_style: Style) {
+    let mut current_idx = 0;
+    while let Some(start) = text[current_idx..].find('(') {
+        let abs_start = current_idx + start;
+        if let Some(end) = text[abs_start..].find(')') {
+            let abs_end = abs_start + end;
+            let inner = &text[abs_start + 1..abs_end];
+            if !inner.is_empty() && (inner.chars().all(|c| c.is_ascii_digit()) || inner == "pending") {
+                if abs_start > current_idx {
+                    spans.push(Span::styled(&text[current_idx..abs_start + 1], base_style));
+                }
+                spans.push(Span::styled(inner, Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)));
+                current_idx = abs_end;
+                continue;
+            }
+        }
+        // If not matching, just skip the '('
+        spans.push(Span::styled(&text[current_idx..abs_start + 1], base_style));
+        current_idx = abs_start + 1;
+    }
+    if current_idx < text.len() {
+        spans.push(Span::styled(&text[current_idx..], base_style));
+    }
 }
 
 fn colorize_sql<'a>(sql: &'a str, spans: &mut Vec<Span<'a>>) {
