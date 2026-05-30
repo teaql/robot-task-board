@@ -1,96 +1,198 @@
-# Show HN: A Task Board That Explains What Your Business Code Is Doing
+# TeaQL Robot Task Board
 
-![TeaQL task board demo](./assets/teaql-task-board.gif)
+[HERO SCREENSHOT HERE]
 
-Most business applications hide what happens after a user action.
+*A tiny self-bootstrapping business application built with TeaQL Runtime.*
 
-You click a button, something changes, and the actual execution path disappears behind layers of services, ORMs, caches, and logs.
+```bash
+docker run --rm -it teaql/robot-task-board:latest
+```
 
-This small terminal task board explores a different idea.
+### Highlights
 
-When you move a task from **Planned** to **Process**, the application shows the complete execution path in real time:
+* ~4.7 MB Docker image
+* No distro layer
+* Self-bootstrap SQLite DB
+* Business Trace & SQL Introspection
+* Domain-model-driven runtime
+* Runs comfortably within a few megabytes of memory
+
+---
+
+## Demo Video
+
+Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize reference data, and start the application.
+
+[VIDEO LINK HERE]
+
+---
+
+## Runtime Bootstrap
+
+[BOOTSTRAP SCREENSHOT HERE]
+
+TeaQL Runtime starts from an empty environment and automatically:
+
+1. Opens the database
+2. Discovers domain entities
+3. Verifies storage structures
+4. Verifies reference data
+5. Starts the runtime
+
+Example startup trace:
 
 ```text
-Command
-  ↓
-Domain Transition
-  ↓
-Generated SQL
-  ↓
-Audit Diff
-  ↓
-Domain Event
-  ↓
-UI Projection
+Open SQLite database
+
+4 entities discovered
+
+Verified platform_data (4 fields)
+Verified task_data (5 fields)
+Verified task_execution_log_data (5 fields)
+Verified task_status_data (7 fields)
+
+Seed platform_data (1 record)
+Seed task_status_data (4 records)
+
+TeaQL Runtime ready
+
+4 entities, 4 tables verified, 2 seeds
+24348μs total
 ```
 
-For example, moving a task immediately reveals the generated SQL:
+---
 
-```sql
-UPDATE task_data
-SET status = 1002, version = 2
-WHERE id = 1 AND version = 1
-```
+## Robot Task Board
 
-At the same time, the audit system records the field-level change:
+[TASK BOARD SCREENSHOT HERE]
 
-```text
-status:
-Planned -> Process
+The task board is intentionally simple.
 
-version:
-1 -> 2
-```
+Its purpose is not to demonstrate task management.
 
-And the board statistics are refreshed automatically.
+Its purpose is to demonstrate how TeaQL Runtime powers a real business application through generated domain models, business traces, audit trails, and query execution.
 
-The goal is not to build another Kanban board.
+---
 
-The board is intentionally simple so the runtime behavior is easy to follow. The underlying framework, **TeaQL**, is designed for larger business systems where understanding state transitions, generated SQL, audit trails, and query execution paths becomes increasingly important.
+## Business Trace & SQL Introspection
 
-## Query Trace Chains
+[BUSINESS TRACE SCREENSHOT HERE]
 
-TeaQL queries carry semantic intent, not just SQL.
+Unlike traditional ORMs, TeaQL exposes how business operations are translated into runtime behavior.
+
+Example:
 
 ```text
 Get active tasks
-Get active tasks->status_stats
-Get active tasks->status_stats->Count status
+ └── status_stats
+      └── Count status
+
+Generated SQL:
+SELECT ...
 ```
 
-This makes it easier to understand how one business request expands into multiple queries, relation loads, and aggregations.
+The goal is to make business behavior observable rather than hidden behind framework internals.
 
-## Why Embedded Matters
+---
 
-This is not just a desktop demo.
+# What Is TeaQL?
 
-The same application can be cross-compiled into a standalone `armv7` binary and run directly on router-class devices with no external runtime dependencies.
+TeaQL applications are composed of three layers.
 
-I am particularly interested in bringing business workflows closer to physical infrastructure: industrial gateways, factory equipment, logistics systems, gas filling stations, and other edge devices.
+```text
+┌─────────────────────────────────────┐
+│ Application Layer                   │
+│                                     │
+│ Robot Task Board                    │
+│ ERP                                 │
+│ API Services                        │
+│ CLI Applications                    │
+│ Industrial Systems                  │
+│                                     │
+│ Controlled by application teams     │
+└─────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────┐
+│ Generated Domain Model Layer        │
+│                                     │
+│ Entities                            │
+│ Requests                            │
+│ State Changes                       │
+│ Query APIs                          │
+│ Business Behaviors                  │
+│                                     │
+│ Generated from domain definitions   │
+└─────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────┐
+│ TeaQL Runtime Layer                 │
+│                                     │
+│ Query Execution                     │
+│ SQL Generation                      │
+│ Transactions                        │
+│ Audit Trails                        │
+│ Business Trace                      │
+│ Facets                              │
+│ Bootstrap                           │
+│ Schema Verification                 │
+│ Runtime Infrastructure              │
+│                                     │
+└─────────────────────────────────────┘
+```
 
-For TeaQL, embedded deployment is not an afterthought. The long-term idea is that domain models, workflow execution, SQL persistence, audit trails, and business logic should be able to run close to the equipment itself, not only inside a cloud backend.
+TeaQL Runtime is not the application itself.
 
-## What Might Be Interesting
+TeaQL Runtime is the infrastructure layer that supports generated domain model code and allows business applications to run.
 
-- Query tracing with semantic comments
-- Field-level audit diffs
-- Optimistic concurrency control
-- Faceted aggregations
-- Strongly typed domain APIs
-- SQLite-based local persistence
-- Single-binary deployment
-- Embedded-friendly runtime
+---
 
-## More Details
+# Why This Matters
 
-I wrote a deeper technical walkthrough covering the architecture, generated APIs, query tracing, audit subsystem, faceted queries, and deployment model:
+Traditional business software often requires heavyweight infrastructure.
 
-https://teaql.io/blog/robot-task-board-showcase
+TeaQL Runtime is designed to support business applications across a very wide range of environments.
 
-GitHub: https://github.com/teaql
+### Edge & Embedded
 
-Website: https://teaql.io/
+* Routers
+* Industrial gateways
+* ARM devices
+* Embedded Linux systems
+* Edge computing platforms
 
-I'd love feedback from people building ERP, CRM, workflow, industrial, edge, or embedded business applications.
+### Standard Business Systems
 
-Does seeing every SQL statement, audit diff, trace chain, and domain transition help you understand and debug business software more effectively?
+* Internal enterprise applications
+* ERP systems
+* Workflow systems
+* Operational platforms
+
+### Mission-Critical Systems
+
+* Financial systems
+* Trading infrastructure
+* Audit-heavy applications
+* Low-latency business services
+
+The same domain model can scale from embedded devices to mission-critical business systems.
+
+---
+
+# Design Philosophy
+
+TeaQL focuses on making business software:
+
+* Observable
+* Traceable
+* Domain-driven
+* Resource-efficient
+* AI-friendly
+* Portable
+
+The goal is to let developers understand what their business code actually does.
+
+---
+
+Powered by TeaQL (@teaqlio)
