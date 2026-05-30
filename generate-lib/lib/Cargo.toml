@@ -1,6 +1,6 @@
 [package]
 name = "robot-kanban-service"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Generated TeaQL service crate for robot-kanban-service"
 license = "MIT OR Apache-2.0"
@@ -11,12 +11,12 @@ chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-teaql-core = { version = "1.0.0" }
-teaql-macros = { version = "1.0.0" }
-teaql-runtime = { version = "1.0.0" }
-teaql-sql = { version = "1.0.0" }
-teaql-provider-sqlx-postgres = { version = "1.0.0" }
+teaql-core = { version = "1.0.1" }
+teaql-macros = { version = "1.0.1" }
+teaql-runtime = { version = "1.0.1" }
+teaql-sql = { version = "1.0.1" }
+teaql-provider-sqlx-postgres = { version = "1.0.1" }
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "json", "chrono", "rust_decimal"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-teaql-provider-rusqlite = { version = "1.0.0" }
+teaql-provider-rusqlite = { version = "1.0.1" }
 rusqlite = "0.32"
