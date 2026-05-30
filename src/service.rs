@@ -643,7 +643,7 @@ impl TaskService {
                                     // Manually format a line similar to what reformat_log_line expected
                                     let local_time: chrono::DateTime<chrono::Local> = entry.timestamp.into();
                                     let ts = local_time.format("%H:%M:%S%.3f");
-                                    let uid = entry.user_identifier.as_deref().unwrap_or("");
+                                    let uid = entry.user_identifier.as_deref().unwrap_or("").split('@').next().unwrap_or("");
                                     let trace = if entry.trace_chain.is_empty() {
                                         "".to_owned()
                                     } else {
