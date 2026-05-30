@@ -114,7 +114,7 @@ impl<R> TaskRequest<R> {
             &query,
             &relation_aggregates,
         )?;
-        let facets = execute_facets(ctx, &outer_query, &query_options)
+        let facets = execute_facets(ctx, &query, &query_options)
             .map_err(RepositoryError::Runtime)?;
         attach_facets(&mut rows, facets);
         Ok(rows)

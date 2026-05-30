@@ -204,6 +204,7 @@ pub trait TeaqlRuntime {
         entity: &str,
         query: &SelectQuery,
         relation_aggregates: &[RuntimeRelationAggregate],
+        trace_context: Vec<teaql_core::TraceNode>,
     ) -> Result<SmartList<Record>, RuntimeError>;
 }
 
@@ -295,9 +296,11 @@ impl TeaqlRuntime for teaql_runtime::UserContext {
         entity: &str,
         query: &SelectQuery,
         relation_aggregates: &[RuntimeRelationAggregate],
+        trace_context: Vec<teaql_core::TraceNode>,
     ) -> Result<SmartList<Record>, RuntimeError> {
         self.resolve_repository::<crate::runtime::DataServiceDialect, crate::runtime::DataServiceExecutor>(entity.to_owned())
             .map_err(|err| RuntimeError::Graph(err.to_string()))?
+            .with_trace_context(trace_context)
             .fetch_smart_list_with_relation_aggregates(query, relation_aggregates)
             .map_err(|err| RuntimeError::Graph(err.to_string()))
     }
@@ -555,12 +558,19 @@ where
             selection = restrict_facet_to_outer_query(ctx, selection, outer_query, &facet.relation_name)?;
         }
         let relation_aggregates = runtime_relation_aggregates(&selection.query_options);
-        let query = apply_runtime_metadata(
+        let mut query = apply_runtime_metadata(
             selection.query,
             &selection.query_options,
             &selection.child_enhancements,
         );
-        let facet_rows = ctx.fetch_facet_smart_list(&query.entity, &query, &relation_aggregates)?;
+        let mut chain = outer_query.trace_chain.clone();
+        chain.push(teaql_core::TraceNode { 
+            entity_type: query.entity.clone(),
+            entity_id: None,
+            comment: facet.facet_name.clone(),
+        });
+        
+        let facet_rows = ctx.fetch_facet_smart_list(&query.entity, &query, &relation_aggregates, chain)?;
         facets.insert(facet.facet_name.clone(), facet_rows);
     }
     Ok(facets)
@@ -626,7 +636,9 @@ pub(crate) fn apply_runtime_metadata(
     options: &QueryOptions,
     child_enhancements: &[QuerySelection],
 ) -> SelectQuery {
-    query.comment = options.comment.clone();
+    if let Some(c) = options.comment.clone() {
+        query = query.comment(c);
+    }
     query.raw_sql = options.raw_sql.clone();
     query.raw_sql_search_criteria = options.raw_sql_search_criteria.clone();
     query.dynamic_properties = options

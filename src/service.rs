@@ -131,10 +131,28 @@ impl EntityEventSink for AppAuditSink {
             format!(" {{{}}}", field_changes.join(",  "))
         };
 
-        let line = format!(
-            "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}{}",
-            timestamp, user, entity_identity, action_name, comment_part, fields_part
-        );
+        let is_business_log = event.entity == "TaskExecutionLog" && action_name == "CREATED";
+        let line = if is_business_log {
+            let mut detail = String::new();
+            for change in &event.changes {
+                if change.field == "detail" {
+                    detail = format_val_helper(&change.new_value);
+                    // Remove quotes if any
+                    if detail.starts_with('\'') && detail.ends_with('\'') {
+                        detail = detail[1..detail.len()-1].to_owned();
+                    }
+                }
+            }
+            format!(
+                "[{}]-[{}]-[INFO]-Business Log: {}{}",
+                timestamp, user, detail, comment_part
+            )
+        } else {
+            format!(
+                "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}{}",
+                timestamp, user, entity_identity, action_name, comment_part, fields_part
+            )
+        };
 
         // Write to app.log
         if let Ok(mut file) = std::fs::OpenOptions::new()
@@ -433,12 +451,13 @@ impl TaskService {
             .facet_by_status_as("status_stats", Q::task_status().comment("Count status").count_tasks());
 
         let query_trace = format!(
-            "Q: Q::tasks().comment(\"{}\").filter_with_json(\"{}\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())",
+            "Execute TeaQL - Q::tasks().comment(\"{}\").filter_with_json(\"{}\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())",
             search_comment,
             search_json.replace('"', "\\\"")
         );
 
         // Unified logging: Log the query trace before running the query
+        self.log_info(&format!("Starting query: {}", search_comment));
         self.log_info(&query_trace);
 
         let all_tasks = select.execute_for_list(&self.ctx).await?;
@@ -485,6 +504,8 @@ impl TaskService {
             }
         }
 
+        self.log_info(&format!("Finished query: {}", search_comment));
+
         Ok(ReloadedData {
             planned_tasks,
             process_tasks,
@@ -497,6 +518,7 @@ impl TaskService {
     }
 
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
+        self.log_info(&format!("Starting business action: Create task '{}'", name));
         let next_id = self.ctx.next_id_for::<Task>()?;
         let cmd = CreateTaskCommand { name: name.to_owned() };
         let task = Task::create(&cmd, next_id, &self.ctx)?;
@@ -510,21 +532,22 @@ impl TaskService {
             EntityGraph::new(task)
                 .comment(&comment)
                 .child("task_execution_log_list",
-                    EntityGraph::new(log).comment(&comment))
+                    EntityGraph::new(log))
                 .build()
         ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-        self.log_info(&format!("Created task [ID: {}] '{}'", next_id, name));
+        self.log_info(&format!("Finished business action: Create task '{}'", name));
         Ok(next_id)
     }
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
+        self.log_info(&format!("Starting business action: Delete task ID {}", id));
         let select = Q::tasks()
             .comment(&format!("Get task {} for deletion", id))
             .with_id_is(id);
 
         self.log_info(&format!(
-            "Q: Q::tasks().comment(\"Get task {} for deletion\").with_id_is({})",
+            "Execute TeaQL - Q::tasks().comment(\"Get task {} for deletion\").with_id_is({})",
             id, id
         ));
 
@@ -541,10 +564,10 @@ impl TaskService {
                     .build()
             ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-            self.log_info(&format!("Deleted task [ID: {}]", id));
+            self.log_info(&format!("Finished business action: Delete task ID {}", id));
             Ok(true)
         } else {
-            self.log_info(&format!("Error: Task with ID {} not found", id));
+            self.log_info(&format!("Finished business action: Error: Task with ID {} not found", id));
             Ok(false)
         }
     }
@@ -554,12 +577,13 @@ impl TaskService {
         id: u64,
         target_status: &str,
     ) -> Result<MoveResult, Box<dyn Error>> {
+        self.log_info(&format!("Starting business action: Move task {} to '{}'", id, target_status));
         let select = Q::tasks()
             .comment("Get task for DDD")
             .with_id_is(id);
 
         let query_trace = format!(
-            "Q: Q::tasks().comment(\"Get task for DDD\").with_id_is({})",
+            "Execute TeaQL - Q::tasks().comment(\"Get task for DDD\").with_id_is({})",
             id
         );
 
@@ -606,10 +630,10 @@ impl TaskService {
                         EntityGraph::new(task)
                             .comment(&comment)
                             .child("task_execution_log_list",
-                                EntityGraph::new(log).comment(&comment))
+                                EntityGraph::new(log))
                             .build()
                     ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    self.log_info(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
+                    self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
                         status_name: status_name.to_owned(),
@@ -617,16 +641,16 @@ impl TaskService {
                     })
                 }
                 Ok(None) => {
-                    self.log_info(&format!("Task {} is already in 'Done' status", id));
+                    self.log_info(&format!("Finished business action: Task {} is already in 'Done' status", id));
                     Ok(MoveResult::AlreadyDone { query_trace })
                 }
                 Err(err_msg) => {
-                    self.log_info(&format!("Error: {}", err_msg));
+                    self.log_info(&format!("Finished business action: Error: {}", err_msg));
                     Ok(MoveResult::Error { err_msg, query_trace })
                 }
             }
         } else {
-            self.log_info(&format!("Error: Task with ID {} not found", id));
+            self.log_info(&format!("Finished business action: Error: Task with ID {} not found", id));
             Ok(MoveResult::NotFound { query_trace })
         }
     }
