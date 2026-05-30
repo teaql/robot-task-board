@@ -9,6 +9,9 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
     let mut spans = Vec::new();
     let mut rest = line;
 
+    // Detect if this is an AUDIT line (set during level bracket parsing)
+    let mut is_audit = false;
+
     // Detect aligned format: e.g. [08:32:31.456]-[user]-[DEBUG/AUDIT]-message
     if line.starts_with('[') && line.len() > 15 {
         if let Some(time_end) = line.find(']') {
@@ -34,6 +37,7 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
                         let level = &rest[2..end+2];
                         spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
                         if level == "AUDIT" {
+                            is_audit = true;
                             spans.push(Span::styled(format!("[{}]", level), Style::default().fg(Color::Rgb(230, 126, 34)).add_modifier(Modifier::BOLD)));
                         } else if level == "INFO" {
                             spans.push(Span::styled(format!("[{}]", level), Style::default().fg(Color::Rgb(46, 204, 113)).add_modifier(Modifier::BOLD)));
@@ -61,9 +65,28 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
     }
 
     // Now highlight the rest of the message!
+    // Handle extra bracket after timing (e.g. [DEBUG] in reformatted SQL logs)
+    if rest.starts_with("[") {
+        if let Some(end) = rest[1..].find(']') {
+            let tag = &rest[1..end+1];
+            spans.push(Span::styled(format!("[{}]", tag), Style::default().fg(Color::Indexed(242))));
+            rest = &rest[end+2..];
+            if rest.starts_with('-') {
+                spans.push(Span::styled("-", Style::default().fg(Color::Indexed(240))));
+                rest = &rest[1..];
+            }
+        }
+    }
+
     if rest.starts_with("SqlLogEntry") {
         spans.push(Span::styled("SqlLogEntry", Style::default().fg(Color::Indexed(242))));
         rest = &rest[11..];
+    }
+
+    // Use AUDIT orange for the entire message body if this is an AUDIT line
+    if is_audit {
+        spans.push(Span::styled(rest, Style::default().fg(Color::Rgb(230, 126, 34))));
+        return Line::from(spans);
     }
 
     // 4. Comment part and Result summary part
@@ -74,7 +97,7 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
             
             if after_first.starts_with(" - [") {
                 // If there is another " - [" immediately following, then the first one is the comment!
-                spans.push(Span::styled(first_segment, Style::default().fg(Color::Rgb(241, 196, 15)).add_modifier(Modifier::BOLD)));
+                spans.push(Span::styled(first_segment, Style::default().fg(Color::Rgb(230, 126, 34)).add_modifier(Modifier::BOLD)));
                 rest = after_first;
                 
                 // Now parse the second one as the result summary

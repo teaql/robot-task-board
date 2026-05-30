@@ -212,6 +212,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 3. Initialize app state
     let mut app = App::new(service);
     app.reload_data().await?;
+    app.service.log_info("=========================================================================================================");
 
     // 4. Main application loop
     let loop_res = run_app(&mut terminal, &mut app).await;
@@ -442,10 +443,12 @@ mod tests {
             if let Some(ref comment) = entry.comment {
                 println!("SQL: {} - Comment: {}", sql, comment);
                 if sql.contains("insert into task_execution_log_data") {
-                    if comment == "TaskExecutionLog(1): Create task 'Lineage Test Task'" {
+                    // EntityGraph produces hierarchical trace chains:
+                    // "Task(1): Create task '...' -> TaskExecutionLog(1): Create task '...'"
+                    if comment.contains("TaskExecutionLog(1)") && comment.contains("Create task") {
                         found_created_log_lineage = true;
                     }
-                    if comment == "TaskExecutionLog(2): Move task 'Lineage Test Task' to Process" {
+                    if comment.contains("TaskExecutionLog(2)") && comment.contains("Move task") {
                         found_status_changed_log_lineage = true;
                     }
                 }

@@ -1,13 +1,14 @@
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{Q, Task, TaskExecutionLog};
+use robot_kanban::{Q, Task, TaskExecutionLog, TeaqlEntityRepository, TeaqlRuntime};
+use teaql_core::EntityGraph;
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
     RusqliteMutationExecutor, RusqliteProviderExt, MutationExecutorError,
 };
 use teaql_runtime::{
     UserContext, QueryExecutor, GraphTransactionBoundary, EntityEvent,
-    EntityEventKind, EntityEventSink, RuntimeError, TuiLogEntry, TuiLogBuffer,
+    EntityEventKind, EntityEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
 };
 use teaql_core::{Record, Value, TeaqlEntity};
 use teaql_sql::CompiledQuery;
@@ -108,49 +109,54 @@ impl EntityEventSink for AppAuditSink {
         };
         let entity_identity = format!("{}({})", event.entity, entity_id_str);
 
-        let comment_part = if let Some(ref comment) = event.comment {
-            format!(" [{}]", comment)
-        } else {
+        let comment_part = if event.trace_chain.is_empty() {
             "".to_owned()
+        } else {
+            let trace = event.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> ");
+            format!(" [{}]", trace)
         };
 
-        let header_line = format!(
-            "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}",
-            timestamp, user, entity_identity, action_name, comment_part
-        );
-
-        let mut lines = vec![header_line];
-
+        // Build compact single-line audit for TUI and app.log
+        let mut field_changes = Vec::new();
         for change in &event.changes {
             let old_str = format_val_helper(&change.old_value);
             let new_str = format_val_helper(&change.new_value);
             if old_str != new_str {
-                let detail_line = format!(
-                    "[{}]-[{}]-[AUDIT]-  -> Field [{}]: {} ➔ {}",
-                    timestamp, user, change.field, old_str, new_str
-                );
-                lines.push(detail_line);
+                field_changes.push(format!("{}: [{} ➔ {}]", change.field, old_str, new_str));
             }
         }
+        let fields_part = if field_changes.is_empty() {
+            String::new()
+        } else {
+            format!(" {{{}}}", field_changes.join(",  "))
+        };
 
-        // Write all lines to app.log and TUI buffer
-        for line in &lines {
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open("app.log")
-            {
-                use std::io::Write;
-                let _ = writeln!(file, "{}", line);
-            }
+        let line = format!(
+            "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}{}",
+            timestamp, user, entity_identity, action_name, comment_part, fields_part
+        );
 
-            if let Some(buf) = ctx.get_resource::<TuiLogBuffer>() {
-                if let Ok(mut entries) = buf.entries.lock() {
-                    entries.push(TuiLogEntry {
-                        timestamp: std::time::SystemTime::now(),
-                        line: line.clone(),
-                    });
-                }
+        // Write to app.log
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("app.log")
+        {
+            use std::io::Write;
+            let _ = writeln!(file, "{}", line);
+        }
+
+        // Write to TUI buffer
+        if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+            if let Ok(mut entries) = buf.entries.lock() {
+                entries.push(UnifiedLogEntry {
+                    timestamp: std::time::SystemTime::now(),
+                    user_identifier: Some(user.clone()),
+                    trace_chain: event.trace_chain.clone(),
+                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                        message: line.clone(),
+                    }),
+                });
             }
         }
 
@@ -243,21 +249,21 @@ impl TaskDomainBehavior for Task {
         if cmd.name.trim().is_empty() {
             return Err("Task name cannot be empty".to_owned());
         }
-        let mut task = Q::tasks().new_entity(ctx);
+        let mut task = Q::tasks().with_id_is(next_id).new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
-            .update_version(1_i64)
+            .update_version(0_i64)
             .update_status_to_planned()
             .update_platform_id(1_u64);
         Ok(task)
     }
 
     fn generate_execution_log(&self, log_id: u64, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
-        let mut log = Q::task_execution_logs().new_entity(ctx);
+        let mut log = Q::task_execution_logs().with_id_is(log_id).new_entity(ctx);
         log.update_id(log_id)
             .update_action(action.to_owned())
             .update_detail(detail.to_owned())
-            .update_version(1_i64)
+            .update_version(0_i64)
             .update_task_id(self.id());
         log
     }
@@ -347,7 +353,7 @@ impl TaskService {
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
 
         // Register custom TUI log buffer and audit event sink
-        let log_buffer = TuiLogBuffer::default();
+        let log_buffer = UnifiedLogBuffer::default();
         ctx.insert_resource(log_buffer);
         ctx.set_event_sink(AppAuditSink);
 
@@ -380,11 +386,15 @@ impl TaskService {
         let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
         
         // Write to TUI buffer
-        if let Some(buf) = self.ctx.get_resource::<TuiLogBuffer>() {
+        if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
             if let Ok(mut entries) = buf.entries.lock() {
-                entries.push(TuiLogEntry {
+                entries.push(UnifiedLogEntry {
                     timestamp: std::time::SystemTime::now(),
-                    line: log_line.clone(),
+                    user_identifier: Some(user.clone()),
+                    trace_chain: Vec::new(),
+                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                        message: log_line.clone(),
+                    }),
                 });
             }
         }
@@ -488,23 +498,23 @@ impl TaskService {
 
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
         let next_id = self.ctx.next_id_for::<Task>()?;
+        let cmd = CreateTaskCommand { name: name.to_owned() };
+        let task = Task::create(&cmd, next_id, &self.ctx)?;
 
+        let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
+        let log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
-        let cmd = CreateTaskCommand {
-            name: name.to_owned(),
-        };
-        let mut task = Task::create(&cmd, next_id, &self.ctx)?;
-
-        let log_id = self.ctx.next_id("TaskExecutionLog")?;
-        let mut log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
-
-        task.set_comment(format!("Create task '{}'", name));
-        log.set_comment(format!("Create task '{}'", name));
-        task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        let comment = format!("Create task '{}'", name);
+        let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        TeaqlEntityRepository::save_entity_graph_from(&repo,
+            EntityGraph::new(task)
+                .comment(&comment)
+                .child("task_execution_log_list",
+                    EntityGraph::new(log).comment(&comment))
+                .build()
+        ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Created task [ID: {}] '{}'", next_id, name));
-
         Ok(next_id)
     }
 
@@ -520,13 +530,18 @@ impl TaskService {
 
         let task_opt = select.execute_for_one(&self.ctx).await?;
 
-        if let Some(mut task) = task_opt {
+        if let Some(task) = task_opt {
             let task_name = task.name().to_string();
-            task.mark_as_delete().set_comment(format!("Delete task '{}'", task_name));
-            task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            let comment = format!("Delete task '{}'", task_name);
+            let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            TeaqlEntityRepository::save_entity_graph_from(&repo,
+                EntityGraph::new(task)
+                    .comment(&comment)
+                    .delete()
+                    .build()
+            ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Deleted task [ID: {}]", id));
-
             Ok(true)
         } else {
             self.log_info(&format!("Error: Task with ID {} not found", id));
@@ -582,13 +597,18 @@ impl TaskService {
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
                     let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
-                    let mut log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
+                    let log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
                     let task_name = task.name().to_string();
 
-                    task.set_comment(format!("Move task '{}' to {}", task_name, status_name));
-                    log.set_comment(format!("Move task '{}' to {}", task_name, status_name));
-                    task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    let comment = format!("Move task '{}' to {}", task_name, status_name);
+                    let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    TeaqlEntityRepository::save_entity_graph_from(&repo,
+                        EntityGraph::new(task)
+                            .comment(&comment)
+                            .child("task_execution_log_list",
+                                EntityGraph::new(log).comment(&comment))
+                            .build()
+                    ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     self.log_info(&format!("Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
@@ -613,12 +633,29 @@ impl TaskService {
 
     pub fn check_sql_logs(&self) -> Vec<String> {
         let mut new_logs = Vec::new();
-        if let Some(buf) = self.ctx.get_resource::<TuiLogBuffer>() {
+        if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
             if let Ok(mut last_log) = self.last_log_index.lock() {
                 if let Ok(entries) = buf.entries.lock() {
                     if entries.len() > *last_log {
                         for entry in &entries[*last_log..] {
-                            new_logs.push(reformat_log_line(&entry.line));
+                            match &entry.payload {
+                                LogPayload::Sql(sql_entry) => {
+                                    // Manually format a line similar to what reformat_log_line expected
+                                    let local_time: chrono::DateTime<chrono::Local> = entry.timestamp.into();
+                                    let ts = local_time.format("%H:%M:%S%.3f");
+                                    let uid = entry.user_identifier.as_deref().unwrap_or("");
+                                    let trace = if entry.trace_chain.is_empty() {
+                                        "".to_owned()
+                                    } else {
+                                        format!(" - [{}]", entry.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> "))
+                                    };
+                                    let line = format!("[{}]-[{}]-[DEBUG]-SqlLogEntry{} - [{}] {} - [{:.3}ms]", ts, uid, trace, sql_entry.result_summary, sql_entry.pretty_sql.replace("\n", " "), sql_entry.elapsed.as_secs_f64() * 1000.0);
+                                    new_logs.push(line);
+                                }
+                                LogPayload::Info(info) => {
+                                    new_logs.push(info.message.clone());
+                                }
+                            }
                         }
                         *last_log = entries.len();
                     }

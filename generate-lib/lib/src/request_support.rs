@@ -6,7 +6,7 @@ use teaql_core::{
     BinaryOp, Expr, Record,
     RelationAggregate as RuntimeRelationAggregate, SelectQuery, SmartList,
 };
-use teaql_runtime::{ContextError, GraphNode, QueryExecutor, RepositoryError, RuntimeError, UserContext, QueryCommentGuard};
+use teaql_runtime::{ContextError, GraphNode, QueryExecutor, RepositoryError, RuntimeError, UserContext};
 
 pub(crate) const COUNT_ALIAS: &str = "count";
 pub(crate) const TYPE_FIELD: &str = "internal_type";
@@ -88,6 +88,8 @@ pub trait TeaqlEntityRepository: TeaqlRecordRepository {
     fn save_entity_with_comment<T>(&self, entity: T, status: teaql_runtime::EntityStatus, comment: String) -> Result<GraphNode, RepositoryError<Self::Error>>
     where
         T: teaql_core::Entity;
+
+    fn save_entity_graph_from(&self, graph: teaql_core::EntityGraph) -> Result<GraphNode, RepositoryError<Self::Error>>;
 }
 
 impl<'a, D, E> TeaqlRecordRepository for teaql_runtime::ResolvedRepository<'a, D, E>
@@ -164,6 +166,10 @@ where
         T: teaql_core::Entity,
     {
         teaql_runtime::ResolvedRepository::save_entity_with_comment(self, entity, status, comment)
+    }
+
+    fn save_entity_graph_from(&self, graph: teaql_core::EntityGraph) -> Result<GraphNode, RepositoryError<Self::Error>> {
+        teaql_runtime::ResolvedRepository::save_entity_graph_from(self, graph)
     }
 }
 
@@ -541,10 +547,8 @@ pub(crate) fn execute_facets<C>(
 where
     C: TeaqlRuntime + ?Sized,
 {
-    let _guard = QueryCommentGuard::new(ctx.user_context(), options.comment.clone().or(outer_query.comment.clone()));
     let mut facets = BTreeMap::new();
     for facet in &options.facets {
-        let _facet_guard = QueryCommentGuard::new(ctx.user_context(), Some(facet.facet_name.clone()));
         let mut selection = facet.query.clone();
         merge_outer_filter_into_facet_aggregates(&mut selection, outer_query);
         if !facet.include_all_facets {

@@ -5,7 +5,6 @@ use robot_kanban::{Q, TeaqlRuntime, Task};
 use teaql_core::{Value, TeaqlEntity};
 use teaql_runtime::{
     EntityEvent, EntityEventKind, EntityEventSink, UserContext, RuntimeError,
-    QueryCommentGuard,
 };
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator, RusqliteMutationExecutor,
@@ -60,10 +59,11 @@ impl EntityEventSink for AuditLogSink {
         };
         let entity_identity = format!("{}:{}", event.entity, entity_id_str);
 
-        let comment_part = if let Some(ref comment) = event.comment {
-            format!(" [{}]", comment)
-        } else {
+        let comment_part = if event.trace_chain.is_empty() {
             "".to_owned()
+        } else {
+            let trace = event.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> ");
+            format!(" [{}]", trace)
         };
 
         let header = format!(
@@ -144,6 +144,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let executor = RusqliteMutationExecutor::new(conn);
     ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(executor.clone()));
     ctx.use_rusqlite_provider(executor.clone());
+    
+    let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(executor.clone());
+    ctx.insert_resource(service_runtime_executor);
 
     // 5. Ensure Schema is bootstrapped
     ensure_rusqlite_schema_for(&ctx)?;
@@ -161,16 +164,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Saving a clone will trigger the CREATED event automatically, allowing us to reuse the local variable
     {
-        let _guard = QueryCommentGuard::new(&ctx, Some("Create task 'Analyze Network Traffic Logs'".to_owned()));
-        task.clone().save(&ctx).await?;
+        let repo = ctx.task_repository()?;
+        teaql_runtime::ResolvedRepository::save_entity_with_comment(&repo, task.clone(), teaql_runtime::EntityStatus::New, "Create task 'Analyze Network Traffic Logs'".to_owned())?;
     }
 
     // 7. Action 2: Move the Task (Update status)
     println!("--- Action 2: Moving the Task to 'Process' Status ---");
     task.update_status_to_process();
     {
-        let _guard = QueryCommentGuard::new(&ctx, Some("Move task 'Analyze Network Traffic Logs' to Process".to_owned()));
-        task.clone().save(&ctx).await?;
+        let repo = ctx.task_repository()?;
+        teaql_runtime::ResolvedRepository::save_entity_with_comment(&repo, task.clone(), teaql_runtime::EntityStatus::Updated, "Move task 'Analyze Network Traffic Logs' to Process".to_owned())?;
     }
 
     // 8. Action 3: Deleting the Task

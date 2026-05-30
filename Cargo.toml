@@ -14,7 +14,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
-# TeaQL runtime packages from registry
+# TeaQL runtime packages
 teaql-core = "1.0.0"
 teaql-runtime = "1.0.0"
 teaql-macros = "1.0.0"
@@ -24,3 +24,9 @@ teaql-provider-rusqlite = "1.0.0"
 # Our generated TeaQL domain logic library
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
 
+# Patch teaql crates to use local source (for EntityGraph support)
+[patch.crates-io]
+teaql-core = { path = "/home/philip/teaql-home/teaql-rs/teaql-core" }
+teaql-runtime = { path = "/home/philip/teaql-home/teaql-rs/teaql-runtime" }
+teaql-sql = { path = "/home/philip/teaql-home/teaql-rs/teaql-sql" }
+teaql-provider-rusqlite = { path = "/home/philip/teaql-home/teaql-rs/teaql-provider-rusqlite" }
