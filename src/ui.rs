@@ -182,7 +182,7 @@ fn colorize_sql_text<'a>(text: &'a str, spans: &mut Vec<Span<'a>>) {
         
         if !in_word && is_ident {
             if i > word_start {
-                spans.push(Span::styled(text[word_start..i].to_owned(), Style::default().fg(Color::White)));
+                spans.push(Span::styled(text[word_start..i].to_owned(), Style::default().fg(Color::DarkGray)));
             }
             word_start = i;
             in_word = true;
@@ -192,7 +192,7 @@ fn colorize_sql_text<'a>(text: &'a str, spans: &mut Vec<Span<'a>>) {
                         || word.eq_ignore_ascii_case("true") 
                         || word.eq_ignore_ascii_case("false") 
                         || word.eq_ignore_ascii_case("null");
-            let color = if is_param { Color::Red } else { Color::White };
+            let color = if is_param { Color::Red } else { Color::DarkGray };
             spans.push(Span::styled(word.to_owned(), Style::default().fg(color)));
             word_start = i;
             in_word = false;
@@ -206,10 +206,10 @@ fn colorize_sql_text<'a>(text: &'a str, spans: &mut Vec<Span<'a>>) {
                         || word.eq_ignore_ascii_case("true") 
                         || word.eq_ignore_ascii_case("false") 
                         || word.eq_ignore_ascii_case("null");
-            let color = if is_param { Color::Red } else { Color::White };
+            let color = if is_param { Color::Red } else { Color::DarkGray };
             spans.push(Span::styled(word.to_owned(), Style::default().fg(color)));
         } else {
-            spans.push(Span::styled(text[word_start..].to_owned(), Style::default().fg(Color::White)));
+            spans.push(Span::styled(text[word_start..].to_owned(), Style::default().fg(Color::DarkGray)));
         }
     }
 }
