@@ -103,12 +103,12 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
                 // Now parse the second one as the result summary
                 if let Some(end2) = rest[4..].find(']') {
                     let result_part = &rest[..end2+5];
-                    spans.push(Span::styled(result_part, Style::default().fg(Color::Rgb(52, 152, 219))));
+                    colorize_comment_segment(result_part, &mut spans, Style::default().fg(Color::Rgb(52, 152, 219)));
                     rest = &rest[end2+5..];
                 }
             } else {
                 // If there is no " - [" following, then this first segment is the result summary (no comment exists)!
-                spans.push(Span::styled(first_segment, Style::default().fg(Color::Rgb(52, 152, 219))));
+                colorize_comment_segment(first_segment, &mut spans, Style::default().fg(Color::Rgb(52, 152, 219)));
                 rest = after_first;
             }
         }
