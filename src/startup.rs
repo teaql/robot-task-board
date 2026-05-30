@@ -39,7 +39,7 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             )),
             Line::from(""),
             Line::from(Span::styled(
-                "A showcase application built with TeaQL.",
+                "A self-bootstrapping business application powered by TeaQL Runtime.",
                 Style::default().fg(SOFT_WHITE),
             )),
             Line::from(""),
