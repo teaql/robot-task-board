@@ -120,16 +120,98 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
         let changes = &rest[changes_idx..];
         spans.push(Span::styled(main_msg, Style::default().fg(Color::White)));
         spans.push(Span::styled(changes, Style::default().fg(Color::Cyan)));
+    } else if rest.ends_with("ms]") && rest.rfind(" - [").is_some() {
+        let took_idx = rest.rfind(" - [").unwrap();
+        let sql = &rest[..took_idx];
+        let took = &rest[took_idx..];
+        colorize_sql(sql, &mut spans);
+        spans.push(Span::styled(took, Style::default().fg(Color::Rgb(231, 76, 60))));
     } else if let Some(took_idx) = rest.rfind(" (took ") {
         let sql = &rest[..took_idx];
         let took = &rest[took_idx..];
-        spans.push(Span::styled(sql, Style::default().fg(Color::White)));
+        colorize_sql(sql, &mut spans);
         spans.push(Span::styled(took, Style::default().fg(Color::Rgb(231, 76, 60))));
     } else {
         spans.push(Span::styled(rest, Style::default().fg(Color::White)));
     }
 
     Line::from(spans)
+}
+
+fn colorize_sql<'a>(sql: &'a str, spans: &mut Vec<Span<'a>>) {
+    let mut current_idx = 0;
+    let mut text_start = 0;
+
+    while let Some(quote_idx) = sql[current_idx..].find('\'') {
+        let abs_quote = current_idx + quote_idx;
+        if abs_quote > text_start {
+            colorize_sql_text(&sql[text_start..abs_quote], spans);
+        }
+        
+        let mut end_idx = abs_quote + 1;
+        loop {
+            if let Some(next_quote) = sql[end_idx..].find('\'') {
+                end_idx += next_quote; // this is the index of the next quote
+                if end_idx + 1 < sql.len() && sql[end_idx + 1..].starts_with('\'') {
+                    end_idx += 2; // skip escaped quote
+                } else {
+                    end_idx += 1; // include the closing quote
+                    break;
+                }
+            } else {
+                end_idx = sql.len();
+                break;
+            }
+        }
+        spans.push(Span::styled(sql[abs_quote..end_idx].to_owned(), Style::default().fg(Color::Red)));
+        current_idx = end_idx;
+        text_start = current_idx;
+    }
+    
+    if text_start < sql.len() {
+        colorize_sql_text(&sql[text_start..], spans);
+    }
+}
+
+fn colorize_sql_text<'a>(text: &'a str, spans: &mut Vec<Span<'a>>) {
+    let mut in_word = false;
+    let mut word_start = 0;
+    
+    for (i, c) in text.char_indices() {
+        let is_ident = c.is_alphanumeric() || c == '_' || c == '.';
+        
+        if !in_word && is_ident {
+            if i > word_start {
+                spans.push(Span::styled(text[word_start..i].to_owned(), Style::default().fg(Color::White)));
+            }
+            word_start = i;
+            in_word = true;
+        } else if in_word && !is_ident {
+            let word = &text[word_start..i];
+            let is_param = (word != "." && word.chars().all(|ch| ch.is_ascii_digit() || ch == '.'))
+                        || word.eq_ignore_ascii_case("true") 
+                        || word.eq_ignore_ascii_case("false") 
+                        || word.eq_ignore_ascii_case("null");
+            let color = if is_param { Color::Red } else { Color::White };
+            spans.push(Span::styled(word.to_owned(), Style::default().fg(color)));
+            word_start = i;
+            in_word = false;
+        }
+    }
+    
+    if word_start < text.len() {
+        if in_word {
+            let word = &text[word_start..];
+            let is_param = (word != "." && word.chars().all(|ch| ch.is_ascii_digit() || ch == '.'))
+                        || word.eq_ignore_ascii_case("true") 
+                        || word.eq_ignore_ascii_case("false") 
+                        || word.eq_ignore_ascii_case("null");
+            let color = if is_param { Color::Red } else { Color::White };
+            spans.push(Span::styled(word.to_owned(), Style::default().fg(color)));
+        } else {
+            spans.push(Span::styled(text[word_start..].to_owned(), Style::default().fg(Color::White)));
+        }
+    }
 }
 
 pub fn ui(f: &mut ratatui::Frame, app: &App) {
