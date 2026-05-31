@@ -29,7 +29,7 @@ Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize refer
 
 ## Runtime Bootstrap
 
-[BOOTSTRAP SCREENSHOT HERE]
+
 
 ![BOOTSTRAP](assets/002-bootstrap.png)
 
@@ -66,7 +66,7 @@ TeaQL Runtime ready
 
 ## Robot Task Board
 
-[TASK BOARD SCREENSHOT HERE]
+
 ![Task Board](assets/003-task-board.png)
 The task board is intentionally simple.
 
@@ -194,6 +194,8 @@ TeaQL focuses on making business software:
 * Portable
 
 The goal is to let developers understand what their business code actually does.
+
+[Make a deeper dive](<https://teaql.io/blog/robot-task-board-showcase/> blog) 
 
 ---
 
