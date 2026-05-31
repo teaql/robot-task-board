@@ -17,18 +17,20 @@ impl TaskModel {
 /// Data returned from a reload query.
 pub struct ReloadedData {
     pub planned_tasks: Vec<TaskModel>,
-    pub process_tasks: Vec<TaskModel>,
-    pub done_tasks: Vec<TaskModel>,
+    pub ready_tasks: Vec<TaskModel>,
+    pub executing_tasks: Vec<TaskModel>,
+    pub verified_tasks: Vec<TaskModel>,
     pub planned_count: usize,
-    pub process_count: usize,
-    pub done_count: usize,
+    pub ready_count: usize,
+    pub executing_count: usize,
+    pub verified_count: usize,
     pub query_trace: String,
 }
 
 /// Result of a move-task operation.
 pub enum MoveResult {
     Moved { status_name: String, query_trace: String },
-    AlreadyDone { query_trace: String },
+    AlreadyFinal { query_trace: String },
     Error { err_msg: String, query_trace: String },
     NotFound { query_trace: String },
 }

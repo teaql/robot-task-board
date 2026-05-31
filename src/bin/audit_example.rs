@@ -172,7 +172,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 7. Action 2: Move the Task (Update status)
     println!("--- Action 2: Moving the Task to 'Process' Status ---");
-    task.update_status_to_process();
+    task.update_status_to_ready();
     {
         let mut cloned = task.clone();
         cloned.set_comment("Move task 'Analyze Network Traffic Logs' to Process");

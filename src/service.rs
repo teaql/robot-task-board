@@ -70,20 +70,20 @@ impl TaskDomainBehavior for Task {
         let target = cmd.target_status.trim().to_lowercase();
 
         let next_status_id = if target.is_empty() {
-            // Planned -> Process -> Done
-            if current_status == 1001 {
-                Some(1002_u64)
-            } else if current_status == 1002 {
-                Some(1003_u64)
-            } else {
-                None
+            // Planned -> Ready -> Executing -> Verified
+            match current_status {
+                1001 => Some(1002_u64),
+                1002 => Some(1003_u64),
+                1003 => Some(1004_u64),
+                _ => None,
             }
         } else {
             match target.as_str() {
                 "planned" => Some(1001_u64),
-                "process" => Some(1002_u64),
-                "done" => Some(1003_u64),
-                _ => return Err(format!("Invalid status '{}'. Use planned, process, done, or empty to move next.", cmd.target_status)),
+                "ready" => Some(1002_u64),
+                "executing" => Some(1003_u64),
+                "verified" => Some(1004_u64),
+                _ => return Err(format!("Invalid status '{}'. Use planned, ready, executing, verified, or empty to move next.", cmd.target_status)),
             }
         };
 
@@ -259,8 +259,9 @@ impl TaskService {
         let all_tasks = select.execute_for_list(&self.ctx).await?;
 
         let mut planned_count = 0;
-        let mut process_count = 0;
-        let mut done_count = 0;
+        let mut ready_count = 0;
+        let mut executing_count = 0;
+        let mut verified_count = 0;
 
         if let Some(facet_list) = all_tasks.facet("status_stats") {
             for record in facet_list.iter() {
@@ -276,16 +277,18 @@ impl TaskService {
                 };
                 match status_id {
                     1001 => planned_count = count,
-                    1002 => process_count = count,
-                    1003 => done_count = count,
+                    1002 => ready_count = count,
+                    1003 => executing_count = count,
+                    1004 => verified_count = count,
                     _ => {}
                 }
             }
         }
 
         let mut planned_tasks = Vec::new();
-        let mut process_tasks = Vec::new();
-        let mut done_tasks = Vec::new();
+        let mut ready_tasks = Vec::new();
+        let mut executing_tasks = Vec::new();
+        let mut verified_tasks = Vec::new();
 
         for task in all_tasks.data {
             let task_model = TaskModel {
@@ -294,8 +297,9 @@ impl TaskService {
             };
             match task.status_id() {
                 1001 => planned_tasks.push(task_model),
-                1002 => process_tasks.push(task_model),
-                1003 => done_tasks.push(task_model),
+                1002 => ready_tasks.push(task_model),
+                1003 => executing_tasks.push(task_model),
+                1004 => verified_tasks.push(task_model),
                 _ => {}
             }
         }
@@ -304,11 +308,13 @@ impl TaskService {
 
         Ok(ReloadedData {
             planned_tasks,
-            process_tasks,
-            done_tasks,
+            ready_tasks,
+            executing_tasks,
+            verified_tasks,
             planned_count,
-            process_count,
-            done_count,
+            ready_count,
+            executing_count,
+            verified_count,
             query_trace,
         })
     }
@@ -393,20 +399,23 @@ impl TaskService {
                     let old_status_id = task.status_id();
                     match new_status {
                         1001 => { task.update_status_to_planned(); }
-                        1002 => { task.update_status_to_process(); }
-                        1003 => { task.update_status_to_done(); }
+                        1002 => { task.update_status_to_ready(); }
+                        1003 => { task.update_status_to_executing(); }
+                        1004 => { task.update_status_to_verified(); }
                         _ => {}
                     }
                     let status_name = match new_status {
                         1001 => "Planned",
-                        1002 => "Process",
-                        1003 => "Done",
+                        1002 => "Ready",
+                        1003 => "Executing",
+                        1004 => "Verified",
                         _ => "Unknown",
                     };
                     let old_status_name = match old_status_id {
                         1001 => "Planned",
-                        1002 => "Process",
-                        1003 => "Done",
+                        1002 => "Ready",
+                        1003 => "Executing",
+                        1004 => "Verified",
                         _ => "Unknown",
                     };
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
@@ -430,8 +439,8 @@ impl TaskService {
                     })
                 }
                 Ok(None) => {
-                    self.log_info(&format!("Finished business action: Task {} is already in 'Done' status", id));
-                    Ok(MoveResult::AlreadyDone { query_trace })
+                    self.log_info(&format!("Finished business action: Task {} is already in 'Verified' status", id));
+                    Ok(MoveResult::AlreadyFinal { query_trace })
                 }
                 Err(err_msg) => {
                     self.log_info(&format!("Finished business action: Error: {}", err_msg));

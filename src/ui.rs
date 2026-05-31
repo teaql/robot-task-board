@@ -316,18 +316,19 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(log_paragraph, chunks[0]);
 
-    // 2. Render Status Statistics Area (3 equal columns - plain white borders)
+    // 2. Render Status Statistics Area (4 equal columns)
     let stats_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(34),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
         ])
         .split(chunks[1]);
 
     let planned_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Planned tasks count: "),
+        Span::raw("  Planned: "),
         Span::styled(
             format!("{}", app.planned_count),
             Style::default().fg(Color::White),
@@ -341,10 +342,10 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(planned_stat, stats_chunks[0]);
 
-    let process_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Tasks in Process count: "),
+    let ready_stat = Paragraph::new(Line::from(vec![
+        Span::raw("  Ready: "),
         Span::styled(
-            format!("{}", app.process_count),
+            format!("{}", app.ready_count),
             Style::default().fg(Color::White),
         ),
     ]))
@@ -354,12 +355,12 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(process_stat, stats_chunks[1]);
+    f.render_widget(ready_stat, stats_chunks[1]);
 
-    let done_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Completed Tasks count: "),
+    let executing_stat = Paragraph::new(Line::from(vec![
+        Span::raw("  Executing: "),
         Span::styled(
-            format!("{}", app.done_count),
+            format!("{}", app.executing_count),
             Style::default().fg(Color::White),
         ),
     ]))
@@ -369,15 +370,31 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(done_stat, stats_chunks[2]);
+    f.render_widget(executing_stat, stats_chunks[2]);
 
-    // 3. Render task list columns (Planned, Process, Done - plain white borders)
+    let verified_stat = Paragraph::new(Line::from(vec![
+        Span::raw("  Verified: "),
+        Span::styled(
+            format!("{}", app.verified_count),
+            Style::default().fg(Color::White),
+        ),
+    ]))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::White)),
+    );
+    f.render_widget(verified_stat, stats_chunks[3]);
+
+    // 3. Render task list columns (4 columns)
     let col_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(34),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
         ])
         .split(chunks[2]);
 
@@ -400,43 +417,62 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(planned_list, col_chunks[0]);
 
-    // Process Tasks column
-    let process_lines = app
-        .process_tasks
+    // Ready Tasks column
+    let ready_lines = app
+        .ready_tasks
         .iter()
         .map(|t| Line::from(vec![
             Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::LightGreen)),
             Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
         ]))
         .collect::<Vec<Line>>();
-    let process_list = Paragraph::new(process_lines).block(
+    let ready_list = Paragraph::new(ready_lines).block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(" PROCESS ")
+            .title(" READY ")
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(process_list, col_chunks[1]);
+    f.render_widget(ready_list, col_chunks[1]);
 
-    // Done Tasks column
-    let done_lines = app
-        .done_tasks
+    // Executing Tasks column
+    let executing_lines = app
+        .executing_tasks
         .iter()
         .map(|t| Line::from(vec![
             Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::LightGreen)),
             Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
         ]))
         .collect::<Vec<Line>>();
-    let done_list = Paragraph::new(done_lines).block(
+    let executing_list = Paragraph::new(executing_lines).block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(" DONE ")
+            .title(" EXECUTING ")
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(done_list, col_chunks[2]);
+    f.render_widget(executing_list, col_chunks[2]);
+
+    // Verified Tasks column
+    let verified_lines = app
+        .verified_tasks
+        .iter()
+        .map(|t| Line::from(vec![
+            Span::styled(format!("  {:>4}  ", t.id()), Style::default().fg(Color::LightGreen)),
+            Span::styled(t.name().to_string(), Style::default().fg(Color::White)),
+        ]))
+        .collect::<Vec<Line>>();
+    let verified_list = Paragraph::new(verified_lines).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(" VERIFIED ")
+            .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+            .border_style(Style::default().fg(Color::White)),
+    );
+    f.render_widget(verified_list, col_chunks[3]);
 
     // 4. Render Command Line Area (plain white borders)
     let prompt_line = Line::from(vec![

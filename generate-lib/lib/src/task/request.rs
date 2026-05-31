@@ -1485,34 +1485,50 @@ impl<R> TaskRequest<R> {
     }
 
 
-    pub fn status_is_process(self) -> Self {
+    pub fn status_is_ready(self) -> Self {
         self.filter_by_status(1002_u64)
     }
 
-    pub fn with_status_is_process(self) -> Self {
+    pub fn with_status_is_ready(self) -> Self {
         self.filter_by_status(1002_u64)
     }
 
 
 
-    pub fn with_status_is_not_process(mut self) -> Self {
+    pub fn with_status_is_not_ready(mut self) -> Self {
         self.query = self.query.and_filter(Expr::ne("status_id", 1002_u64));
         self
     }
 
 
-    pub fn status_is_done(self) -> Self {
+    pub fn status_is_executing(self) -> Self {
         self.filter_by_status(1003_u64)
     }
 
-    pub fn with_status_is_done(self) -> Self {
+    pub fn with_status_is_executing(self) -> Self {
         self.filter_by_status(1003_u64)
     }
 
 
 
-    pub fn with_status_is_not_done(mut self) -> Self {
+    pub fn with_status_is_not_executing(mut self) -> Self {
         self.query = self.query.and_filter(Expr::ne("status_id", 1003_u64));
+        self
+    }
+
+
+    pub fn status_is_verified(self) -> Self {
+        self.filter_by_status(1004_u64)
+    }
+
+    pub fn with_status_is_verified(self) -> Self {
+        self.filter_by_status(1004_u64)
+    }
+
+
+
+    pub fn with_status_is_not_verified(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::ne("status_id", 1004_u64));
         self
     }
 

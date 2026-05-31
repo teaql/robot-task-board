@@ -119,33 +119,33 @@ mod tests {
         // Verify initial status (Planned = 1)
         let reloaded = db.reload_data(&None).await?;
         assert_eq!(reloaded.planned_tasks.len(), 1);
-        assert_eq!(reloaded.process_tasks.len(), 0);
+        assert_eq!(reloaded.ready_tasks.len(), 0);
 
-        // 2. Move next (empty command moves Planned -> Process)
+        // 2. Move next (empty command moves Planned -> Ready)
         let res = db.move_task(task_id, "").await?;
         match res {
             MoveResult::Moved { status_name, .. } => {
-                assert_eq!(status_name, "Process");
+                assert_eq!(status_name, "Ready");
             }
             _ => panic!("Expected task to be moved"),
         }
 
         let reloaded = db.reload_data(&None).await?;
         assert_eq!(reloaded.planned_tasks.len(), 0);
-        assert_eq!(reloaded.process_tasks.len(), 1);
+        assert_eq!(reloaded.ready_tasks.len(), 1);
 
-        // 3. Move directly to Done
-        let res2 = db.move_task(task_id, "done").await?;
+        // 3. Move directly to Verified
+        let res2 = db.move_task(task_id, "verified").await?;
         match res2 {
             MoveResult::Moved { status_name, .. } => {
-                assert_eq!(status_name, "Done");
+                assert_eq!(status_name, "Verified");
             }
-            _ => panic!("Expected task to be moved to Done"),
+            _ => panic!("Expected task to be moved to Verified"),
         }
 
         let reloaded = db.reload_data(&None).await?;
-        assert_eq!(reloaded.process_tasks.len(), 0);
-        assert_eq!(reloaded.done_tasks.len(), 1);
+        assert_eq!(reloaded.ready_tasks.len(), 0);
+        assert_eq!(reloaded.verified_tasks.len(), 1);
 
         // 4. Test invalid status move
         let res3 = db.move_task(task_id, "invalid_status").await?;
@@ -168,8 +168,8 @@ mod tests {
         let db = TaskService::new(db_file).await?;
         let task_id = db.add_task("Lineage Test Task").await?;
 
-        // Move task to Process
-        let _ = db.move_task(task_id, "process").await?;
+        // Move task to Ready
+        let _ = db.move_task(task_id, "ready").await?;
 
         // Delete task (which explicitly cascade soft-deletes the related logs)
         let _ = db.delete_task(task_id).await?;
@@ -199,7 +199,7 @@ mod tests {
         // Verify task is actually deleted (functional check instead of SQL log check)
         let reloaded = db.reload_data(&None).await?;
         assert_eq!(
-            reloaded.planned_tasks.len() + reloaded.process_tasks.len() + reloaded.done_tasks.len(),
+            reloaded.planned_tasks.len() + reloaded.ready_tasks.len() + reloaded.executing_tasks.len() + reloaded.verified_tasks.len(),
             0,
             "Task should be soft-deleted and not visible after reload"
         );
@@ -232,7 +232,7 @@ mod tests {
         }
 
         // 3. Move task + reload
-        let _ = db.move_task(1, "Process").await?;
+        let _ = db.move_task(1, "Ready").await?;
         let _ = db.reload_data(&None).await?;
         let move_logs = db.check_sql_logs();
         println!("\n=== MOVE TASK + RELOAD ===");

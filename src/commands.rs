@@ -54,7 +54,7 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
             }
             "move" | "mv" => {
                 if args.is_empty() {
-                    app.service.log_info("Error: Missing arguments. Usage: /mv <id> [planned|process|done|next]");
+                    app.service.log_info("Error: Missing arguments. Usage: /mv <id> [planned|ready|executing|verified|next]");
                     app.input.clear();
                     return Ok(());
                 }

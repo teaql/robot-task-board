@@ -145,19 +145,26 @@ impl Task {
     pub fn status_is_planned(&self) -> bool {
         self.status_id() == 1001_u64
     }
-    pub fn update_status_to_process(&mut self) -> &mut Self {
+    pub fn update_status_to_ready(&mut self) -> &mut Self {
         self.update_status_id(1002_u64)
     }
 
-    pub fn status_is_process(&self) -> bool {
+    pub fn status_is_ready(&self) -> bool {
         self.status_id() == 1002_u64
     }
-    pub fn update_status_to_done(&mut self) -> &mut Self {
+    pub fn update_status_to_executing(&mut self) -> &mut Self {
         self.update_status_id(1003_u64)
     }
 
-    pub fn status_is_done(&self) -> bool {
+    pub fn status_is_executing(&self) -> bool {
         self.status_id() == 1003_u64
+    }
+    pub fn update_status_to_verified(&mut self) -> &mut Self {
+        self.update_status_id(1004_u64)
+    }
+
+    pub fn status_is_verified(&self) -> bool {
+        self.status_id() == 1004_u64
     }
     pub fn status(&self) -> Option<&crate::TaskStatus> {
         self.status.as_ref()

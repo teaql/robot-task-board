@@ -2335,6 +2335,21 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
+    pub fn id_is_value_1004(self) -> Self {
+        self.with_id_is("1004")
+    }
+
+    pub fn with_id_is_value_1004(self) -> Self {
+        self.with_id_is("1004")
+    }
+
+
+
+    pub fn with_id_is_not_value_1004(self) -> Self {
+        self.with_id_is_not("1004")
+    }
+
+
 
     pub fn name_is_planned(self) -> Self {
         self.with_name_is("Planned")
@@ -2351,33 +2366,48 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
-    pub fn name_is_process(self) -> Self {
-        self.with_name_is("Process")
+    pub fn name_is_ready(self) -> Self {
+        self.with_name_is("Ready")
     }
 
-    pub fn with_name_is_process(self) -> Self {
-        self.with_name_is("Process")
-    }
-
-
-
-    pub fn with_name_is_not_process(self) -> Self {
-        self.with_name_is_not("Process")
-    }
-
-
-    pub fn name_is_done(self) -> Self {
-        self.with_name_is("Done")
-    }
-
-    pub fn with_name_is_done(self) -> Self {
-        self.with_name_is("Done")
+    pub fn with_name_is_ready(self) -> Self {
+        self.with_name_is("Ready")
     }
 
 
 
-    pub fn with_name_is_not_done(self) -> Self {
-        self.with_name_is_not("Done")
+    pub fn with_name_is_not_ready(self) -> Self {
+        self.with_name_is_not("Ready")
+    }
+
+
+    pub fn name_is_executing(self) -> Self {
+        self.with_name_is("Executing")
+    }
+
+    pub fn with_name_is_executing(self) -> Self {
+        self.with_name_is("Executing")
+    }
+
+
+
+    pub fn with_name_is_not_executing(self) -> Self {
+        self.with_name_is_not("Executing")
+    }
+
+
+    pub fn name_is_verified(self) -> Self {
+        self.with_name_is("Verified")
+    }
+
+    pub fn with_name_is_verified(self) -> Self {
+        self.with_name_is("Verified")
+    }
+
+
+
+    pub fn with_name_is_not_verified(self) -> Self {
+        self.with_name_is_not("Verified")
     }
 
 
@@ -2397,33 +2427,48 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
-    pub fn code_is_proces_s(self) -> Self {
-        self.with_code_is("PROCESS")
+    pub fn code_is_read_y(self) -> Self {
+        self.with_code_is("READY")
     }
 
-    pub fn with_code_is_proces_s(self) -> Self {
-        self.with_code_is("PROCESS")
-    }
-
-
-
-    pub fn with_code_is_not_proces_s(self) -> Self {
-        self.with_code_is_not("PROCESS")
-    }
-
-
-    pub fn code_is_don_e(self) -> Self {
-        self.with_code_is("DONE")
-    }
-
-    pub fn with_code_is_don_e(self) -> Self {
-        self.with_code_is("DONE")
+    pub fn with_code_is_read_y(self) -> Self {
+        self.with_code_is("READY")
     }
 
 
 
-    pub fn with_code_is_not_don_e(self) -> Self {
-        self.with_code_is_not("DONE")
+    pub fn with_code_is_not_read_y(self) -> Self {
+        self.with_code_is_not("READY")
+    }
+
+
+    pub fn code_is_executin_g(self) -> Self {
+        self.with_code_is("EXECUTING")
+    }
+
+    pub fn with_code_is_executin_g(self) -> Self {
+        self.with_code_is("EXECUTING")
+    }
+
+
+
+    pub fn with_code_is_not_executin_g(self) -> Self {
+        self.with_code_is_not("EXECUTING")
+    }
+
+
+    pub fn code_is_verifie_d(self) -> Self {
+        self.with_code_is("VERIFIED")
+    }
+
+    pub fn with_code_is_verifie_d(self) -> Self {
+        self.with_code_is("VERIFIED")
+    }
+
+
+
+    pub fn with_code_is_not_verifie_d(self) -> Self {
+        self.with_code_is_not("VERIFIED")
     }
 
 
@@ -2440,6 +2485,21 @@ impl<R> TaskStatusRequest<R> {
 
     pub fn with_color_is_not_value_94a3b8(self) -> Self {
         self.with_color_is_not("#94A3B8")
+    }
+
+
+    pub fn color_is_value_3b82f6(self) -> Self {
+        self.with_color_is("#3B82F6")
+    }
+
+    pub fn with_color_is_value_3b82f6(self) -> Self {
+        self.with_color_is("#3B82F6")
+    }
+
+
+
+    pub fn with_color_is_not_value_3b82f6(self) -> Self {
+        self.with_color_is_not("#3B82F6")
     }
 
 
@@ -2519,6 +2579,21 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
+    pub fn display_order_is_value_40(self) -> Self {
+        self.with_display_order_is("40")
+    }
+
+    pub fn with_display_order_is_value_40(self) -> Self {
+        self.with_display_order_is("40")
+    }
+
+
+
+    pub fn with_display_order_is_not_value_40(self) -> Self {
+        self.with_display_order_is_not("40")
+    }
+
+
 
     pub fn progress_is_value_0(self) -> Self {
         self.with_progress_is("0")
@@ -2532,6 +2607,21 @@ impl<R> TaskStatusRequest<R> {
 
     pub fn with_progress_is_not_value_0(self) -> Self {
         self.with_progress_is_not("0")
+    }
+
+
+    pub fn progress_is_value_25(self) -> Self {
+        self.with_progress_is("25")
+    }
+
+    pub fn with_progress_is_value_25(self) -> Self {
+        self.with_progress_is("25")
+    }
+
+
+
+    pub fn with_progress_is_not_value_25(self) -> Self {
+        self.with_progress_is_not("25")
     }
 
 

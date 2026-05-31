@@ -50,12 +50,16 @@ where
         self.expression.apply(|value| value.status_is_planned())
     }
 
-    pub fn status_is_process(self) -> SafeExpression<R, bool> {
-        self.expression.apply(|value| value.status_is_process())
+    pub fn status_is_ready(self) -> SafeExpression<R, bool> {
+        self.expression.apply(|value| value.status_is_ready())
     }
 
-    pub fn status_is_done(self) -> SafeExpression<R, bool> {
-        self.expression.apply(|value| value.status_is_done())
+    pub fn status_is_executing(self) -> SafeExpression<R, bool> {
+        self.expression.apply(|value| value.status_is_executing())
+    }
+
+    pub fn status_is_verified(self) -> SafeExpression<R, bool> {
+        self.expression.apply(|value| value.status_is_verified())
     }
     pub fn get_task_execution_log_list(self) -> crate::TaskExecutionLogListExpression<R> {
         crate::TaskExecutionLogListExpression::new(

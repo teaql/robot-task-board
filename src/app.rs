@@ -15,11 +15,13 @@ pub struct App {
     pub input: String,
     pub logs: VecDeque<String>,
     pub planned_tasks: Vec<TaskModel>,
-    pub process_tasks: Vec<TaskModel>,
-    pub done_tasks: Vec<TaskModel>,
+    pub ready_tasks: Vec<TaskModel>,
+    pub executing_tasks: Vec<TaskModel>,
+    pub verified_tasks: Vec<TaskModel>,
     pub planned_count: usize,
-    pub process_count: usize,
-    pub done_count: usize,
+    pub ready_count: usize,
+    pub executing_count: usize,
+    pub verified_count: usize,
     pub service: TaskService,
     pub search_term: Option<String>,
     pub should_quit: bool,
@@ -36,11 +38,13 @@ impl App {
             input: String::new(),
             logs: VecDeque::new(),
             planned_tasks: Vec::new(),
-            process_tasks: Vec::new(),
-            done_tasks: Vec::new(),
+            ready_tasks: Vec::new(),
+            executing_tasks: Vec::new(),
+            verified_tasks: Vec::new(),
             planned_count: 0,
-            process_count: 0,
-            done_count: 0,
+            ready_count: 0,
+            executing_count: 0,
+            verified_count: 0,
             service,
             search_term: None,
             should_quit: false,
@@ -52,7 +56,7 @@ impl App {
         app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
         app.service.log_info("System successfully initialized.");
         app.service.log_info("Pre-loaded SQLite database 'robot_kanban.db'.");
-        app.service.log_info("TeaQL v0.9.9: Comment Propagation is fully active.");
+        app.service.log_info("TeaQL v1.0.3: Comment Propagation is fully active.");
         app
     }
 
@@ -81,11 +85,13 @@ impl App {
         let res = self.service.reload_data(&self.search_term).await?;
 
         self.planned_tasks = res.planned_tasks;
-        self.process_tasks = res.process_tasks;
-        self.done_tasks = res.done_tasks;
+        self.ready_tasks = res.ready_tasks;
+        self.executing_tasks = res.executing_tasks;
+        self.verified_tasks = res.verified_tasks;
         self.planned_count = res.planned_count;
-        self.process_count = res.process_count;
-        self.done_count = res.done_count;
+        self.ready_count = res.ready_count;
+        self.executing_count = res.executing_count;
+        self.verified_count = res.verified_count;
 
         Ok(())
     }
