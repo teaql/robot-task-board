@@ -146,7 +146,7 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
         spans.push(Span::styled(changes, Style::default().fg(Color::Cyan)));
     } else if rest.starts_with("Execute TeaQL - ") {
         spans.push(Span::styled("Execute TeaQL - ", Style::default().fg(Color::Indexed(242))));
-        spans.push(Span::styled(&rest[16..], Style::default().fg(Color::Green)));
+        spans.push(Span::styled(&rest[16..], Style::default().fg(Color::Rgb(46, 204, 113)).add_modifier(Modifier::BOLD)));
     } else {
         colorize_sql(rest, &mut spans);
     }
