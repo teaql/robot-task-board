@@ -66,7 +66,6 @@ TeaQL Runtime ready
 
 ## Robot Task Board
 
-
 ![Task Board](assets/003-task-board.png)
 The task board is intentionally simple.
 
@@ -78,7 +77,7 @@ Its purpose is to demonstrate how TeaQL Runtime powers a real business applicati
 
 ## Business Trace & SQL Introspection
 
-[BUSINESS TRACE SCREENSHOT HERE]
+![Task Board](assets/004-trace-chain.png)
 
 Unlike traditional ORMs, TeaQL exposes how business operations are translated into runtime behavior.
 
