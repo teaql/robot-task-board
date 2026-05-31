@@ -195,7 +195,7 @@ TeaQL focuses on making business software:
 
 The goal is to let developers understand what their business code actually does.
 
-[Make a deeper dive](<https://teaql.io/blog/robot-task-board-showcase/> blog) 
+[Make a deeper dive](<https://teaql.io/blog/robot-task-board-showcase/>) 
 
 ---
 
