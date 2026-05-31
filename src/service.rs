@@ -751,14 +751,13 @@ impl TaskService {
                     let task_name = task.name().to_string();
 
                     let comment = format!("Move task '{}' to {}", task_name, status_name);
-                    let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    TeaqlEntityRepository::save_entity_graph_from(&repo,
-                        EntityGraph::new(task)
-                            .comment(&comment)
-                            .child("task_execution_log_list",
-                                EntityGraph::new(log))
-                            .build()
-                    ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    let task_repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    task_repo.save_entity_with_comment(task, teaql_runtime::EntityStatus::Updated, &comment)
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+                    let log_repo = self.ctx.task_execution_log_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    log_repo.save_entity_with_comment(log, teaql_runtime::EntityStatus::New, &comment)
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
