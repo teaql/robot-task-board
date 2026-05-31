@@ -45,6 +45,14 @@ fn format_field_val(field: &str, val: &Option<Value>) -> String {
     }
 }
 
+/// Map internal field names to user-friendly display names.
+fn display_field_name(field: &str) -> &str {
+    match field {
+        "status_id" => "status",
+        other => other,
+    }
+}
+
 /// Check if a log message is a bootstrap event (schema or seed).
 pub fn is_bootstrap_message(msg: &str) -> bool {
     msg.starts_with("Create ")
@@ -156,7 +164,7 @@ impl EntityEventSink for AppAuditSink {
             let old_str = format_field_val(&change.field, &change.old_value);
             let new_str = format_field_val(&change.field, &change.new_value);
             if old_str != new_str {
-                field_changes.push(format!("{}: [{} ➔ {}]", change.field, old_str, new_str));
+                field_changes.push(format!("{}: [{} ➔ {}]", display_field_name(&change.field), old_str, new_str));
             }
         }
         let fields_part = if field_changes.is_empty() {
@@ -225,7 +233,7 @@ impl EntityEventSink for AppAuditSink {
             if old_str != new_str {
                 let detail = format!(
                     "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
-                    timestamp_with_date, user, change.field, old_str, new_str
+                    timestamp_with_date, user, display_field_name(&change.field), old_str, new_str
                 );
                 audit_lines.push(detail);
             }
