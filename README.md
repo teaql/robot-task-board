@@ -1,6 +1,6 @@
 # TeaQL Robot Task Board
 
-[HERO SCREENSHOT HERE]
+![Start Screen](assets/001-start-screen.png)
 
 *A tiny self-bootstrapping business application built with TeaQL Runtime.*
 
@@ -30,6 +30,8 @@ Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize refer
 ## Runtime Bootstrap
 
 [BOOTSTRAP SCREENSHOT HERE]
+
+![BOOTSTRAP](assets/002-bootstrap.png)
 
 TeaQL Runtime starts from an empty environment and automatically:
 
@@ -65,7 +67,7 @@ TeaQL Runtime ready
 ## Robot Task Board
 
 [TASK BOARD SCREENSHOT HERE]
-
+![Task Board](assets/003-task-board.png)
 The task board is intentionally simple.
 
 Its purpose is not to demonstrate task management.
