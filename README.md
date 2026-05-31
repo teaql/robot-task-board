@@ -1,6 +1,6 @@
 # TeaQL Robot Task Board
 
-![Start Screen](assets/001-start-screen.png)
+![Start Screen](https://raw.githubusercontent.com/teaql/robot-task-board/main/assets/001-start-screen.png)
 
 *A tiny self-bootstrapping business application built with TeaQL Runtime.*
 
@@ -31,7 +31,7 @@ Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize refer
 
 
 
-![BOOTSTRAP](assets/002-bootstrap.png)
+![BOOTSTRAP](https://raw.githubusercontent.com/teaql/robot-task-board/main/assets/002-bootstrap.png)
 
 TeaQL Runtime starts from an empty environment and automatically:
 
@@ -66,7 +66,7 @@ TeaQL Runtime ready
 
 ## Robot Task Board
 
-![Task Board](assets/003-task-board.png)
+![Task Board](https://raw.githubusercontent.com/teaql/robot-task-board/main/assets/003-task-board.png)
 The task board is intentionally simple.
 
 Its purpose is not to demonstrate task management.
@@ -77,7 +77,7 @@ Its purpose is to demonstrate how TeaQL Runtime powers a real business applicati
 
 ## Business Trace & SQL Introspection
 
-![Task Board](assets/004-trace-chain.png)
+![Task Board](https://raw.githubusercontent.com/teaql/robot-task-board/main/assets/004-trace-chain.png)
 
 Unlike traditional ORMs, TeaQL exposes how business operations are translated into runtime behavior.
 
