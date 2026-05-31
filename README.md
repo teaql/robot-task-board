@@ -97,7 +97,7 @@ The goal is to make business behavior observable rather than hidden behind frame
 
 ---
 
-# What Is TeaQL?
+## What Is TeaQL?
 
 TeaQL applications are composed of three layers.
 
@@ -150,7 +150,7 @@ TeaQL Runtime is the infrastructure layer that supports generated domain model c
 
 ---
 
-# Why This Matters
+## Why This Matters
 
 Traditional business software often requires heavyweight infrastructure.
 
@@ -182,7 +182,7 @@ The same domain model can scale from embedded devices to mission-critical busine
 
 ---
 
-# Design Philosophy
+## Design Philosophy
 
 TeaQL focuses on making business software:
 
@@ -195,7 +195,7 @@ TeaQL focuses on making business software:
 
 The goal is to let developers understand what their business code actually does.
 
-[Make a deeper dive](<https://teaql.io/blog/robot-task-board-showcase/>) 
+[Make a deeper dive](<https://teaql.io/blog/robot-task-board-showcase/>)
 
 ---
 
