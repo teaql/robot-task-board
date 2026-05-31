@@ -263,3 +263,122 @@ pub struct BootstrapStep {
     pub completed: bool,
     pub elapsed_ms: Option<f64>,
 }
+
+/// Run the full bootstrap sequence: initialize the service, collect events,
+/// animate the bootstrap screen, and return the ready TaskService.
+pub async fn bootstrap<B: Backend>(
+    terminal: &mut Terminal<B>,
+    db_path: &str,
+) -> Result<crate::service::TaskService, Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+
+    let boot_start = Instant::now();
+
+    // Show a minimal bootstrap screen while the service initializes
+    draw_bootstrap(terminal, &[
+        BootstrapStep { label: "Open SQLite database", completed: false, elapsed_ms: None },
+    ], false, None, None)?;
+
+    // Initialize service — real events are fired through ctx.send_event()
+    // and captured in the UnifiedLogBuffer.
+    let db_open_start = Instant::now();
+    let service = crate::service::TaskService::new(db_path).await?;
+    let total_elapsed = boot_start.elapsed();
+
+    // Collect real bootstrap events and build the step list dynamically
+    let bootstrap_events = service.drain_bootstrap_events();
+    let db_open_ms = db_open_start.elapsed().as_secs_f64() * 1000.0;
+
+    // Compute summary counts from event messages
+    let mut tables_created = 0usize;
+    let mut tables_verified = 0usize;
+    let mut fields_added = 0usize;
+    let mut seeds = 0usize;
+    for (msg, _) in &bootstrap_events {
+        if msg.starts_with("Create ") {
+            tables_created += 1;
+        } else if msg.starts_with("Verified ") {
+            tables_verified += 1;
+        } else if msg.starts_with("  + field ") {
+            fields_added += 1;
+        } else if msg.starts_with("Seed ") {
+            seeds += 1;
+        }
+    }
+    let entity_count = tables_created + tables_verified;
+    let mut summary_parts = Vec::new();
+    summary_parts.push(format!("{} entities", entity_count));
+    if tables_created > 0 {
+        summary_parts.push(format!("{} tables created", tables_created));
+    }
+    if tables_verified > 0 {
+        summary_parts.push(format!("{} tables verified", tables_verified));
+    }
+    if fields_added > 0 {
+        summary_parts.push(format!("{} fields added", fields_added));
+    }
+    if seeds > 0 {
+        summary_parts.push(format!("{} seeds", seeds));
+    }
+    let summary = summary_parts.join(", ");
+
+    // Build steps: "Open SQLite database" + "N entities discovered" + events + "Startup complete"
+    let mut final_steps: Vec<BootstrapStep> = Vec::new();
+    final_steps.push(BootstrapStep {
+        label: "Open SQLite database",
+        completed: true,
+        elapsed_ms: Some(db_open_ms),
+    });
+
+    // Insert "N entities discovered" step
+    let discovered_label: &'static str = Box::leak(
+        format!("{} entities discovered", entity_count).into_boxed_str()
+    );
+    final_steps.push(BootstrapStep {
+        label: discovered_label,
+        completed: true,
+        elapsed_ms: None,
+    });
+
+    // Leak the strings so we can use &'static str in BootstrapStep
+    for (event_msg, elapsed_ms) in &bootstrap_events {
+        let label: &'static str = Box::leak(event_msg.clone().into_boxed_str());
+        final_steps.push(BootstrapStep {
+            label,
+            completed: true,
+            elapsed_ms: Some(*elapsed_ms),
+        });
+    }
+    final_steps.push(BootstrapStep {
+        label: "TeaQL Runtime ready",
+        completed: true,
+        elapsed_ms: None,
+    });
+
+    // Animate the bootstrap steps with checkmarks one by one
+    for i in 0..final_steps.len() {
+        let display_steps: Vec<BootstrapStep> = final_steps
+            .iter()
+            .enumerate()
+            .map(|(j, s)| BootstrapStep {
+                label: s.label,
+                completed: j <= i,
+                elapsed_ms: if j <= i { s.elapsed_ms } else { None },
+            })
+            .collect();
+        let all_done = i == final_steps.len() - 1;
+        draw_bootstrap(
+            terminal,
+            &display_steps,
+            all_done,
+            if all_done { Some(total_elapsed) } else { None },
+            if all_done { Some(&summary) } else { None },
+        )?;
+        if !all_done {
+            std::thread::sleep(Duration::from_millis(80));
+        }
+    }
+    wait_for_key()?;
+
+    Ok(service)
+}

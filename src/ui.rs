@@ -3,7 +3,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 
-use crate::App;
+use crate::app::App;
 
 pub fn parse_log_line(line: &str) -> Line<'_> {
     let mut spans = Vec::new();
