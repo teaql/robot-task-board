@@ -144,6 +144,9 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
         let changes = &rest[changes_idx..];
         spans.push(Span::styled(main_msg, Style::default().fg(Color::White)));
         spans.push(Span::styled(changes, Style::default().fg(Color::Cyan)));
+    } else if rest.starts_with("Execute TeaQL - ") {
+        spans.push(Span::styled("Execute TeaQL - ", Style::default().fg(Color::Indexed(242))));
+        spans.push(Span::styled(&rest[16..], Style::default().fg(Color::Green)));
     } else {
         colorize_sql(rest, &mut spans);
     }
