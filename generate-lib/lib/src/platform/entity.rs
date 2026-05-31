@@ -113,6 +113,10 @@ impl Platform {
         &self.task_list
     }
 
+    pub fn task_list_mut(&mut self) -> &mut SmartList<crate::Task> {
+        &mut self.task_list
+    }
+
     pub fn mark_as_delete(&mut self) -> &mut Self {
         self.root.mark_as_delete(self.entity_key());
         self

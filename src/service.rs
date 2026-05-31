@@ -10,7 +10,7 @@ use teaql_runtime::{
 };
 use teaql_core::TeaqlEntity;
 
-use crate::logging::{short_user, is_bootstrap_message, AppAuditSink, LoggingExecutor};
+use crate::logging::{is_bootstrap_message, AppAuditSink, LoggingExecutor};
 use crate::models::{TaskModel, ReloadedData, MoveResult};
 
 pub trait UserContextExt {
@@ -27,7 +27,7 @@ impl UserContextExt for UserContext {
 pub trait TaskDomainBehavior {
     fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> where Self: Sized;
     fn transition_status(&self, cmd: &TransitionCommand) -> Result<Option<u64>, String>;
-    fn generate_execution_log(&self, log_id: u64, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog;
+    fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog;
 }
 
 pub struct TransitionCommand {
@@ -44,10 +44,9 @@ impl TaskDomainBehavior for Task {
             return Err("Task name cannot be empty".to_owned());
         }
         
-        let query_trace = format!("Execute TeaQL - Q::tasks().with_id_is({}).new_entity(ctx)", next_id);
-        crate::logging::log_info(ctx, &query_trace);
-
-        let mut task = Q::tasks().with_id_is(next_id).new_entity(ctx);
+        let comment = format!("Create task '{}'", cmd.name);
+        crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", comment));
+        let mut task = Q::tasks().comment(&comment).new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
             .update_version(0_i64)
@@ -56,13 +55,11 @@ impl TaskDomainBehavior for Task {
         Ok(task)
     }
 
-    fn generate_execution_log(&self, log_id: u64, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
-        let query_trace = format!("Execute TeaQL - Q::task_execution_logs().with_id_is({}).new_entity(ctx)", log_id);
-        crate::logging::log_info(ctx, &query_trace);
-
-        let mut log = Q::task_execution_logs().with_id_is(log_id).new_entity(ctx);
-        log.update_id(log_id)
-            .update_action(action.to_owned())
+    fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
+        let comment = format!("Generate execution log for action '{}'", action);
+        crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::task_execution_logs().comment({:?}).new_entity(ctx)", comment));
+        let mut log = Q::task_execution_logs().comment(&comment).new_entity(ctx);
+        log.update_action(action.to_owned())
             .update_detail(detail.to_owned())
             .update_version(0_i64)
             .update_task_id(self.id());
@@ -103,6 +100,7 @@ pub struct TaskService {
     #[allow(dead_code)]
     inner_executor: RusqliteMutationExecutor,
     last_log_index: Mutex<usize>,
+    pub status_cache: std::collections::HashMap<u64, String>,
 }
 
 impl TaskService {
@@ -141,10 +139,21 @@ impl TaskService {
         // which are captured in the UnifiedLogBuffer for the startup screen to observe.
         ensure_rusqlite_schema_for(&ctx)?;
 
+        let mut status_cache = std::collections::HashMap::new();
+        crate::logging::log_info(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").execute_for_list(&ctx)");
+        let statuses = robot_kanban::Q::task_status()
+            .comment("Load task statuses for cache")
+            .execute_for_list(&ctx)
+            .await?.data;
+        for status in statuses {
+            status_cache.insert(status.id(), status.code().to_string());
+        }
+
         Ok(Self {
             ctx,
             inner_executor,
             last_log_index: Mutex::new(0),
+            status_cache,
         })
     }
 
@@ -215,36 +224,28 @@ impl TaskService {
             "Get active tasks"
         };
 
-        let search_json = if let Some(ref term) = search_term {
-            let escaped_name = serde_json::Value::String(term.clone());
-            format!(r#"{{"name": {}}}"#, escaped_name)
-        } else {
-            r#"{}"#.to_owned()
-        };
-
-        let select = Q::tasks()
+        let query = robot_kanban::Q::tasks()
             .comment(search_comment)
-            .filter_with_json(&search_json)
-            .facet_by_status_as("status_stats", Q::task_status().comment("Count status").count_tasks());
-
-        let query_trace = format!(
-            "Execute TeaQL - Q::tasks().comment(\"{}\").filter_with_json(\"{}\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())",
-            search_comment,
-            search_json.replace('"', "\\\"")
-        );
+            .facet_by_status_as("status_stats", robot_kanban::Q::task_status().comment("Count status").count_tasks());
 
         // Unified logging: Log the query trace before running the query
         self.log_info(&format!("Starting query: {}", search_comment));
-        self.log_info(&query_trace);
+        
+        let teaql_code = if let Some(kw) = search_term {
+            format!("Q::tasks().comment({:?}).with_name_like(\"%{}%\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())", search_comment, kw)
+        } else {
+            format!("Q::tasks().comment({:?}).facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())", search_comment)
+        };
+        self.log_info(&format!("Execute TeaQL - {}", teaql_code));
 
-        let all_tasks = select.execute_for_list(&self.ctx).await?;
+        let list_result = query.execute_for_list(&self.ctx).await?;
 
         let mut planned_count = 0;
         let mut ready_count = 0;
         let mut executing_count = 0;
         let mut verified_count = 0;
 
-        if let Some(facet_list) = all_tasks.facet("status_stats") {
+        if let Some(facet_list) = list_result.facet("status_stats") {
             for record in facet_list.iter() {
                 let status_id = match record.get("id") {
                     Some(&teaql_core::Value::U64(id)) => id,
@@ -271,16 +272,36 @@ impl TaskService {
         let mut executing_tasks = Vec::new();
         let mut verified_tasks = Vec::new();
 
-        for task in all_tasks.data {
+        let mut all_tasks = list_result.data;
+        all_tasks.sort_by_key(|t| t.id());
+
+        for task in all_tasks {
+            if let Some(term) = search_term {
+                if !task.name().to_lowercase().contains(&term.to_lowercase()) {
+                    continue;
+                }
+            }
             let task_model = TaskModel {
                 id: task.id(),
                 name: task.name().to_string(),
             };
             match task.status_id() {
-                1001 => planned_tasks.push(task_model),
-                1002 => ready_tasks.push(task_model),
-                1003 => executing_tasks.push(task_model),
-                1004 => verified_tasks.push(task_model),
+                1001 => {
+                    planned_count += 1;
+                    planned_tasks.push(task_model);
+                }
+                1002 => {
+                    ready_count += 1;
+                    ready_tasks.push(task_model);
+                }
+                1003 => {
+                    executing_count += 1;
+                    executing_tasks.push(task_model);
+                }
+                1004 => {
+                    verified_count += 1;
+                    verified_tasks.push(task_model);
+                }
                 _ => {}
             }
         }
@@ -296,7 +317,6 @@ impl TaskService {
             ready_count,
             executing_count,
             verified_count,
-            query_trace,
         })
     }
 
@@ -306,16 +326,14 @@ impl TaskService {
         let cmd = CreateTaskCommand { name: name.to_owned() };
         let mut task = Task::create(&cmd, next_id, &self.ctx)?;
 
-        let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
-        let mut log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
+        let mut log = task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
         let comment = format!("Create task '{}'", name);
         
+        task.task_execution_log_list_mut().push(log);
         task.set_comment(&comment);
+        
         task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-        log.set_comment(&comment);
-        log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Finished business action: Create task '{}'", name));
         Ok(next_id)
@@ -323,16 +341,12 @@ impl TaskService {
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
         self.log_info(&format!("Starting business action: Delete task ID {}", id));
-        let select = Q::tasks()
-            .comment(&format!("Get task {} for deletion", id))
-            .with_id_is(id);
-
-        self.log_info(&format!(
-            "Execute TeaQL - Q::tasks().comment(\"Get task {} for deletion\").with_id_is({})",
-            id, id
-        ));
-
-        let task_opt = select.execute_for_one(&self.ctx).await?;
+        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").execute_for_one(&self.ctx)", id, id));
+        
+        let task_opt = robot_kanban::Q::tasks()
+            .with_id_is(id)
+            .comment(&format!("Load task {} for deletion", id))
+            .execute_for_one(&self.ctx).await?;
 
         if let Some(mut task) = task_opt {
             let task_name = task.name().to_string();
@@ -355,23 +369,17 @@ impl TaskService {
         id: u64,
         target_status: &str,
     ) -> Result<MoveResult, Box<dyn Error>> {
-        self.log_info(&format!("Starting business action: Move task {} to '{}'", id, target_status));
-        let select = Q::tasks()
-            .comment("Get task for DDD")
-            .with_id_is(id);
+        let trimmed_status = target_status.trim();
 
-        let query_trace = format!(
-            "Execute TeaQL - Q::tasks().comment(\"Get task for DDD\").with_id_is({})",
-            id
-        );
-
-        self.log_info(&query_trace);
-
-        let task_opt = select.execute_for_one(&self.ctx).await?;
+        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").execute_for_one(&self.ctx)", id, id));
+        let task_opt = robot_kanban::Q::tasks()
+            .with_id_is(id)
+            .comment(&format!("Load task {} for status transition", id))
+            .execute_for_one(&self.ctx).await?;
 
         if let Some(mut task) = task_opt {
             let cmd_obj = TransitionCommand {
-                target_status: target_status.to_owned(),
+                target_status: trimmed_status.to_owned(),
             };
             let transition_result = task.transition_status(&cmd_obj);
 
@@ -385,52 +393,46 @@ impl TaskService {
                         1004 => { task.update_status_to_verified(); }
                         _ => {}
                     }
-                    let status_name = match new_status {
-                        1001 => "Planned",
-                        1002 => "Ready",
-                        1003 => "Executing",
-                        1004 => "Verified",
-                        _ => "Unknown",
-                    };
-                    let old_status_name = match old_status_id {
-                        1001 => "Planned",
-                        1002 => "Ready",
-                        1003 => "Executing",
-                        1004 => "Verified",
-                        _ => "Unknown",
-                    };
+                    let status_name = self.status_cache.get(&new_status).cloned().unwrap_or_else(|| "Unknown".to_owned());
+                    let old_status_name = self.status_cache.get(&old_status_id).cloned().unwrap_or_else(|| "Unknown".to_owned());
+                    
+                    self.log_info(&format!("Starting business action: Move task {} status from {} to {}", id, old_status_name, status_name));
+
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
-                    let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
-                    let mut log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
+                    let log = task.generate_execution_log("STATUS_CHANGED", &detail, &self.ctx);
                     let task_name = task.name().to_string();
 
-                    let comment = format!("Move task '{}' to {}", task_name, status_name);
+                    let comment = format!("Move task '{}' status from {} to {}", task_name, old_status_name, status_name);
                     
+                    // Attach the log to the task's execution log list to establish the graph relation
+                    task.task_execution_log_list_mut().push(log);
+
+                    // Set the comment on the aggregate root
                     task.set_comment(&comment);
+
+                    // Save the aggregate root, which implicitly saves the child execution logs
                     task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-                    log.set_comment(&comment);
-                    log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
-                        status_name: status_name.to_owned(),
-                        query_trace,
+                        status_name,
                     })
                 }
                 Ok(None) => {
-                    self.log_info(&format!("Finished business action: Task {} is already in 'Verified' status", id));
-                    Ok(MoveResult::AlreadyFinal { query_trace })
+                    self.log_info(&format!("Action failed: Task {} already in final status", id));
+                    Ok(MoveResult::AlreadyFinal)
                 }
-                Err(err_msg) => {
-                    self.log_info(&format!("Finished business action: Error: {}", err_msg));
-                    Ok(MoveResult::Error { err_msg, query_trace })
+                Err(e) => {
+                    let err_msg = format!("Transition error: {}", e);
+                    self.log_info(&format!("Action failed: {}", err_msg));
+                    Ok(MoveResult::Error { err_msg })
                 }
             }
         } else {
-            self.log_info(&format!("Finished business action: Error: Task with ID {} not found", id));
-            Ok(MoveResult::NotFound { query_trace })
+            self.log_info(&format!("Action failed: Task {} not found", id));
+            Ok(MoveResult::NotFound)
         }
     }
 
@@ -467,5 +469,28 @@ impl TaskService {
             }
         }
         new_logs
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error;
+
+    #[tokio::test]
+    async fn test_core_flow() -> Result<(), Box<dyn Error>> {
+        let db_path = "test_core_flow.db";
+        let _ = std::fs::remove_file(db_path);
+
+        let service = TaskService::new(db_path).await?;
+        
+        let task_id = service.add_task("Test Task").await?;
+
+        // Restart service to simulate user's flow
+        let service2 = TaskService::new(db_path).await?;
+
+        service2.move_task(task_id, "Ready").await?;
+        
+        Ok(())
     }
 }

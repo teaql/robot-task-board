@@ -89,58 +89,26 @@ impl teaql_runtime::QueryExecutor for ServiceRuntimeExecutor {
         &self,
         query: &teaql_sql::CompiledQuery,
     ) -> Result<Vec<teaql_core::Record>, Self::Error> {
-        let inner = self.inner.clone();
         let query = query.clone();
-        inner.fetch_all(&query)
+        teaql_runtime::QueryExecutor::fetch_all(&self.inner, &query)
     }
 
     fn execute(&self, query: &teaql_sql::CompiledQuery) -> Result<u64, Self::Error> {
-        let inner = self.inner.clone();
         let query = query.clone();
-        inner.execute(&query)
+        teaql_runtime::QueryExecutor::execute(&self.inner, &query)
     }
 
     fn begin_transaction(&self) -> Result<teaql_runtime::GraphTransactionBoundary, Self::Error> {
-        let inner = self.inner.clone();
         teaql_runtime::QueryExecutor::begin_transaction(&self.inner)?;
         Ok(teaql_runtime::GraphTransactionBoundary::Started)
     }
 
     fn commit_transaction(&self) -> Result<(), Self::Error> {
-        let inner = self.inner.clone();
-        teaql_runtime::QueryExecutor::commit_transaction(&self.inner)
-    }
+        teaql_runtime::QueryExecutor::commit_transaction(&self.inner)}
 
     fn rollback_transaction(&self) -> Result<(), Self::Error> {
-        let inner = self.inner.clone();
-        teaql_runtime::QueryExecutor::rollback_transaction(&self.inner)
-    }
+        teaql_runtime::QueryExecutor::rollback_transaction(&self.inner)}
 }
-
-fn block_on_data_service<F, T>(future: F) -> T
-where
-    F: std::future::Future<Output = T> + Send + 'static,
-    T: Send + 'static,
-{
-    if tokio::runtime::Handle::try_current().is_ok() {
-        std::thread::spawn(move || {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .expect("data service runtime")
-                .block_on(future)
-        })
-        .join()
-        .expect("data service runtime thread")
-    } else {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("data service runtime")
-            .block_on(future)
-    }
-}
-
 pub async fn service_runtime_from_env() -> Result<ServiceRuntime, ServiceRuntimeError> {
     service_runtime(ServiceRuntimeConfig::from_env()?).await
 }
@@ -197,7 +165,7 @@ async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<Data
     } else {
         url.clone()
     };
-    let path_str = config.database_url.strip_prefix("sqlite://").or_else(|| config.database_url.strip_prefix("sqlite:")).unwrap_or(&config.database_url);
+    let path_str = sanitized_url.strip_prefix("sqlite://").or_else(|| sanitized_url.strip_prefix("sqlite:")).unwrap_or(&sanitized_url);
     Ok(DataServicePool::open(path_str)?)}
 
 pub fn repository_registry() -> teaql_runtime::InMemoryRepositoryRegistry {

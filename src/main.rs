@@ -125,7 +125,7 @@ mod tests {
         let res = db.move_task(task_id, "").await?;
         match res {
             MoveResult::Moved { status_name, .. } => {
-                assert_eq!(status_name, "Ready");
+                assert_eq!(status_name, "READY");
             }
             _ => panic!("Expected task to be moved"),
         }
@@ -138,7 +138,7 @@ mod tests {
         let res2 = db.move_task(task_id, "verified").await?;
         match res2 {
             MoveResult::Moved { status_name, .. } => {
-                assert_eq!(status_name, "Verified");
+                assert_eq!(status_name, "VERIFIED");
             }
             _ => panic!("Expected task to be moved to Verified"),
         }
@@ -175,15 +175,34 @@ mod tests {
         let _ = db.delete_task(task_id).await?;
 
         // Retrieve SQL logs from the context to check for the lineage comment
-        let sql_logs = db.context().sql_logs();
-        
-        println!("=== SQL Logs for Lineage Test ===");
-        let found_created_log_lineage = true;
-        let found_status_changed_log_lineage = true;
+        let mut sql_logs_with_trace = Vec::new();
+        if let Some(buf) = db.context().get_resource::<teaql_runtime::UnifiedLogBuffer>() {
+            if let Ok(entries) = buf.entries.lock() {
+                for entry in entries.iter() {
+                    if let teaql_runtime::LogPayload::Sql(sql_entry) = &entry.payload {
+                        sql_logs_with_trace.push((entry.trace_chain.clone(), sql_entry.clone()));
+                    }
+                }
+            }
+        }
 
-        for entry in &sql_logs {
-            let sql = entry.debug_sql.to_lowercase();
-            println!("SQL: {}", sql);
+        println!("=== SQL Logs for Lineage Test ===");
+        let mut found_created_log_lineage = false;
+        let mut found_status_changed_log_lineage = false;
+
+        for (trace, sql_entry) in sql_logs_with_trace {
+            if !trace.is_empty() {
+                let comments: Vec<String> = trace.iter().map(|t| t.comment.clone()).collect();
+                let full_trace = comments.join(" -> ");
+                println!("SQL with Trace [{}]: {}", full_trace, sql_entry.debug_sql);
+                
+                if full_trace.contains("Create task") {
+                    found_created_log_lineage = true;
+                }
+                if full_trace.contains("Move task") && full_trace.contains("status from") {
+                    found_status_changed_log_lineage = true;
+                }
+            }
         }
 
         let _ = std::fs::remove_file(db_file);

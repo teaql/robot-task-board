@@ -147,6 +147,21 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
     } else if rest.starts_with("Execute TeaQL - ") {
         spans.push(Span::styled("Execute TeaQL - ", Style::default().fg(Color::Indexed(242))));
         spans.push(Span::styled(rest[16..].to_owned(), Style::default().fg(Color::Rgb(46, 204, 113)).add_modifier(Modifier::BOLD)));
+    } else if rest.starts_with("Starting business action: ") {
+        spans.push(Span::styled("▶ ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled(rest[26..].to_owned(), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+    } else if rest.starts_with("Finished business action: ") {
+        spans.push(Span::styled("✔ ", Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled(rest[26..].to_owned(), Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD)));
+    } else if rest.starts_with("Starting query: ") {
+        spans.push(Span::styled("▶ ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled(rest[16..].to_owned(), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)));
+    } else if rest.starts_with("Finished query: ") {
+        spans.push(Span::styled("✔ ", Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled(rest[16..].to_owned(), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)));
+    } else if rest.starts_with("Business Log: ") {
+        spans.push(Span::styled("🛈 ", Style::default().fg(Color::LightMagenta).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled(rest[14..].to_owned(), Style::default().fg(Color::LightMagenta).add_modifier(Modifier::BOLD)));
     } else {
         colorize_sql(rest, &mut spans);
     }
@@ -261,18 +276,16 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         .constraints(if app.hide_logs {
             vec![
                 Constraint::Length(3),      // 1. System Info area
-                Constraint::Length(3),      // 2. Status statistics
-                Constraint::Min(5),         // 3. Columns (Planned, Process, Done)
-                Constraint::Length(3),      // 4. Command Line Area
-                Constraint::Length(3),      // 5. Command Help Area
+                Constraint::Min(5),         // 2. Columns (Planned, Ready, Executing, Verified)
+                Constraint::Length(3),      // 3. Command Line Area
+                Constraint::Length(3),      // 4. Command Help Area
             ]
         } else {
             vec![
                 Constraint::Percentage(60), // 1. Log area
-                Constraint::Length(3),      // 2. Status statistics
-                Constraint::Min(5),         // 3. Columns (Planned, Process, Done)
-                Constraint::Length(3),      // 4. Command Line Area
-                Constraint::Length(3),      // 5. Command Help Area
+                Constraint::Min(5),         // 2. Columns (Planned, Ready, Executing, Verified)
+                Constraint::Length(3),      // 3. Command Line Area
+                Constraint::Length(3),      // 4. Command Help Area
             ]
         })
         .split(f.size());
@@ -319,78 +332,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(log_paragraph, chunks[0]);
 
-    // 2. Render Status Statistics Area (4 equal columns)
-    let stats_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-        ])
-        .split(chunks[1]);
-
-    let planned_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Planned: "),
-        Span::styled(
-            format!("{}", app.planned_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(planned_stat, stats_chunks[0]);
-
-    let ready_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Ready: "),
-        Span::styled(
-            format!("{}", app.ready_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(ready_stat, stats_chunks[1]);
-
-    let executing_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Executing: "),
-        Span::styled(
-            format!("{}", app.executing_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(executing_stat, stats_chunks[2]);
-
-    let verified_stat = Paragraph::new(Line::from(vec![
-        Span::raw("  Verified: "),
-        Span::styled(
-            format!("{}", app.verified_count),
-            Style::default().fg(Color::White),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White)),
-    );
-    f.render_widget(verified_stat, stats_chunks[3]);
-
-    // 3. Render task list columns (4 columns)
+    // 2. Render task list columns (4 columns)
     let col_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -399,7 +341,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             Constraint::Percentage(25),
             Constraint::Percentage(25),
         ])
-        .split(chunks[2]);
+        .split(chunks[1]);
 
     // Planned Tasks column
     let planned_lines = app
@@ -414,7 +356,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(" PLANNED ")
+            .title(format!(" PLANNED [ {} ] ", app.planned_count))
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
@@ -433,7 +375,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(" READY ")
+            .title(format!(" READY [ {} ] ", app.ready_count))
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
@@ -452,7 +394,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(" EXECUTING ")
+            .title(format!(" EXECUTING [ {} ] ", app.executing_count))
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
@@ -471,7 +413,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title(" VERIFIED ")
+            .title(format!(" VERIFIED [ {} ] ", app.verified_count))
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
@@ -490,12 +432,12 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(cmd_input, chunks[3]);
+    f.render_widget(cmd_input, chunks[2]);
 
     // Position and show the cursor inside the input area (adjusted +6: 1 for left border + 5 for prompt arrow)
     f.set_cursor(
-        chunks[3].x + 6 + app.input.chars().count() as u16,
-        chunks[3].y + 1,
+        chunks[2].x + 6 + app.input.chars().count() as u16,
+        chunks[2].y + 1,
     );
 
     let help_text = vec![
@@ -525,5 +467,5 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(help_box, chunks[4]);
+    f.render_widget(help_box, chunks[3]);
 }

@@ -11,7 +11,7 @@ pub fn get_system_info() -> SystemInfo {
     if let Ok(file) = std::fs::File::open("/proc/cpuinfo") {
         use std::io::BufRead;
         let reader = std::io::BufReader::new(file);
-        for line in reader.lines().flatten() {
+        for line in reader.lines().map_while(Result::ok) {
             if line.starts_with("model name") {
                 if let Some(pos) = line.find(':') {
                     cpu_model = line[pos + 1..].trim().to_owned();
@@ -32,7 +32,7 @@ pub fn get_system_info() -> SystemInfo {
     if let Ok(file) = std::fs::File::open("/proc/meminfo") {
         use std::io::BufRead;
         let reader = std::io::BufReader::new(file);
-        for line in reader.lines().flatten() {
+        for line in reader.lines().map_while(Result::ok) {
             if line.starts_with("MemTotal") {
                 if let Some(pos) = line.find(':') {
                     let parts: Vec<&str> = line[pos + 1..].split_whitespace().collect();

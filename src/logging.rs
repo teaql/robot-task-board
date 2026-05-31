@@ -24,13 +24,13 @@ fn format_val_helper(val: &Option<Value>) -> String {
     }
 }
 
-/// Resolve a status ID value to a human-readable name.
+/// Resolve a status ID value to a human-readable code.
 fn resolve_status_name(raw: &str) -> String {
     match raw {
-        "1001" => "Planned".to_owned(),
-        "1002" => "Ready".to_owned(),
-        "1003" => "Executing".to_owned(),
-        "1004" => "Verified".to_owned(),
+        "1001" => "PLANNED".to_owned(),
+        "1002" => "READY".to_owned(),
+        "1003" => "EXECUTING".to_owned(),
+        "1004" => "VERIFIED".to_owned(),
         other => other.to_owned(),
     }
 }

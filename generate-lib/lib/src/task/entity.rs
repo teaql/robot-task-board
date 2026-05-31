@@ -177,6 +177,10 @@ impl Task {
         &self.task_execution_log_list
     }
 
+    pub fn task_execution_log_list_mut(&mut self) -> &mut SmartList<crate::TaskExecutionLog> {
+        &mut self.task_execution_log_list
+    }
+
     pub fn mark_as_delete(&mut self) -> &mut Self {
         self.root.mark_as_delete(self.entity_key());
         self
