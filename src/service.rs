@@ -43,6 +43,10 @@ impl TaskDomainBehavior for Task {
         if cmd.name.trim().is_empty() {
             return Err("Task name cannot be empty".to_owned());
         }
+        
+        let query_trace = format!("Execute TeaQL - Q::tasks().with_id_is({}).new_entity(ctx)", next_id);
+        crate::logging::log_info(ctx, &query_trace);
+
         let mut task = Q::tasks().with_id_is(next_id).new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
@@ -53,6 +57,9 @@ impl TaskDomainBehavior for Task {
     }
 
     fn generate_execution_log(&self, log_id: u64, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
+        let query_trace = format!("Execute TeaQL - Q::task_execution_logs().with_id_is({}).new_entity(ctx)", log_id);
+        crate::logging::log_info(ctx, &query_trace);
+
         let mut log = Q::task_execution_logs().with_id_is(log_id).new_entity(ctx);
         log.update_id(log_id)
             .update_action(action.to_owned())
@@ -195,33 +202,7 @@ impl TaskService {
     }
 
     pub fn log_info(&self, message: &str) {
-        let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
-        let user = short_user(&self.ctx);
-        let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
-        
-        // Write to TUI buffer
-        if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
-            if let Ok(mut entries) = buf.entries.lock() {
-                entries.push(teaql_runtime::UnifiedLogEntry {
-                    timestamp: std::time::SystemTime::now(),
-                    user_identifier: Some(user.clone()),
-                    trace_chain: Vec::new(),
-                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                        message: log_line.clone(),
-                    }),
-                });
-            }
-        }
-
-        // Also write to app.log for completeness
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("app.log")
-        {
-            use std::io::Write;
-            let _ = writeln!(file, "{}", log_line);
-        }
+        crate::logging::log_info(&self.ctx, message);
     }
 
     pub async fn reload_data(
