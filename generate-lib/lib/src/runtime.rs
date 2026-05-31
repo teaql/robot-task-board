@@ -11,21 +11,15 @@ pub type DataServiceExecutor = ServiceRuntimeExecutor;
 pub type ServiceRuntime = teaql_runtime::UserContext;
 
 pub const DATABASE_URL_ENV: &str = "ROBOT_KANBAN_SERVICE_DATABASE_URL";
-pub const DATABASE_USER_ENV: &str = "ROBOT_KANBAN_SERVICE_DATABASE_USER";
-pub const DATABASE_PASSWORD_ENV: &str = "ROBOT_KANBAN_SERVICE_DATABASE_PASSWORD";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ServiceRuntimeConfig {
     pub database_url: String,
-    pub database_user: String,
-    pub database_password: String,
 }
 
 impl ServiceRuntimeConfig {
     pub fn from_env() -> Result<Self, ServiceRuntimeError> {
         Ok(Self {
             database_url: env_value(DATABASE_URL_ENV)?,
-            database_user: env_value(DATABASE_USER_ENV)?,
-            database_password: env_value(DATABASE_PASSWORD_ENV)?,
         })
     }
 }
@@ -36,8 +30,8 @@ pub enum ServiceRuntimeError {
         name: &'static str,
         source: std::env::VarError,
     },
-    Runtime(teaql_runtime::RuntimeError),
     Rusqlite(rusqlite::Error),
+    Runtime(teaql_runtime::RuntimeError),
 }
 
 impl std::fmt::Display for ServiceRuntimeError {
@@ -46,8 +40,8 @@ impl std::fmt::Display for ServiceRuntimeError {
             ServiceRuntimeError::MissingEnv { name, source } => {
                 write!(f, "missing environment variable {name}: {source}")
             }
-            ServiceRuntimeError::Runtime(err) => write!(f, "runtime error: {err}"),
             ServiceRuntimeError::Rusqlite(err) => write!(f, "rusqlite error: {err}"),
+            ServiceRuntimeError::Runtime(err) => write!(f, "runtime error: {err}"),
         }
     }
 }
@@ -56,8 +50,8 @@ impl std::error::Error for ServiceRuntimeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             ServiceRuntimeError::MissingEnv { source, .. } => Some(source),
-            ServiceRuntimeError::Runtime(err) => Some(err),
             ServiceRuntimeError::Rusqlite(err) => Some(err),
+            ServiceRuntimeError::Runtime(err) => Some(err),
         }
     }
 }
@@ -67,7 +61,6 @@ impl From<rusqlite::Error> for ServiceRuntimeError {
         ServiceRuntimeError::Rusqlite(err)
     }
 }
-
 impl From<teaql_runtime::RuntimeError> for ServiceRuntimeError {
     fn from(err: teaql_runtime::RuntimeError) -> Self {
         ServiceRuntimeError::Runtime(err)
@@ -108,14 +101,18 @@ impl teaql_runtime::QueryExecutor for ServiceRuntimeExecutor {
     }
 
     fn begin_transaction(&self) -> Result<teaql_runtime::GraphTransactionBoundary, Self::Error> {
-        teaql_runtime::QueryExecutor::begin_transaction(&self.inner)
+        let inner = self.inner.clone();
+        teaql_runtime::QueryExecutor::begin_transaction(&self.inner)?;
+        Ok(teaql_runtime::GraphTransactionBoundary::Started)
     }
 
     fn commit_transaction(&self) -> Result<(), Self::Error> {
+        let inner = self.inner.clone();
         teaql_runtime::QueryExecutor::commit_transaction(&self.inner)
     }
 
     fn rollback_transaction(&self) -> Result<(), Self::Error> {
+        let inner = self.inner.clone();
         teaql_runtime::QueryExecutor::rollback_transaction(&self.inner)
     }
 }
@@ -144,12 +141,18 @@ where
     }
 }
 
+pub async fn service_runtime_from_env() -> Result<ServiceRuntime, ServiceRuntimeError> {
+    service_runtime(ServiceRuntimeConfig::from_env()?).await
+}
 
+pub async fn service_runtime(config: ServiceRuntimeConfig) -> Result<ServiceRuntime, ServiceRuntimeError> {
+    let pool = connect_data_service_pool(&config).await?;
+    service_runtime_from_pool(pool).await
+}
 
 pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceRuntime, ServiceRuntimeError> {
     let mutation_executor = DataServiceMutationExecutor::new(pool);
-    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());
-    let runtime_executor = ServiceRuntimeExecutor::new(mutation_executor.clone());
+    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());let runtime_executor = ServiceRuntimeExecutor::new(mutation_executor.clone());
     let mut context = module_with_behaviors_and_checkers().into_context();
     context.set_internal_id_generator(id_generator);
     context.use_rusqlite_provider(mutation_executor);
@@ -164,6 +167,38 @@ fn env_value(name: &'static str) -> Result<String, ServiceRuntimeError> {
     std::env::var(name).map_err(|source| ServiceRuntimeError::MissingEnv { name, source })
 }
 
+async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
+    use std::path::Path;
+
+    let url = &config.database_url;
+    let sanitized_url = if url.starts_with("sqlite:") {
+        let raw_path = url.strip_prefix("sqlite:").unwrap();
+        let (is_absolute, file_path_str) = if raw_path.starts_with("///") {
+            (true, &raw_path[2..])
+        } else if raw_path.starts_with("//") {
+            (false, &raw_path[2..])
+        } else if raw_path.starts_with("/") {
+            (true, raw_path)
+        } else {
+            (false, raw_path)
+        };
+        let pure_file_path = file_path_str.split('?').next().unwrap_or(file_path_str);
+        let path = Path::new(pure_file_path);
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).map_err(|err| teaql_runtime::RuntimeError::Graph(err.to_string()))?;
+            }
+        }
+        if is_absolute {
+            format!("sqlite://{}?mode=rwc", pure_file_path)
+        } else {
+            format!("sqlite:{}?mode=rwc", pure_file_path)
+        }
+    } else {
+        url.clone()
+    };
+    let path_str = config.database_url.strip_prefix("sqlite://").or_else(|| config.database_url.strip_prefix("sqlite:")).unwrap_or(&config.database_url);
+    Ok(DataServicePool::open(path_str)?)}
 
 pub fn repository_registry() -> teaql_runtime::InMemoryRepositoryRegistry {
     teaql_runtime::InMemoryRepositoryRegistry::new()

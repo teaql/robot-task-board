@@ -126,7 +126,7 @@ impl Attribute {
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: crate::TeaqlRuntime + ?Sized,
+        C: crate::TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .attribute_repository()

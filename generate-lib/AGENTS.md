@@ -38,43 +38,123 @@ The generated crate provides:
   - `repository_registry()`
   - `behavior_registry()`
 
-## Query Style
+## MANDATORY AUDIT RULE (Zero-cost Intent Logging)
 
-Use `Q` for reads.
+Whenever you query or persist data, you MUST chain a comment explaining your business intent. This allows the system to build an automatic audit trail.
+- For queries: chain `.comment("...")` before execution.
+- For updates/saves: chain `.set_comment("...")` before saving.
 
-Preferred:
+## CRUD & Query Patterns
+
+### 1. Querying (Read)
+Use `Q` for reads. Always include a `.comment()` to explain the business context.
 
 ```rust
-let rows = Q::<entity_plural>()
+let rows = Q::platforms()
+    .comment("Fetch platforms for processing")
     .select_self()
     .page(1, 20)
     .execute_for_list(&ctx)
     .await?;
 ```
 
-Avoid direct `sqlx::query(...)` unless the user explicitly asks for raw SQL.
+Avoid direct `sqlx::query(...)` unless raw SQL is explicitly requested. Do NOT call generated repositories directly.
 
-Do not call generated repositories, repository registries, metadata registries,
-SQL executors, transaction internals, or other TeaQL runtime internals directly.
-If `Q`, generated entity APIs, `E`, and `UserContext` extensions are not enough,
-report the missing generated API instead of bypassing it.
+### 2. Creating (Create)
+Use `Q::platforms().new_entity(&ctx)` to create a new entity with the correct root context, then use graph save:
+
+```rust
+let mut entity = Q::platforms().new_entity(&ctx);
+// entity.update_name("example");
+entity.set_comment("Created new Platform for user request")
+      .save(&ctx).await?;
+```
+
+### 3. Updating (Update)
+Fetch the graph node, use generated typed setters to modify fields, and append intent before saving:
+
+```rust
+if let Some(mut entity) = Q::platforms().with_id_is(id).execute_for_one(&ctx).await? {
+    // entity.update_status(new_status)
+    entity.set_comment("Updating status due to state transition")
+          .save(&ctx).await?;
+}
+```
+
+### 4. Audited Soft-Delete (Delete)
+Do NOT call `repo.delete`. Use the elegant `mark_as_delete` method chained with `set_comment`:
+
+```rust
+if let Some(mut entity) = Q::platforms().with_id_is(id).execute_for_one(&ctx).await? {
+    entity.mark_as_delete()
+          .set_comment("Soft deleted Platform as requested")
+          .save(&ctx).await?;
+}
+```
+
+## Advanced TeaQL Paradigms
+
+### Dynamic JSON Filtering
+When building multi-condition UI filters, do NOT write complex `if-else` query builders. Use dynamic JSON filtering:
+
+
+```rust
+let items = Q::<platforms>()
+    .comment("Search with dynamic UI filters")
+    .filter_with_json(filter_json_value)
+    .execute_for_list(&ctx).await?;
+```
+
+### Faceted Aggregation
+For dashboard metrics and grouping, use generated facet methods to let the database handle aggregation:
+
+```rust
+let aggregations = Q::<platforms>()
+    .comment("Aggregate data for dashboard")
+    // .facet_by_status_as("status_stats")
+    .execute_for_list(&ctx).await?;
+```
+
+### Partial Projections & DTOs
+When only a few fields are needed, avoid loading the full entity graph. Project specific columns into a custom Rust struct (`return_type::<T>()`):
+
+```rust
+// let stats = Q::<platforms>()
+//     .comment("Fetch lightweight specific fields")
+//     .select_status()
+//     .count_id_as("count")
+//     .group_by_status()
+//     .return_type::<StatusStatsDTO>()
+//     .execute_for_list(&ctx).await?;
+```
+
+### Domain Behavior Injection
+NEVER manually edit generated Entity files. Inject business logic by defining Rust Extension Traits in your application logic (`service.rs`):
+
+```rust
+pub trait <Platform>Ext {
+    fn custom_business_logic(&mut self);
+}
+
+impl <Platform>Ext for <Platform> {
+    fn custom_business_logic(&mut self) {
+        // ...
+    }
+}
+```
 
 ## Relation Loading
 
-Use generated relation helpers.
-
-Preferred:
+Use generated relation helpers. Avoid manual N+1 query loops.
 
 ```rust
 Q::<entity_plural>()
     .select_<relation>_with(Q::<target_plural>().select_self())
 ```
 
-Avoid manual N+1 query loops.
+## Standard Filtering
 
-## Filtering
-
-Use generated readable filters when available:
+Use generated readable filters when available. Use direct `teaql_core::Expr` only when no generated helper exists.
 
 ```rust
 Q::<entity_plural>()
@@ -82,24 +162,10 @@ Q::<entity_plural>()
     .with_<relation>_matching(Q::<target_plural>().select_self())
 ```
 
-Use direct `teaql_core::Expr` only when no generated helper exists.
+## Low-Level Warnings
 
-## Saving Data
-
-Use `Q::platforms().new_entity(&ctx)` to create a new
-entity with the correct TeaQL root context, then use graph save for
-business-object persistence:
-
-```rust
-let mut entity = Q::platforms().new_entity(&ctx);
-// entity.update_name("example");
-entity.save(&ctx).await?;
-```
-
-Do not manually coordinate multiple repository insert/update calls unless the
-task explicitly requires low-level control.
-Do not call `runtime_new(...)`, `entity_root()`, repositories, or runtime
-internals to create entities.
+Do not manually coordinate multiple repository insert/update calls unless the task explicitly requires low-level control.
+Do not call `runtime_new(...)`, `entity_root()`, repositories, or runtime internals to create entities.
 
 ## Safe Value Access
 
@@ -146,16 +212,6 @@ modules, update the KSML model first and regenerate the crate.
 Do not manually edit generated entity/request/expression files. Treat generated
 files as disposable.
 
-## Internationalization (i18n) Guidance
-
-For multilingual support and translation of domain terms (e.g. validation error messages) when using non-English locales (such as Chinese, Spanish, etc.), TeaQL provides a clean, offline i18n translation dictionary workflow:
-
-1. **Locate the Sample File**: Find the auto-generated `teaql-i18n.sample.json` file in the project root. It contains all unique domain entity and property vocabulary keys.
-2. **Translate via AI**: Paste the contents of `teaql-i18n.sample.json` into your AI tool, or instruct this AI agent to translate it. Use the following prompt:
-   > **Prompt**: "Translate this JSON file containing TeaQL domain vocabulary keys into 15 languages: Arabic (ar), Simplified Chinese (zh_CN), Traditional Chinese (zh_TW), Spanish (es), French (fr), German (de), Japanese (ja), Korean (ko), Portuguese (pt), Thai (th), Ukrainian (uk), Filipino (fil), Indonesian (id), English (en) under each key. Return only the valid JSON result."
-3. **Save the JSON**: Save the translated JSON result as `teaql-i18n.json` externally or on the classpath.
-4. **Configure JVM Parameter**: Set the JVM property `-Dteaql.i18n.path=/path/to/teaql-i18n.json` pointing to your translated file.
-5. **Runtime Validation Rule**: If a non-English translator is instantiated at runtime and `-Dteaql.i18n.path` is unconfigured, invalid, or the file is empty, the starter throws a strict `IllegalStateException` to prevent unlocalized output.
 
 ## Domain Context
 

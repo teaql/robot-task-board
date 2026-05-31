@@ -144,7 +144,7 @@ impl TaskExecutionLog {
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
     where
-        C: crate::TeaqlRuntime + ?Sized,
+        C: crate::TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .task_execution_log_repository()

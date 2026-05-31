@@ -167,12 +167,22 @@ impl TaskStatus {
         &self.task_list
     }
 
+    pub fn mark_as_delete(&mut self) -> &mut Self {
+        self.root.mark_as_delete(self.entity_key());
+        self
+    }
+
+    pub fn set_comment(&mut self, comment: impl Into<String>) -> &mut Self {
+        self.root.set_comment(comment);
+        self
+    }
+
     pub async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskStatusRepository<'a>>>
     where
-        C: crate::TeaqlRuntime + ?Sized,
+        C: crate::TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .task_status_repository()

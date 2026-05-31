@@ -1,7 +1,7 @@
 use std::error::Error;
 use chrono::Local;
 
-use robot_kanban::{Q, TeaqlRuntime, Task};
+use robot_kanban::{Q, Task};
 use teaql_core::{Value, TeaqlEntity};
 use teaql_runtime::{
     EntityEvent, EntityEventKind, EntityEventSink, UserContext, RuntimeError,
@@ -165,16 +165,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Saving a clone will trigger the CREATED event automatically, allowing us to reuse the local variable
     {
-        let repo = ctx.task_repository()?;
-        teaql_runtime::ResolvedRepository::save_entity_with_comment(&repo, task.clone(), teaql_runtime::EntityStatus::New, "Create task 'Analyze Network Traffic Logs'".to_owned())?;
+        let mut cloned = task.clone();
+        cloned.set_comment("Create task 'Analyze Network Traffic Logs'");
+        cloned.save(&ctx).await?;
     }
 
     // 7. Action 2: Move the Task (Update status)
     println!("--- Action 2: Moving the Task to 'Process' Status ---");
     task.update_status_to_process();
     {
-        let repo = ctx.task_repository()?;
-        teaql_runtime::ResolvedRepository::save_entity_with_comment(&repo, task.clone(), teaql_runtime::EntityStatus::Updated, "Move task 'Analyze Network Traffic Logs' to Process".to_owned())?;
+        let mut cloned = task.clone();
+        cloned.set_comment("Move task 'Analyze Network Traffic Logs' to Process");
+        cloned.save(&ctx).await?;
     }
 
     // 8. Action 3: Deleting the Task
@@ -186,10 +188,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .execute_for_list(&ctx)
         .await?;
 
-    if let Some(latest_task) = found_tasks.into_iter().next() {
-        let repo = ctx.task_repository()?;
-        // Deleting via repository emits the DELETED event
-        repo.save_entity_with_comment(latest_task.clone(), teaql_runtime::EntityStatus::UpdatedDeleted, "Soft delete the test task".to_string())?;
+    if let Some(mut latest_task) = found_tasks.into_iter().next() {
+        // Deleting via entity API emits the DELETED event
+        latest_task.mark_as_delete();
+        latest_task.set_comment("Soft delete the test task");
+        latest_task.save(&ctx).await?;
     } else {
         println!("[ERROR] Task with ID {} could not be found for deletion.", next_id);
     }

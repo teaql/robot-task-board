@@ -185,7 +185,7 @@ impl Task {
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: crate::TeaqlRuntime + ?Sized,
+        C: crate::TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .task_repository()

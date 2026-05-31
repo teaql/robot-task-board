@@ -100,14 +100,13 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         let repository = ctx
             .task_repository()
             .map_err(|err| RepositoryError::Runtime(RuntimeError::Graph(err.to_string())))?;
         let query_options = self.query_options.clone();
-        let outer_query = self.query.clone();
         let relation_aggregates = runtime_relation_aggregates(&query_options);
         let query = apply_runtime_metadata(self.query, &query_options, &self.child_enhancements);
         let mut rows = repository.fetch_enhanced_entities_with_relation_aggregates::<R>(
@@ -125,7 +124,7 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         let rows = self.limit(1).execute_for_list(ctx).await?;
@@ -137,7 +136,7 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         self.execute_for_first(ctx).await
@@ -149,7 +148,7 @@ impl<R> TaskRequest<R> {
         id: impl Into<teaql_core::Value>,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         self.and_filter(Expr::eq("id", id)).execute_for_first(ctx).await
@@ -162,7 +161,7 @@ impl<R> TaskRequest<R> {
         limit: u64,
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         let total_count = self.clone().execute_for_count(ctx).await?;
@@ -176,7 +175,7 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<u64, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .task_repository()
@@ -200,7 +199,7 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<bool, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .task_repository()
@@ -216,7 +215,7 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<SmartList<Record>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .task_repository()
@@ -237,7 +236,7 @@ impl<R> TaskRequest<R> {
         ctx: &'a C,
     ) -> Result<Option<Record>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let records = self.limit(1).execute_for_records(ctx).await?;
         Ok(records.into_iter().next())

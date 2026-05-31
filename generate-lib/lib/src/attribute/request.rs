@@ -100,7 +100,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         let repository = ctx
@@ -125,7 +125,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         let rows = self.limit(1).execute_for_list(ctx).await?;
@@ -137,7 +137,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         self.execute_for_first(ctx).await
@@ -149,7 +149,7 @@ impl<R> AttributeRequest<R> {
         id: impl Into<teaql_core::Value>,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         self.and_filter(Expr::eq("id", id)).execute_for_first(ctx).await
@@ -162,7 +162,7 @@ impl<R> AttributeRequest<R> {
         limit: u64,
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
         let total_count = self.clone().execute_for_count(ctx).await?;
@@ -176,7 +176,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<u64, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .attribute_repository()
@@ -200,7 +200,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<bool, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .attribute_repository()
@@ -216,7 +216,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<SmartList<Record>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .attribute_repository()
@@ -237,7 +237,7 @@ impl<R> AttributeRequest<R> {
         ctx: &'a C,
     ) -> Result<Option<Record>, TeaqlRepositoryError<C::AttributeRepository<'a>>>
     where
-        C: TeaqlRuntime + ?Sized,
+        C: TeaqlRepositoryProvider + ?Sized,
     {
         let records = self.limit(1).execute_for_records(ctx).await?;
         Ok(records.into_iter().next())

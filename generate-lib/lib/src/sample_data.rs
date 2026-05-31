@@ -124,7 +124,7 @@ pub async fn generate_sample_data<C>(
     plan: SampleDataPlan,
 ) -> Result<SampleDataReport, String>
 where
-    C: TeaqlRuntime + ?Sized,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
     log::info!("Starting sample data generation. Scale: {:?}, Seed: {}", plan.scale, plan.seed);
     let mut state = SampleDataState::new(plan);
@@ -157,7 +157,7 @@ async fn load_root_platforms<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
     let list = Q::platforms().execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
@@ -171,7 +171,7 @@ async fn load_root_task_status<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
     let list = Q::task_status().execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
@@ -186,7 +186,7 @@ async fn generate_tasks<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
         if state.ids("Task Status").is_empty() {
             state.record_skipped("Task", "Required dependency Task Status is missing in reference pool".to_string());
@@ -253,7 +253,7 @@ async fn generate_task_execution_logs<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
         if state.ids("Task").is_empty() {
             state.record_skipped("Task Execution Log", "Required dependency Task is missing in reference pool".to_string());

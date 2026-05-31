@@ -90,7 +90,7 @@ impl Object {
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::ObjectRepository<'a>>>
     where
-        C: crate::TeaqlRuntime + ?Sized,
+        C: crate::TeaqlRepositoryProvider + ?Sized,
     {
         let repository = ctx
             .object_repository()

@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{Q, Task, TaskExecutionLog, TeaqlEntityRepository, TeaqlRuntime};
-use teaql_core::EntityGraph;
+use robot_kanban::{Q, Task, TaskExecutionLog};
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
     RusqliteMutationExecutor, RusqliteProviderExt, MutationExecutorError,
@@ -647,20 +646,18 @@ impl TaskService {
         self.log_info(&format!("Starting business action: Create task '{}'", name));
         let next_id = self.ctx.next_id_for::<Task>()?;
         let cmd = CreateTaskCommand { name: name.to_owned() };
-        let task = Task::create(&cmd, next_id, &self.ctx)?;
+        let mut task = Task::create(&cmd, next_id, &self.ctx)?;
 
         let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
-        let log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
+        let mut log = task.generate_execution_log(log_id, "CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
         let comment = format!("Create task '{}'", name);
-        let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-        TeaqlEntityRepository::save_entity_graph_from(&repo,
-            EntityGraph::new(task)
-                .comment(&comment)
-                .child("task_execution_log_list",
-                    EntityGraph::new(log))
-                .build()
-        ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        
+        task.set_comment(&comment);
+        task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+        log.set_comment(&comment);
+        log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Finished business action: Create task '{}'", name));
         Ok(next_id)
@@ -679,16 +676,13 @@ impl TaskService {
 
         let task_opt = select.execute_for_one(&self.ctx).await?;
 
-        if let Some(task) = task_opt {
+        if let Some(mut task) = task_opt {
             let task_name = task.name().to_string();
             let comment = format!("Delete task '{}'", task_name);
-            let repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-            TeaqlEntityRepository::save_entity_graph_from(&repo,
-                EntityGraph::new(task)
-                    .comment(&comment)
-                    .delete()
-                    .build()
-            ).map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            
+            task.set_comment(&comment);
+            task.mark_as_delete();
+            task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Finished business action: Delete task ID {}", id));
             Ok(true)
@@ -747,17 +741,16 @@ impl TaskService {
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
                     let log_id = self.ctx.next_id_for::<TaskExecutionLog>()?;
-                    let log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
+                    let mut log = task.generate_execution_log(log_id, "STATUS_CHANGED", &detail, &self.ctx);
                     let task_name = task.name().to_string();
 
                     let comment = format!("Move task '{}' to {}", task_name, status_name);
-                    let task_repo = self.ctx.task_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    task_repo.save_entity_with_comment(task, teaql_runtime::EntityStatus::Updated, &comment)
-                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    
+                    task.set_comment(&comment);
+                    task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-                    let log_repo = self.ctx.task_execution_log_repository().map_err(|e| Box::new(e) as Box<dyn Error>)?;
-                    log_repo.save_entity_with_comment(log, teaql_runtime::EntityStatus::New, &comment)
-                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    log.set_comment(&comment);
+                    log.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
