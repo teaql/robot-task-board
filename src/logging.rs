@@ -24,6 +24,27 @@ fn format_val_helper(val: &Option<Value>) -> String {
     }
 }
 
+/// Resolve a status ID value to a human-readable name.
+fn resolve_status_name(raw: &str) -> String {
+    match raw {
+        "1001" => "Planned".to_owned(),
+        "1002" => "Ready".to_owned(),
+        "1003" => "Executing".to_owned(),
+        "1004" => "Verified".to_owned(),
+        other => other.to_owned(),
+    }
+}
+
+/// Format a field change value, resolving known ID fields to names.
+fn format_field_val(field: &str, val: &Option<Value>) -> String {
+    let raw = format_val_helper(val);
+    if field == "status_id" || field == "status" {
+        resolve_status_name(&raw)
+    } else {
+        raw
+    }
+}
+
 /// Check if a log message is a bootstrap event (schema or seed).
 pub fn is_bootstrap_message(msg: &str) -> bool {
     msg.starts_with("Create ")
@@ -132,8 +153,8 @@ impl EntityEventSink for AppAuditSink {
         // Build compact single-line audit for TUI and app.log
         let mut field_changes = Vec::new();
         for change in &event.changes {
-            let old_str = format_val_helper(&change.old_value);
-            let new_str = format_val_helper(&change.new_value);
+            let old_str = format_field_val(&change.field, &change.old_value);
+            let new_str = format_field_val(&change.field, &change.new_value);
             if old_str != new_str {
                 field_changes.push(format!("{}: [{} ➔ {}]", change.field, old_str, new_str));
             }
@@ -199,8 +220,8 @@ impl EntityEventSink for AppAuditSink {
         );
         let mut audit_lines = vec![audit_header];
         for change in &event.changes {
-            let old_str = format_val_helper(&change.old_value);
-            let new_str = format_val_helper(&change.new_value);
+            let old_str = format_field_val(&change.field, &change.old_value);
+            let new_str = format_field_val(&change.field, &change.new_value);
             if old_str != new_str {
                 let detail = format!(
                     "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
