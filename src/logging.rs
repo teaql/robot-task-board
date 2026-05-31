@@ -173,8 +173,38 @@ impl EntityEventSink for AppAuditSink {
             format!(" {{{}}}", field_changes.join(",  "))
         };
 
+        let audit_line = format!(
+            "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}{}",
+            timestamp, user, entity_identity, action_name, comment_part, fields_part
+        );
+
+        // Write audit log to app.log
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("app.log")
+        {
+            use std::io::Write;
+            let _ = writeln!(file, "{}", audit_line);
+        }
+
+        // Write audit log to TUI buffer
+        if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+            if let Ok(mut entries) = buf.entries.lock() {
+                entries.push(UnifiedLogEntry {
+                    timestamp: std::time::SystemTime::now(),
+                    user_identifier: Some(user.clone()),
+                    trace_chain: event.trace_chain.clone(),
+                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                        message: audit_line,
+                    }),
+                });
+            }
+        }
+
+        // If it's a business log, ALSO emit a Business Log line
         let is_business_log = event.entity == "TaskExecutionLog" && action_name == "CREATED";
-        let line = if is_business_log {
+        if is_business_log {
             let mut detail = String::new();
             for change in &event.changes {
                 if change.field == "detail" {
@@ -185,38 +215,33 @@ impl EntityEventSink for AppAuditSink {
                     }
                 }
             }
-            format!(
+            let business_line = format!(
                 "[{}]-[{}]-[INFO]-Business Log: {}{}",
                 timestamp, user, detail, comment_part
-            )
-        } else {
-            format!(
-                "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}{}",
-                timestamp, user, entity_identity, action_name, comment_part, fields_part
-            )
-        };
+            );
 
-        // Write to app.log
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("app.log")
-        {
-            use std::io::Write;
-            let _ = writeln!(file, "{}", line);
-        }
+            // Write business log to app.log
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("app.log")
+            {
+                use std::io::Write;
+                let _ = writeln!(file, "{}", business_line);
+            }
 
-        // Write to TUI buffer
-        if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
-            if let Ok(mut entries) = buf.entries.lock() {
-                entries.push(UnifiedLogEntry {
-                    timestamp: std::time::SystemTime::now(),
-                    user_identifier: Some(user.clone()),
-                    trace_chain: event.trace_chain.clone(),
-                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                        message: line.clone(),
-                    }),
-                });
+            // Write business log to TUI buffer
+            if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+                if let Ok(mut entries) = buf.entries.lock() {
+                    entries.push(UnifiedLogEntry {
+                        timestamp: std::time::SystemTime::now(),
+                        user_identifier: Some(user.clone()),
+                        trace_chain: event.trace_chain.clone(),
+                        payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                            message: business_line,
+                        }),
+                    });
+                }
             }
         }
 
