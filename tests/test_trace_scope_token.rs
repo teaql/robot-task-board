@@ -223,6 +223,7 @@ fn test_plan_item_carries_token() {
         values,
         vec!["status".to_owned()],
         Some(token.clone()),
+        None,
     );
 
     assert_eq!(plan.items.len(), 1);
@@ -252,6 +253,7 @@ fn test_plan_item_without_token() {
         Record::new(),
         Vec::new(),
         None, // 没有 token
+        None,
     );
 
     assert_eq!(plan.items.len(), 1);
@@ -272,6 +274,7 @@ fn test_item_index_monotonic() {
             GraphMutationKind::Create,
             Record::new(),
             Vec::new(),
+            None,
             None,
         );
     }
