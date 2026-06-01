@@ -1,0 +1,48 @@
+{
+    "_instructions": "This is a translation dictionary sample for the TeaQL domain package 'robot-kanban-service'. To translate this file, you can copy its content and paste it into any modern AI tool (like ChatGPT, Claude, Gemini, etc.) with the following prompt: 'Translate this JSON file containing TeaQL domain vocabulary keys into 15 languages: Arabic (ar), Simplified Chinese (zh_CN), Traditional Chinese (zh_TW), Spanish (es), French (fr), German (de), Japanese (ja), Korean (ko), Portuguese (pt), Thai (th), Ukrainian (uk), Filipino (fil), Indonesian (id), English (en) under each key. Return only the valid JSON result.' Save the translated JSON externally, and configure the JVM parameter -Dteaql.i18n.path pointing to the translated JSON file path at runtime.",
+    "code": {
+        "en": "Code"
+    },
+    "color": {
+        "en": "Color"
+    },
+    "displayOrder": {
+        "en": "Display Order"
+    },
+    "founded": {
+        "en": "Founded"
+    },
+    "version": {
+        "en": "Version"
+    },
+    "platform": {
+        "en": "Platform"
+    },
+    "taskExecutionLog": {
+        "en": "Task Execution Log"
+    },
+    "task": {
+        "en": "Task"
+    },
+    "name": {
+        "en": "Name"
+    },
+    "action": {
+        "en": "Action"
+    },
+    "progress": {
+        "en": "Progress"
+    },
+    "detail": {
+        "en": "Detail"
+    },
+    "id": {
+        "en": "Id"
+    },
+    "taskStatus": {
+        "en": "Task Status"
+    },
+    "status": {
+        "en": "Status"
+    }
+}
