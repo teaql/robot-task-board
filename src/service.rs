@@ -524,6 +524,59 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn test_cascade_save_and_trace() -> Result<(), Box<dyn Error>> {
+        let db_path = "test_cascade.db";
+        let _ = std::fs::remove_file(db_path);
+
+        let service = TaskService::new(db_path).await?;
+        
+        let next_id = service.ctx.next_id_for::<robot_kanban::Task>()?;
+        let mut task = robot_kanban::Q::tasks().new_entity(&service.ctx);
+        task.update_id(next_id)
+            .update_name("Aggregate Root Cascade Demo".to_string())
+            .update_status_id(1001_u64)
+            .update_platform_id(1001_u64);
+        task.set_comment("Creating the aggregate root task");
+        
+        let mut log1 = robot_kanban::Q::task_execution_logs().new_entity(&service.ctx);
+        log1.update_action("DEMO_ACTION_1".to_string())
+            .update_detail("Testing cascade save log 1".to_string())
+            .update_task_id(next_id);
+        log1.set_comment("Trace point for log 1");
+        
+        let mut log2 = robot_kanban::Q::task_execution_logs().new_entity(&service.ctx);
+        log2.update_action("DEMO_ACTION_2".to_string())
+            .update_detail("Testing cascade save log 2".to_string())
+            .update_task_id(next_id);
+        log2.set_comment("Trace point for log 2");
+
+        task.task_execution_log_list_mut().push(log1);
+        task.task_execution_log_list_mut().push(log2);
+
+        // Save ONLY the aggregate root. The manual cascade logic in Task::save will attach them to GraphNode
+        task.save(&service.ctx).await?;
+
+        // 1. Verify Aggregate Root is saved along with children (by performing a graph query)
+        let saved_tasks = robot_kanban::Q::tasks()
+            .with_name_is("Aggregate Root Cascade Demo")
+            .execute_for_list(&service.ctx).await?.data;
+        
+        assert_eq!(saved_tasks.len(), 1);
+        let saved_task = &saved_tasks[0];
+        
+        // 2. Verify Children are saved automatically via cascade (fetch all and filter for this test)
+        let all_logs = robot_kanban::Q::task_execution_logs().execute_for_list(&service.ctx).await?.data;
+        let logs: Vec<_> = all_logs.into_iter().filter(|l| l.task_id() == saved_task.id()).collect();
+        assert_eq!(logs.len(), 2);
+        
+        // 3. Verify the logs contain the trace comments (if the entity has a way to retrieve them, or just assert they exist)
+        assert!(logs.iter().any(|l| l.action() == "DEMO_ACTION_1"));
+        assert!(logs.iter().any(|l| l.action() == "DEMO_ACTION_2"));
+
+        Ok(())
+    }
+
 
     #[tokio::test]
     async fn test_database_initialization() -> Result<(), Box<dyn Error>> {
