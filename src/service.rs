@@ -288,19 +288,15 @@ impl TaskService {
             };
             match task.status_id() {
                 1001 => {
-                    planned_count += 1;
                     planned_tasks.push(task_model);
                 }
                 1002 => {
-                    ready_count += 1;
                     ready_tasks.push(task_model);
                 }
                 1003 => {
-                    executing_count += 1;
                     executing_tasks.push(task_model);
                 }
                 1004 => {
-                    verified_count += 1;
                     verified_tasks.push(task_model);
                 }
                 _ => {}
@@ -402,9 +398,11 @@ impl TaskService {
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
                     let log = task.generate_execution_log("STATUS_CHANGED", &detail, &self.ctx);
-                    let task_name = task.name().to_string();
-
-                    let comment = format!("Move task '{}' status from {} to {}", task_name, old_status_name, status_name);
+                    let mut task_name_short = task.name().to_string();
+                    if task_name_short.chars().count() > 15 {
+                        task_name_short = format!("{}...", task_name_short.chars().take(12).collect::<String>());
+                    }
+                    let comment = format!("Task '{}': {} -> {}", task_name_short, old_status_name, status_name);
                     
                     // Attach the log to the task's execution log list to establish the graph relation
                     task.task_execution_log_list_mut().push(log);
