@@ -478,6 +478,96 @@ mod tests {
     use super::*;
     use std::error::Error;
 
+
+    #[tokio::test]
+    async fn test_facet_and_count() -> Result<(), Box<dyn Error>> {
+        let db_path = "test_facet_and_count.db";
+        let _ = std::fs::remove_file(db_path);
+
+        let service = TaskService::new(db_path).await?;
+        
+        // Add tasks to a specific status (Planned usually gets tasks initially)
+        let t1 = service.add_task("T1").await?;
+        let t2 = service.add_task("T2").await?;
+        service.move_task(t1, "Ready").await?;
+
+        // Query statuses and verify counts using facet_by
+        let tasks = robot_kanban::Q::tasks()
+            .facet_by_status_as("status_stats", robot_kanban::Q::task_status().count_tasks())
+            .execute_for_list(&service.ctx)
+            .await?;
+
+        let mut ready_count = 0;
+        let mut planned_count = 0;
+
+        let statuses = tasks.facets.get("status_stats").unwrap();
+        for status in &statuses.data {
+            let count = match status.get("count_tasks") {
+                Some(teaql_core::Value::I64(c)) => *c,
+                _ => 0,
+            };
+            let name = match status.get("name") {
+                Some(teaql_core::Value::Text(s)) => s.as_str(),
+                _ => "",
+            };
+            if name == "Ready" {
+                ready_count = count;
+                assert_eq!(count, 1);
+            }
+            if name == "Planned" {
+                planned_count = count;
+                assert_eq!(count, 1);
+            }
+        }
+        
+        assert_eq!(ready_count, 1);
+        assert_eq!(planned_count, 1);
+
+        Ok(())
+    }
+
+
+    #[tokio::test]
+    async fn test_database_initialization() -> Result<(), Box<dyn Error>> {
+        let db_path = "test_db_init.db";
+        let _ = std::fs::remove_file(db_path);
+
+        // 1. First open: should create tables and seed data
+        let service = TaskService::new(db_path).await?;
+        assert!(!service.status_cache.is_empty(), "Status map should be populated on first initialization");
+        
+        // 2. Second open: should reuse tables and still load status
+        let service2 = TaskService::new(db_path).await?;
+        assert!(!service2.status_cache.is_empty(), "Status map should be populated on second initialization");
+        
+        // Ensure same data is accessible
+        let task_id = service2.add_task("Test Init Task").await?;
+        
+        // 3. Third open: verify task exists
+        let service3 = TaskService::new(db_path).await?;
+        let tasks = robot_kanban::Q::tasks().execute_for_list(&service3.ctx).await?.data;
+        let found = tasks.iter().any(|t| t.id() == task_id);
+        assert!(found, "Task created in session 2 should be visible in session 3");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_database_concurrent_open() -> Result<(), Box<dyn Error>> {
+        let db_path = "test_db_concurrent.db";
+        let _ = std::fs::remove_file(db_path);
+
+        let service1 = TaskService::new(db_path).await?;
+        let service2 = TaskService::new(db_path).await?;
+
+        let t1 = service1.add_task("T1").await?;
+        let t2 = service2.add_task("T2").await?;
+        
+        assert_ne!(t1, t2);
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn test_core_flow() -> Result<(), Box<dyn Error>> {
         let db_path = "test_core_flow.db";
