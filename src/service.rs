@@ -327,7 +327,7 @@ impl TaskService {
 
         let comment = format!("Create task '{}'", name);
         
-        task.task_execution_log_list_mut().push(log);
+        task.task_execution_logs_mut().push(log);
         task.set_comment(&comment);
         
         task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
@@ -405,7 +405,7 @@ impl TaskService {
                     let comment = format!("Task '{}': {} -> {}", task_name_short, old_status_name, status_name);
                     
                     // Attach the log to the task's execution log list to establish the graph relation
-                    task.task_execution_log_list_mut().push(log);
+                    task.task_execution_logs_mut().push(log);
 
                     // Set the comment on the aggregate root
                     task.set_comment(&comment);
@@ -551,8 +551,8 @@ mod tests {
             .update_task_id(next_id);
         log2.set_comment("Trace point for log 2");
 
-        task.task_execution_log_list_mut().push(log1);
-        task.task_execution_log_list_mut().push(log2);
+        task.task_execution_logs_mut().push(log1);
+        task.task_execution_logs_mut().push(log2);
 
         // Save ONLY the aggregate root. The manual cascade logic in Task::save will attach them to GraphNode
         task.save(&service.ctx).await?;
