@@ -59,6 +59,7 @@ impl TaskDomainBehavior for Task {
         let comment = format!("Generate execution log for action '{}'", action);
         crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::task_execution_logs().comment({:?}).new_entity(ctx)", comment));
         let mut log = Q::task_execution_logs().comment(&comment).new_entity(ctx);
+        teaql_core::Entity::set_comment(&mut log, comment);
         log.update_action(action.to_owned())
             .update_detail(detail.to_owned())
             .update_version(0_i64)
