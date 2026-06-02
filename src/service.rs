@@ -404,13 +404,13 @@ impl TaskService {
                         task_name.clone()
                     };
 
-                    self.log_info(&format!("Starting business action: '{}' {} - {}", display_name, old_status_name, status_name));
+                    self.log_info(&format!("Starting business action: '{}' {} => {}", display_name, old_status_name, status_name));
 
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
                     let log = task.generate_execution_log("STATUS_CHANGED", &detail, &self.ctx);
 
-                    let comment = format!("'{}' {} - {}", display_name, old_status_name, status_name);
+                    let comment = format!("'{}' {} => {}", display_name, old_status_name, status_name);
                     
                     // Attach the log to the task's execution log list to establish the graph relation
                     task.task_execution_log_list_mut().push(log);

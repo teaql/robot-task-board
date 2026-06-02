@@ -204,7 +204,7 @@ impl EntityEventSink for AppAuditSink {
         };
 
         let audit_line = format!(
-            "[{}]-[{}]-[AUDIT]-Entity [{}] was {}.{}{}",
+            "[{}]-[{}]-[AUDIT]-Entity [{}] {}.{}{}",
             timestamp, user, entity_identity, action_name, comment_part, fields_part
         );
 
@@ -278,7 +278,7 @@ impl EntityEventSink for AppAuditSink {
         // Write to audit.log with the long format
         let timestamp_with_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         let audit_header = format!(
-            "[{}] - [{}] - [AUDIT] Entity [{}] was {}.{}",
+            "[{}] - [{}] - [AUDIT] Entity [{}] {}.{}",
             timestamp_with_date, user, entity_identity, action_name, comment_part
         );
         let mut audit_lines = vec![audit_header];
