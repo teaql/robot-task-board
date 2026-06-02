@@ -214,4 +214,12 @@ The goal is to let developers understand what their business code actually does.
 
 ---
 
+## License
+
+This project is fully open source.
+
+The demo application, generated TeaQL libraries, and the TeaQL Rust runtime are released under the Apache License 2.0.
+
+---
+
 Powered by TeaQL (@teaqlio)
