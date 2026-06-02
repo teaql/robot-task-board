@@ -397,14 +397,20 @@ impl TaskService {
                     let status_name = self.status_cache.get(&new_status).cloned().unwrap_or_else(|| "Unknown".to_owned());
                     let old_status_name = self.status_cache.get(&old_status_id).cloned().unwrap_or_else(|| "Unknown".to_owned());
                     
-                    self.log_info(&format!("Starting business action: Move task {} status from {} to {}", id, old_status_name, status_name));
+                    let task_name = task.name().to_string();
+                    let display_name = if task_name.chars().count() > 10 {
+                        format!("{}...", task_name.chars().take(10).collect::<String>())
+                    } else {
+                        task_name.clone()
+                    };
+
+                    self.log_info(&format!("Starting business action: '{}' {} - {}", display_name, old_status_name, status_name));
 
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
                     let log = task.generate_execution_log("STATUS_CHANGED", &detail, &self.ctx);
-                    let task_name = task.name().to_string();
 
-                    let comment = format!("Move task '{}' status from {} to {}", task_name, old_status_name, status_name);
+                    let comment = format!("'{}' {} - {}", display_name, old_status_name, status_name);
                     
                     // Attach the log to the task's execution log list to establish the graph relation
                     task.task_execution_log_list_mut().push(log);

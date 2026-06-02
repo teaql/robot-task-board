@@ -199,7 +199,7 @@ mod tests {
                 if full_trace.contains("Create task") {
                     found_created_log_lineage = true;
                 }
-                if full_trace.contains("Move task") && full_trace.contains("status from") {
+                if full_trace.contains(" - ") {
                     found_status_changed_log_lineage = true;
                 }
             }
