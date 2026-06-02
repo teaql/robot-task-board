@@ -148,7 +148,7 @@ pub fn parse_log_line(line: &str) -> Line<'_> {
         spans.push(Span::styled("Execute TeaQL - ", Style::default().fg(Color::Indexed(242))));
         spans.push(Span::styled(rest[16..].to_owned(), Style::default().fg(Color::Rgb(46, 204, 113)).add_modifier(Modifier::BOLD)));
     } else if rest.starts_with("Starting business action: ") {
-        spans.push(Span::styled("▶ ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled("DOMAIN: ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
         spans.push(Span::styled(rest[26..].to_owned(), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
     } else if rest.starts_with("Finished business action: ") {
         spans.push(Span::styled("✔ ", Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD)));
