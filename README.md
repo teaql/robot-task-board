@@ -32,11 +32,12 @@ A 140-second walkthrough from Docker pull to a live TeaQL runtime trace, click t
 
 ---
 
-[▶️ Watch on YouTube](https://www.youtube.com/watch?v=A1CA8ErrweA)
+[▶️ Watch on YouTube](https://youtu.be/tF7UQJEjRTo)
 
 ---
 
-This demo shows a small Rust + SQLite business application running from Docker.\n\nThe key point is not only that the app runs, but that TeaQL makes the full runtime path visible:\n\n```text\nDomain Action → SQL → Audit → UI State\n```
+A short live proof that the TeaQL Robot Task Board exists, runs, and exposes the full runtime trace:
+
 The demo is fully open source, including:
 
 * the demo application
