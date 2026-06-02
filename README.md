@@ -28,6 +28,13 @@ Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize refer
 
 [VIDEO LINK HERE]
 
+This demo shows a small Rust + SQLite business application running from Docker.\n\nThe key point is not only that the app runs, but that TeaQL makes the full runtime path visible:\n\n```text\nDomain Action → SQL → Audit → UI State\n```
+The demo is fully open source, including:
+
+* the demo application
+* the generated TeaQL domain libraries
+* the TeaQL Rust runtime
+
 ---
 
 ## Runtime Bootstrap
