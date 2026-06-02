@@ -88,9 +88,22 @@ Example:
 Get active tasks
  └── status_stats
       └── Count status
+         └── count_tasks
 
-Generated SQL:
-SELECT ...
+```
+
+```sql
+
+[06:36:50.540]-[root]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().comment("Count status").count_tasks())          │
+│[06:36:50.540]-[root]-[  443µs]-[DEBUG]-SqlLogEntry - [Get active tasks] - [16*Task]                                                                                                    │
+│          SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)                                                                     │
+│[06:36:50.541]-[root]-[  256µs]-[DEBUG]-SqlLogEntry - [Get active tasks -> status_stats -> Count status] - [5*TaskStatus]                                                               │
+│          SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)                                                                      │
+│[06:36:50.541]-[root]-[  303µs]-[DEBUG]-SqlLogEntry - [Get active tasks -> status_stats -> Count status -> count_tasks] - [4*Task]                                                      │
+│          SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status                 │
+│[06:36:50.542]-[root]-[INFO]-✔ Get active tasks                                                                                                                                         │
+│--------------------------------------------------------------------------------
+
 ```
 
 The goal is to make business behavior observable rather than hidden behind framework internals.
