@@ -28,7 +28,7 @@ Tiny Docker image: about **2.5 MB** on disk.
 
 Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize reference data, and start the application.
 
-A 65-second walkthrough from Docker pull to a live TeaQL runtime trace, click to play:
+A 65-second walkthrough to demo live TeaQL runtime trace, click to play:
 
 ---
 
