@@ -288,19 +288,15 @@ impl TaskService {
             };
             match task.status_id() {
                 1001 => {
-                    planned_count += 1;
                     planned_tasks.push(task_model);
                 }
                 1002 => {
-                    ready_count += 1;
                     ready_tasks.push(task_model);
                 }
                 1003 => {
-                    executing_count += 1;
                     executing_tasks.push(task_model);
                 }
                 1004 => {
-                    verified_count += 1;
                     verified_tasks.push(task_model);
                 }
                 _ => {}
