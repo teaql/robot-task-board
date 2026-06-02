@@ -106,7 +106,7 @@ Get active tasks
 
 ```
 
-TeaQL comments are propagated through nested queries, facets and aggregates, so each generated SQL statement can still be traced back to the business intent that produced it.
+TeaQL propagates comments through nested queries, facets, and aggregates, so every generated SQL statement can still be traced back to the business intent that produced it.
 
 ---
 
