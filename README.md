@@ -82,7 +82,7 @@ Its purpose is to demonstrate how TeaQL Runtime powers a real business applicati
 
 Unlike traditional ORMs, TeaQL exposes how business operations are translated into runtime behavior.
 
-Example: comment propagation
+Example: Comment Propagation
 
 ```text
 Get active tasks
