@@ -27,7 +27,12 @@ docker run --rm -it teaql/robot-task-board:latest
 Watch TeaQL Runtime bootstrap itself, verify the domain schema, initialize reference data, and start the application.
 
 A 140-second walkthrough from Docker pull to a live TeaQL runtime trace, click to play:
+
+---
+
 [▶️ Watch on YouTube](https://www.youtube.com/watch?v=A1CA8ErrweA)
+
+---
 
 This demo shows a small Rust + SQLite business application running from Docker.\n\nThe key point is not only that the app runs, but that TeaQL makes the full runtime path visible:\n\n```text\nDomain Action → SQL → Audit → UI State\n```
 The demo is fully open source, including:
@@ -88,7 +93,7 @@ Its purpose is to demonstrate how TeaQL Runtime powers a real business applicati
 
 Unlike traditional ORMs, TeaQL exposes how business operations are translated into runtime behavior.
 
-![TeaQL in Docker: Domain Action → SQL → Audit → UI State](./assets/004-trace-chain.png)]
+![TeaQL in Docker: Domain Action → SQL → Audit → UI State](./assets/004-trace-chain.png)
 
 Example: Comment Propagation
 
