@@ -458,8 +458,10 @@ impl TaskService {
                                         format!(" - [{}]", entry.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> "))
                                     };
                                     let elapsed_us = (sql_entry.elapsed.as_secs_f64() * 1_000_000.0).round() as u64;
-                                    let line = format!("[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}] {}", ts, uid, elapsed_us, trace, sql_entry.result_summary, sql_entry.pretty_sql.replace("\n", " "));
-                                    new_logs.push(line);
+                                    let line1 = format!("[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}]", ts, uid, elapsed_us, trace, sql_entry.result_summary);
+                                    let line2 = format!("          {}", sql_entry.pretty_sql.replace("\n", " "));
+                                    new_logs.push(line1);
+                                    new_logs.push(line2);
                                 }
                                 LogPayload::Info(info) => {
                                     new_logs.push(info.message.clone());

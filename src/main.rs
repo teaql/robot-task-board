@@ -55,9 +55,13 @@ mod tests {
         println!("=== Captured Formatted Logs ===");
         let mut found_facet_status_query = false;
         let mut found_facet_task_query = false;
+        let mut current_trace_contains_target = false;
         for log in &formatted_logs {
             println!("{}", log);
             if log.contains("Get active tasks->status_stats->Count status") || log.contains("Get active tasks -> status_stats -> Count status") {
+                current_trace_contains_target = true;
+            }
+            if current_trace_contains_target {
                 if log.contains("task_status_data") {
                     found_facet_status_query = true;
                 }
