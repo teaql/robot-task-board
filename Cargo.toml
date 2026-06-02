@@ -25,16 +25,3 @@ teaql-provider-rusqlite = "1.1.0"
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
 whoami = "2.1.2"
 
-# Patch teaql crates to use local source (for EntityGraph support)
-[patch.crates-io]
-teaql-core = { path = "../teaql-rs/teaql-core" }
-teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
-teaql-sql = { path = "../teaql-rs/teaql-sql" }
-teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
-
-[patch.teaql]
-teaql-core = { path = "../teaql-rs/teaql-core" }
-teaql-macros = { path = "../teaql-rs/teaql-macros" }
-teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
-teaql-sql = { path = "../teaql-rs/teaql-sql" }
-teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
