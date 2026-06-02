@@ -20,6 +20,8 @@ docker run --rm -it teaql/robot-task-board:latest
 * Domain-model-driven runtime
 * Runs comfortably within a few megabytes of memory
 
+Tiny Docker image: about **2.5 MB** on disk.
+
 ---
 
 ## Demo Video
