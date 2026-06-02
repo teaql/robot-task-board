@@ -4,6 +4,8 @@
 
 *A tiny self-bootstrapping business application built with TeaQL Runtime.*
 
+**Fully open source:** demo app + generated libraries + TeaQL Rust runtime.
+
 ```bash
 docker rmi -f teaql/robot-task-board:latest
 docker run --rm -it teaql/robot-task-board:latest
