@@ -25,3 +25,9 @@ teaql-provider-rusqlite = "1.1.0"
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
 whoami = "2.1.2"
 
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
