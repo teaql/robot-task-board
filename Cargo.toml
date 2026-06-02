@@ -27,14 +27,14 @@ whoami = "2.1.2"
 
 # Patch teaql crates to use local source (for EntityGraph support)
 [patch.crates-io]
-teaql-core = { path = "/home/philip/teaql-home/teaql-rs/teaql-core" }
-teaql-runtime = { path = "/home/philip/teaql-home/teaql-rs/teaql-runtime" }
-teaql-sql = { path = "/home/philip/teaql-home/teaql-rs/teaql-sql" }
-teaql-provider-rusqlite = { path = "/home/philip/teaql-home/teaql-rs/teaql-provider-rusqlite" }
+teaql-core = { path = "../teaql-rs/teaql-core" }
+teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
+teaql-sql = { path = "../teaql-rs/teaql-sql" }
+teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
 
 [patch.teaql]
-teaql-core = { path = "/home/philip/teaql-home/teaql-rs/teaql-core" }
-teaql-macros = { path = "/home/philip/teaql-home/teaql-rs/teaql-macros" }
-teaql-runtime = { path = "/home/philip/teaql-home/teaql-rs/teaql-runtime" }
-teaql-sql = { path = "/home/philip/teaql-home/teaql-rs/teaql-sql" }
-teaql-provider-rusqlite = { path = "/home/philip/teaql-home/teaql-rs/teaql-provider-rusqlite" }
+teaql-core = { path = "../teaql-rs/teaql-core" }
+teaql-macros = { path = "../teaql-rs/teaql-macros" }
+teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
+teaql-sql = { path = "../teaql-rs/teaql-sql" }
+teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
