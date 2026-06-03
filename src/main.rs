@@ -383,3 +383,49 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests_ui {
+    use crate::service::TaskService;
+    use crate::app::App;
+    #[tokio::test]
+    async fn test_ui_update_after_move() -> Result<(), Box<dyn std::error::Error>> {
+        let db_file = "test_ui_app.db";
+        let _ = std::fs::remove_file(db_file);
+        let service = TaskService::new(db_file).await?;
+        let mut app = App::new(service);
+        app.input = "/add Task1".to_string();
+        crate::commands::execute(&mut app).await?;
+        app.input = "/add Task2".to_string();
+        crate::commands::execute(&mut app).await?;
+        let id1 = app.planned_tasks[0].id;
+        assert_eq!(app.planned_tasks.len(), 2);
+        app.input = format!("/mv {}", id1);
+        crate::commands::execute(&mut app).await?;
+        assert_eq!(app.planned_tasks.len(), 1);
+        assert_eq!(app.ready_tasks.len(), 1);
+        assert_eq!(app.planned_count, 1);
+        assert_eq!(app.ready_count, 1);
+        
+        // 1002 -> 1003
+        app.input = format!("/mv {}", id1);
+        crate::commands::execute(&mut app).await?;
+        assert_eq!(app.ready_tasks.len(), 0);
+        assert_eq!(app.executing_tasks.len(), 1);
+        assert_eq!(app.ready_count, 0);
+        assert_eq!(app.executing_count, 1);
+
+        // 1003 -> 1004
+        app.input = format!("/mv {}", id1);
+        crate::commands::execute(&mut app).await?;
+        assert_eq!(app.executing_tasks.len(), 0);
+        assert_eq!(app.verified_tasks.len(), 1);
+
+        // 1004 -> None
+        app.input = format!("/mv {}", id1);
+        crate::commands::execute(&mut app).await?;
+        assert_eq!(app.verified_tasks.len(), 1);
+
+        Ok(())
+    }
+}

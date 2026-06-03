@@ -104,7 +104,7 @@ impl Platform {
             
             let values = teaql_core::Entity::into_record(self);
             node.values = values;
-            repo.save_graph(node).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+            repo.save_graph(node).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
         })
     }
 }
