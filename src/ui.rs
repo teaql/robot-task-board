@@ -309,7 +309,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         "None"
     };
 
-    let scroll_str = if scroll_offset == 0 {
+    let _scroll_str = if scroll_offset == 0 {
         "Bottom".to_owned()
     } else {
         format!("Up {}/{}", scroll_offset, max_scroll)

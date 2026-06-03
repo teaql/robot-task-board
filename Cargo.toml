@@ -20,6 +20,7 @@ teaql-runtime = "1.1.0"
 teaql-macros = "1.1.0"
 teaql-sql = "1.1.0"
 teaql-provider-rusqlite = "1.1.0"
+teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
 
 # Our generated TeaQL domain logic library
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
@@ -31,3 +32,10 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[patch.crates-io]
+teaql-core = { path = "../teaql-rs/teaql-core" }
+teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
+teaql-sql = { path = "../teaql-rs/teaql-sql" }
+teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
+teaql-data-service = { path = "../teaql-rs/teaql-data-service" }

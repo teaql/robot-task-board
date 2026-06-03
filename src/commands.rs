@@ -73,7 +73,15 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                         MoveResult::Moved { .. } => {
                             app.reload_data().await?;
                         }
-                        _ => {}
+                        MoveResult::AlreadyFinal => {
+                            app.add_log(&format!("WARNING: Task {} is already in its final status and cannot be moved further.", id));
+                        }
+                        MoveResult::NotFound => {
+                            app.add_log(&format!("WARNING: Task {} not found.", id));
+                        }
+                        MoveResult::Error { err_msg } => {
+                            app.add_log(&format!("ERROR: Failed to move task {}: {}", id, err_msg));
+                        }
                     }
                 } else {
                     app.service.log_info(&format!("Error: Invalid task ID '{}'", move_parts[0]));

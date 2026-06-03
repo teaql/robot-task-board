@@ -1,4 +1,5 @@
 use crate::*;
+use teaql_core::TeaqlEntity;
 
 use teaql_provider_rusqlite::RusqliteProviderExt as _;
 
@@ -68,47 +69,68 @@ impl From<teaql_runtime::RuntimeError> for ServiceRuntimeError {
 }
 
 #[derive(Clone)]
+pub struct LocalSchemaProvider;
+
+impl teaql_data_service::SchemaProvider for LocalSchemaProvider {
+    fn get_entity(&self, name: &str) -> Option<std::sync::Arc<teaql_core::EntityDescriptor>> {
+        match name {
+            "Platform" => Some(std::sync::Arc::new(crate::Platform::entity_descriptor())),
+            "TaskStatus" => Some(std::sync::Arc::new(crate::TaskStatus::entity_descriptor())),
+            "Task" => Some(std::sync::Arc::new(crate::Task::entity_descriptor())),
+            "TaskExecutionLog" => Some(std::sync::Arc::new(crate::TaskExecutionLog::entity_descriptor())),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct ServiceRuntimeExecutor {
-    inner: DataServiceMutationExecutor,
+    inner: teaql_sql::SqlDataServiceExecutor<
+        DataServiceDialect,
+        DataServiceMutationExecutor,
+        LocalSchemaProvider
+    >,
 }
 
 impl ServiceRuntimeExecutor {
     pub fn new(inner: DataServiceMutationExecutor) -> Self {
-        Self { inner }
-    }
-
-    pub fn inner(&self) -> &DataServiceMutationExecutor {
-        &self.inner
+        Self {
+            inner: teaql_sql::SqlDataServiceExecutor::new(
+                DataServiceDialect::default(),
+                inner,
+                LocalSchemaProvider
+            )
+        }
     }
 }
 
-impl teaql_runtime::QueryExecutor for ServiceRuntimeExecutor {
-    type Error = DataServiceMutationError;
-
-    fn fetch_all(
-        &self,
-        query: &teaql_sql::CompiledQuery,
-    ) -> Result<Vec<teaql_core::Record>, Self::Error> {
-        let query = query.clone();
-        teaql_runtime::QueryExecutor::fetch_all(&self.inner, &query)
+impl teaql_data_service::DataServiceExecutor for ServiceRuntimeExecutor {
+    type Error = teaql_sql::SqlExecutorError<DataServiceMutationError>;
+    fn capabilities(&self) -> teaql_data_service::DataServiceCapabilities {
+        teaql_data_service::DataServiceExecutor::capabilities(&self.inner)
     }
-
-    fn execute(&self, query: &teaql_sql::CompiledQuery) -> Result<u64, Self::Error> {
-        let query = query.clone();
-        teaql_runtime::QueryExecutor::execute(&self.inner, &query)
-    }
-
-    fn begin_transaction(&self) -> Result<teaql_runtime::GraphTransactionBoundary, Self::Error> {
-        teaql_runtime::QueryExecutor::begin_transaction(&self.inner)?;
-        Ok(teaql_runtime::GraphTransactionBoundary::Started)
-    }
-
-    fn commit_transaction(&self) -> Result<(), Self::Error> {
-        teaql_runtime::QueryExecutor::commit_transaction(&self.inner)}
-
-    fn rollback_transaction(&self) -> Result<(), Self::Error> {
-        teaql_runtime::QueryExecutor::rollback_transaction(&self.inner)}
 }
+
+impl teaql_data_service::QueryExecutor for ServiceRuntimeExecutor {
+    async fn query(&self, request: teaql_data_service::QueryRequest) -> Result<teaql_data_service::QueryResult, Self::Error> {
+        teaql_data_service::QueryExecutor::query(&self.inner, request).await
+    }
+}
+
+impl teaql_data_service::MutationExecutor for ServiceRuntimeExecutor {
+    async fn mutate(&self, request: teaql_data_service::MutationRequest) -> Result<teaql_data_service::MutationResult, Self::Error> {
+        teaql_data_service::MutationExecutor::mutate(&self.inner, request).await
+    }
+}
+
+impl teaql_data_service::TransactionExecutor for ServiceRuntimeExecutor {
+    type Tx<'a> = teaql_sql::SqlDataServiceTransaction<'a, DataServiceDialect, <DataServiceMutationExecutor as teaql_sql::SqlTransactionTransport>::Tx<'a>, LocalSchemaProvider> where Self: 'a;
+
+    async fn begin(&self) -> Result<Self::Tx<'_ >, Self::Error> {
+        teaql_data_service::TransactionExecutor::begin(&self.inner).await
+    }
+}
+
 pub async fn service_runtime_from_env() -> Result<ServiceRuntime, ServiceRuntimeError> {
     service_runtime(ServiceRuntimeConfig::from_env()?).await
 }
@@ -120,11 +142,10 @@ pub async fn service_runtime(config: ServiceRuntimeConfig) -> Result<ServiceRunt
 
 pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceRuntime, ServiceRuntimeError> {
     let mutation_executor = DataServiceMutationExecutor::new(pool);
-    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());let runtime_executor = ServiceRuntimeExecutor::new(mutation_executor.clone());
-    let mut context = module_with_behaviors_and_checkers().into_context();
+    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());let mut context = module_with_behaviors_and_checkers().into_context();
     context.set_internal_id_generator(id_generator);
-    context.use_rusqlite_provider(mutation_executor);
-    context.insert_resource(runtime_executor);
+    context.use_rusqlite_provider(mutation_executor.clone());
+    context.insert_resource(ServiceRuntimeExecutor::new(mutation_executor));
     context.ensure_schema().await?;
     Ok(context)
 }

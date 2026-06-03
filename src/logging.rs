@@ -1,10 +1,8 @@
-use teaql_provider_rusqlite::{RusqliteMutationExecutor, MutationExecutorError};
 use teaql_runtime::{
-    UserContext, QueryExecutor, GraphTransactionBoundary, EntityEvent,
+    UserContext, EntityEvent,
     EntityEventKind, EntityEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
 };
 use teaql_core::Value;
-use teaql_sql::CompiledQuery;
 
 /// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
 pub fn short_user(ctx: &UserContext) -> String {
@@ -310,34 +308,3 @@ impl EntityEventSink for AppAuditSink {
     }
 }
 
-#[derive(Clone)]
-pub struct LoggingExecutor {
-    pub inner: RusqliteMutationExecutor,
-}
-
-impl QueryExecutor for LoggingExecutor {
-    type Error = MutationExecutorError;
-
-    fn fetch_all(
-        &self,
-        query: &CompiledQuery,
-    ) -> Result<Vec<teaql_core::Record>, Self::Error> {
-        QueryExecutor::fetch_all(&self.inner, query)
-    }
-
-    fn execute(&self, query: &CompiledQuery) -> Result<u64, Self::Error> {
-        QueryExecutor::execute(&self.inner, query)
-    }
-
-    fn begin_transaction(&self) -> Result<GraphTransactionBoundary, Self::Error> {
-        QueryExecutor::begin_transaction(&self.inner)
-    }
-
-    fn commit_transaction(&self) -> Result<(), Self::Error> {
-        QueryExecutor::commit_transaction(&self.inner)
-    }
-
-    fn rollback_transaction(&self) -> Result<(), Self::Error> {
-        QueryExecutor::rollback_transaction(&self.inner)
-    }
-}
