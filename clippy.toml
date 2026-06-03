@@ -1,0 +1,15 @@
+disallowed-types = [
+    "teaql_tool::T",
+    "chrono::Utc",
+    "chrono::Local",
+    "std::fs::File",
+]
+
+disallowed-methods = [
+    "std::fs::read",
+    "std::fs::read_to_string",
+    "std::fs::write",
+    "std::process::Command::new",
+    "reqwest::get",
+    "reqwest::Client::new"
+]
