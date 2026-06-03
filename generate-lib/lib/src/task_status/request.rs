@@ -112,8 +112,9 @@ impl<R> TaskStatusRequest<R> {
         let mut rows = repository.fetch_enhanced_entities_with_relation_aggregates::<R>(
             &query,
             &relation_aggregates,
-        )?;
+        ).await?;
         let facets = execute_facets(ctx, &query, &query_options)
+            .await
             .map_err(RepositoryError::Runtime)?;
         attach_facets(&mut rows, facets);
         Ok(rows)
@@ -187,7 +188,7 @@ impl<R> TaskStatusRequest<R> {
         query.slice = None;
         query.relations.clear();
         query = query.count(COUNT_ALIAS);
-        let rows = repository.fetch_all(&query)?;
+        let rows = repository.fetch_all(&query).await?;
         rows.first()
             .and_then(|row| row.get(COUNT_ALIAS))
             .and_then(teaql_core::Value::try_u64)
@@ -206,7 +207,7 @@ impl<R> TaskStatusRequest<R> {
             .map_err(|err| RepositoryError::Runtime(RuntimeError::Graph(err.to_string())))?;
         let mut query = self.query.limit(1);
         query.relations.clear();
-        let rows = repository.fetch_all(&query)?;
+        let rows = repository.fetch_all(&query).await?;
         Ok(!rows.is_empty())
     }
 
@@ -224,8 +225,9 @@ impl<R> TaskStatusRequest<R> {
         let outer_query = self.query.clone();
         let relation_aggregates = runtime_relation_aggregates(&query_options);
         let query = apply_runtime_metadata(self.query, &query_options, &self.child_enhancements);
-        let mut rows = repository.fetch_smart_list_with_relation_aggregates(&query, &relation_aggregates)?;
+        let mut rows = repository.fetch_smart_list_with_relation_aggregates(&query, &relation_aggregates).await?;
         let facets = execute_facets(ctx, &outer_query, &query_options)
+            .await
             .map_err(RepositoryError::Runtime)?;
         attach_facets(&mut rows, facets);
         Ok(rows)

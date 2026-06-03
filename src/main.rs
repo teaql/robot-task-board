@@ -316,10 +316,10 @@ mod tests {
 
         // Let's get the Task repository to do advanced graph manipulation directly
         let ctx = db.context();
-        let repo = ctx.resolve_repository::<teaql_provider_rusqlite::RusqliteDialect, crate::logging::LoggingExecutor>("Task")?;
+        let repo = ctx.resolve_repository::<robot_kanban::ServiceRuntimeExecutor>("Task")?;
 
         // 2. Fetch the task record
-        let task_record = repo.fetch_graph_current_row("Task", "id", &teaql_core::Value::U64(task_id), Vec::new())?
+        let task_record = repo.fetch_graph_current_row("Task", "id", &teaql_core::Value::U64(task_id), Vec::new()).await?
             .expect("Task should exist");
 
         // 3. We modify the task in a GraphNode:
@@ -348,7 +348,7 @@ mod tests {
 
         // 4. Generate the mutation plan and execute it
         // The plan will naturally sequence: Update (Task), Create (TaskExecutionLog), Delete (TaskExecutionLog)
-        let plan = repo.plan_graph(task_node)?;
+        let plan = repo.plan_graph(task_node).await?;
         
         // Verify that the plan contains Create, Update, Delete
         let mut has_create = false;
@@ -368,10 +368,10 @@ mod tests {
         assert!(has_delete, "Plan should contain a Delete operation");
 
         // Execute the single plan
-        repo.execute_graph_plan(plan)?;
+        repo.execute_graph_plan(plan).await?;
 
         // 5. Verify the data changes
-        let updated_task = repo.fetch_graph_current_row("Task", "id", &teaql_core::Value::U64(task_id), Vec::new())?
+        let updated_task = repo.fetch_graph_current_row("Task", "id", &teaql_core::Value::U64(task_id), Vec::new()).await?
             .expect("Task should exist");
         
         assert_eq!(

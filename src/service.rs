@@ -10,7 +10,7 @@ use teaql_runtime::{
 };
 use teaql_core::TeaqlEntity;
 
-use crate::logging::{is_bootstrap_message, AppAuditSink, LoggingExecutor};
+use crate::logging::{is_bootstrap_message, AppAuditSink};
 use crate::models::{TaskModel, ReloadedData, MoveResult};
 
 pub trait UserContextExt {
@@ -115,9 +115,6 @@ impl TaskService {
         let conn = rusqlite::Connection::open(db_path)?;
         let inner_executor = RusqliteMutationExecutor::new(conn);
 
-        let logging_executor = LoggingExecutor {
-            inner: inner_executor.clone(),
-        };
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
 
@@ -129,8 +126,7 @@ impl TaskService {
         // Register synchronous executors
         ctx.use_rusqlite_provider(inner_executor.clone());
         ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
-        ctx.insert_resource(logging_executor.clone());
-        
+
         // Also register ServiceRuntimeExecutor for the generated repository lookups
         let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
         ctx.insert_resource(service_runtime_executor);
@@ -323,7 +319,7 @@ impl TaskService {
         let cmd = CreateTaskCommand { name: name.to_owned() };
         let mut task = Task::create(&cmd, next_id, &self.ctx)?;
 
-        let mut log = task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx);
+        let log = task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx);
 
         let comment = format!("Create task '{}'", name);
         

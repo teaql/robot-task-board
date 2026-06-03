@@ -137,6 +137,6 @@ impl Platform {
         let repository = ctx
             .platform_repository()
             .map_err(|err| teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(err.to_string())))?;
-        crate::TeaqlEntityRepository::save_entity_graph(&repository, self)
+        crate::TeaqlEntityRepository::save_entity_graph(&repository, self).await
     }
 }
