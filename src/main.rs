@@ -428,4 +428,134 @@ mod tests_ui {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_mission_simulation() -> Result<(), Box<dyn std::error::Error>> {
+        // Use real database (clear before running to ensure IDs start from 1 to match commands)
+        let db_file = "robot_kanban.db";
+        let _ = std::fs::remove_file(db_file);
+        
+        let service = TaskService::new(db_file).await?;
+        let mut app = App::new(service);
+
+        let inputs = vec![
+            "Review Mission Timeline",
+            "Validate Payload Configuration",
+            "Verify Flight Software Build",
+            "Calibrate Guidance System",
+            "Load Flight Parameters",
+            "Initialize Ground Telemetry",
+            "Review Telemetry Anomaly",
+            "Review Launch Criteria",
+            "Range Safety Check",
+            "Begin Propellant Loading",
+            "Complete Cryogenic Fueling",
+            "Arm Flight Termination System",
+            "Conduct GO/NO-GO Poll",
+            "Start Terminal Countdown",
+            "Execute Hold-Down Release",
+            "Confirm Orbital Insertion",
+            "/mv 1", "/mv 1", "/mv 1",
+            "/mv 2", "/mv 2", "/mv 2",
+            "/mv 3", "/mv 3", "/mv 3",
+            "/mv 4", "/mv 4", "/mv 4",
+            "/mv 5", "/mv 5",
+            "/mv 6", "/mv 6",
+            "/mv 7", "/mv 7",
+            "/mv 8", "/mv 8",
+            "/mv 9", "/mv 10", "/mv 11", "/mv 12"
+        ];
+
+        let mut actual_output = String::new();
+        let mut print_cap = |s: &str| {
+            print!("{}", s);
+            actual_output.push_str(s);
+        };
+
+        print_cap("\n========== Starting Automated Mission Simulation ==========\n");
+        for input in inputs {
+            print_cap(&format!("\n>>> Executing command: {}\n\n", input));
+            let start_log_idx = app.logs.len();
+            app.input = input.to_string();
+            crate::commands::execute(&mut app).await?;
+            
+            for i in start_log_idx..app.logs.len() {
+                print_cap(&format!("    {}\n", app.logs[i]));
+            }
+
+            print_cap(&format!("\n    [Facet] Planned: {} | Ready: {} | Executing: {} | Verified: {}\n", 
+                app.planned_count, app.ready_count, app.executing_count, app.verified_count));
+        }
+
+        print_cap("\n========== Final Facet Results ==========\n");
+        print_cap(&format!("Planned: {} | Ready: {} | Executing: {} | Verified: {}\n", 
+            app.planned_count, app.ready_count, app.executing_count, app.verified_count));
+        print_cap("==================================================\n\n");
+
+        // Verification step against sample-log.txt
+        if let Ok(sample_content) = std::fs::read_to_string("sample-log.txt") {
+            let start_marker = "========== Starting Automated Mission Simulation ==========";
+            if let Some(start_idx) = sample_content.find(start_marker) {
+                let slice_start = if start_idx > 0 && sample_content.as_bytes()[start_idx - 1] == b'\n' {
+                    start_idx - 1
+                } else {
+                    start_idx
+                };
+                let mut expected_raw = sample_content[slice_start..].to_string();
+                
+                let end_marker = "==================================================";
+                if let Some(end_idx) = expected_raw.find(end_marker) {
+                    let truncate_idx = end_idx + end_marker.len();
+                    if expected_raw.len() > truncate_idx && expected_raw.as_bytes()[truncate_idx] == b'\n' {
+                        if expected_raw.len() > truncate_idx + 1 && expected_raw.as_bytes()[truncate_idx + 1] == b'\n' {
+                            expected_raw.truncate(truncate_idx + 2);
+                        } else {
+                            expected_raw.truncate(truncate_idx + 1);
+                        }
+                    } else {
+                        expected_raw.truncate(truncate_idx);
+                    }
+                }
+
+                fn sanitize(s: &str) -> String {
+                    let mut out = String::with_capacity(s.len());
+                    let mut in_bracket = false;
+                    let mut bracket_content = String::new();
+                    for c in s.chars() {
+                        if c == '[' {
+                            in_bracket = true;
+                            bracket_content.clear();
+                            out.push('[');
+                        } else if c == ']' && in_bracket {
+                            in_bracket = false;
+                            if bracket_content.contains(':') && bracket_content.contains('.') {
+                                out.push_str("TIME");
+                            } else if bracket_content.ends_with("µs") || bracket_content.ends_with("ms") {
+                                out.push_str("DURATION");
+                            } else {
+                                out.push_str(&bracket_content);
+                            }
+                            out.push(']');
+                        } else if in_bracket {
+                            bracket_content.push(c);
+                        } else {
+                            out.push(c);
+                        }
+                    }
+                    out.replace("\r\n", "\n")
+                }
+
+                let sanitized_expected = sanitize(&expected_raw);
+                let sanitized_actual = sanitize(&actual_output);
+
+                if sanitized_expected != sanitized_actual {
+                    let _ = std::fs::write("actual-log.txt", &sanitized_actual);
+                    let _ = std::fs::write("expected-log.txt", &sanitized_expected);
+                    panic!("Simulation output did not match sample-log.txt! Diff saved to expected-log.txt and actual-log.txt");
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
