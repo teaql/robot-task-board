@@ -428,4 +428,64 @@ mod tests_ui {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_mission_simulation() -> Result<(), Box<dyn std::error::Error>> {
+        // Use real database (clear before running to ensure IDs start from 1 to match commands)
+        let db_file = "robot_kanban.db";
+        let _ = std::fs::remove_file(db_file);
+        
+        let service = TaskService::new(db_file).await?;
+        let mut app = App::new(service);
+
+        let inputs = vec![
+            "Review Mission Timeline",
+            "Validate Payload Configuration",
+            "Verify Flight Software Build",
+            "Calibrate Guidance System",
+            "Load Flight Parameters",
+            "Initialize Ground Telemetry",
+            "Review Telemetry Anomaly",
+            "Review Launch Criteria",
+            "Range Safety Check",
+            "Begin Propellant Loading",
+            "Complete Cryogenic Fueling",
+            "Arm Flight Termination System",
+            "Conduct GO/NO-GO Poll",
+            "Start Terminal Countdown",
+            "Execute Hold-Down Release",
+            "Confirm Orbital Insertion",
+            "/mv 1", "/mv 1", "/mv 1",
+            "/mv 2", "/mv 2", "/mv 2",
+            "/mv 3", "/mv 3", "/mv 3",
+            "/mv 4", "/mv 4", "/mv 4",
+            "/mv 5", "/mv 5",
+            "/mv 6", "/mv 6",
+            "/mv 7", "/mv 7",
+            "/mv 8", "/mv 8",
+            "/mv 9", "/mv 10", "/mv 11", "/mv 12"
+        ];
+
+        println!("\n========== Starting Automated Mission Simulation ==========");
+        for input in inputs {
+            println!("\n>>> Executing command: {}\n", input);
+            let start_log_idx = app.logs.len();
+            app.input = input.to_string();
+            crate::commands::execute(&mut app).await?;
+            
+            for i in start_log_idx..app.logs.len() {
+                println!("    {}", app.logs[i]);
+            }
+
+            println!("\n    [Facet] Planned: {} | Ready: {} | Executing: {} | Verified: {}", 
+                app.planned_count, app.ready_count, app.executing_count, app.verified_count);
+        }
+
+        println!("\n========== Final Facet Results ==========");
+        println!("Planned: {} | Ready: {} | Executing: {} | Verified: {}", 
+            app.planned_count, app.ready_count, app.executing_count, app.verified_count);
+        println!("==================================================\n");
+
+        Ok(())
+    }
 }
