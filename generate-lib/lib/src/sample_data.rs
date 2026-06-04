@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
-use crate::TeaqlRuntime;
+use teaql_core::Entity;
+use crate::{CommentedSave, TeaqlRuntime};
 use crate::Q;
 
 pub trait IntoU64 {
@@ -232,7 +233,7 @@ where
 
 
 
-        let entity = entity.save(ctx).await.map_err(|e| e.to_string())?;
+        let entity = entity.comment(format!("Seed Task {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;;
 
         state.record_generated("Task");
 
@@ -289,7 +290,7 @@ where
 
 
 
-entity.save(ctx).await.map_err(|e| e.to_string())?;
+entity.comment(format!("Seed TaskExecutionLog {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;
 
         state.record_generated("Task Execution Log");
 

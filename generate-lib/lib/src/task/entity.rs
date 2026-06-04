@@ -190,17 +190,14 @@ impl Task {
         self.root.set_comment(comment);
         self
     }
+}
 
-    pub async fn save<'a, C>(
-        self,
-        ctx: &'a C,
-    ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskRepository<'a>>>
-    where
-        C: crate::TeaqlRepositoryProvider + ?Sized,
-    {
+impl crate::CommentedSave for teaql_core::Commented<Task> {
+    async fn save(self, ctx: &teaql_runtime::UserContext) -> Result<teaql_runtime::GraphNode, crate::RuntimeRepositoryError> {
+        let entity = self.into_entity();
         let repository = ctx
-            .task_repository()
+            .resolve_repository::<crate::runtime::DataServiceExecutor>("Task")
             .map_err(|err| teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(err.to_string())))?;
-        crate::TeaqlEntityRepository::save_entity_graph(&repository, self).await
+        crate::TeaqlEntityRepository::save_entity_graph(&repository, entity).await
     }
 }

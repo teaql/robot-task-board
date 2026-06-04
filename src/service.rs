@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{Q, Task, TaskExecutionLog};
+use robot_kanban::{CommentedSave, Q, Task, TaskExecutionLog};
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
     RusqliteMutationExecutor, RusqliteProviderExt,
@@ -8,7 +8,7 @@ use teaql_provider_rusqlite::{
 use teaql_runtime::{
     UserContext, UnifiedLogBuffer, LogPayload,
 };
-use teaql_core::TeaqlEntity;
+use teaql_core::{Entity, TeaqlEntity};
 
 use crate::logging::{is_bootstrap_message, AppAuditSink};
 use crate::models::{TaskModel, ReloadedData, MoveResult};
@@ -324,9 +324,8 @@ impl TaskService {
         let comment = format!("Create task '{}'", name);
         
         task.task_execution_log_list_mut().push(log);
-        task.set_comment(&comment);
         
-        task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        task.comment(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Finished business action: Create task '{}'", name));
         Ok(next_id)
@@ -345,9 +344,8 @@ impl TaskService {
             let task_name = task.name().to_string();
             let comment = format!("Delete task '{}'", task_name);
             
-            task.set_comment(&comment);
             task.mark_as_delete();
-            task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            task.comment(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Finished business action: Delete task ID {}", id));
             Ok(true)
@@ -402,11 +400,8 @@ impl TaskService {
                     // Attach the log to the task's execution log list to establish the graph relation
                     task.task_execution_log_list_mut().push(log);
 
-                    // Set the comment on the aggregate root
-                    task.set_comment(&comment);
-
-                    // Save the aggregate root, which implicitly saves the child execution logs
-                    task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    // Save the aggregate root with mandatory comment
+                    task.comment(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
                     self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 

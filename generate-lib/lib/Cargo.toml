@@ -11,11 +11,11 @@ chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-teaql-core = { version = "2.0.0" }
-teaql-macros = { version = "2.0.0" }
-teaql-runtime = { version = "2.0.0" }
-teaql-sql = { version = "2.0.0" }
-teaql-data-service = { version = "2.0.0" }
-teaql-provider-rusqlite = { version = "2.0.0" }
+teaql-core = { version = "3.0.0" }
+teaql-macros = { version = "3.0.0" }
+teaql-runtime = { version = "3.0.0" }
+teaql-sql = { version = "3.0.0" }
+teaql-data-service = { version = "3.0.0" }
+teaql-provider-rusqlite = { version = "3.0.0" }
 rusqlite = { version = "0.32", features = ["bundled", "chrono", "column_decltype"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
