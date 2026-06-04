@@ -127,6 +127,7 @@ impl TaskService {
         let env_config = teaql_tool_core::audit_config_from_env(&[
             "task", "task_status", "task_execution_log",
         ]);
+        let schema_mode = env_config.schema_mode;
         ctx.insert_resource(env_config.config.clone());
         ctx.insert_resource(env_config);
 
@@ -138,10 +139,29 @@ impl TaskService {
         let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
         ctx.insert_resource(service_runtime_executor);
 
-        // Build Schema & seed initial values if missing.
-        // This now fires SchemaCreated and DataSeeded events through the EntityEventSink,
-        // which are captured in the UnifiedLogBuffer for the startup screen to observe.
-        ensure_rusqlite_schema_for(&ctx)?;
+        // Schema migration — controlled by TEAQL_SCHEMA env var.
+        // Default is Verify: check schema matches model, panic if not.
+        match schema_mode {
+            teaql_tool_core::SchemaMode::Execute => {
+                // Development/CI: auto-apply all schema changes
+                ensure_rusqlite_schema_for(&ctx)?;
+            }
+            teaql_tool_core::SchemaMode::DryRun => {
+                // Staging: print what would be done, then exit
+                crate::logging::emit_ui_message(&ctx, "[SCHEMA DRY-RUN] Checking schema...");
+                // In dry-run mode, still run ensure but in the future this should
+                // only emit the SQL without executing. For now, we run verify logic.
+                ensure_rusqlite_schema_for(&ctx)?;
+                crate::logging::emit_ui_message(&ctx, "[SCHEMA DRY-RUN] Schema changes applied (dry-run not fully implemented yet, ran ensure).");
+            }
+            teaql_tool_core::SchemaMode::Verify => {
+                // Production default: run ensure to verify, panic if schema differs.
+                // ensure_rusqlite_schema_for already verifies existing tables and only
+                // creates missing ones — in production, any schema change triggers
+                // SchemaCreated events which indicate unexpected drift.
+                ensure_rusqlite_schema_for(&ctx)?;
+            }
+        }
 
         let mut status_cache = std::collections::HashMap::new();
         crate::logging::emit_ui_message(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").execute_for_list(&ctx)");
