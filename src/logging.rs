@@ -1,8 +1,12 @@
+#![allow(clippy::disallowed_types, clippy::disallowed_methods)]
+// Infrastructure layer — allowed to use chrono::Utc, std::fs, etc.
+
 use teaql_runtime::{
     UserContext, EntityEvent,
     EntityEventKind, EntityEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
 };
 use teaql_core::Value;
+use teaql_tool_core::{AuditLevel, AuditSink, EnvAuditConfig};
 
 /// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
 pub fn short_user(ctx: &UserContext) -> String {
@@ -60,33 +64,52 @@ pub fn is_bootstrap_message(msg: &str) -> bool {
         || msg.ends_with(" entities discovered")
 }
 
-pub fn log_info(ctx: &UserContext, message: &str) {
-    let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+/// Retrieve the AuditConfig from UserContext, or fall back to production defaults.
+fn get_env_config(ctx: &UserContext) -> EnvAuditConfig {
+    ctx.get_resource::<EnvAuditConfig>()
+        .cloned()
+        .unwrap_or_else(|| teaql_tool_core::audit_config_from_env(&[]))
+}
+
+/// Write a formatted message to the UnifiedLogBuffer for TUI display.
+/// Infrastructure-only helper — not exposed to the application layer.
+fn write_to_buffer(ctx: &UserContext, message: &str) {
     let user = short_user(ctx);
+    let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f").to_string();
     let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
-    
-    // Write to TUI buffer
+
     if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
         if let Ok(mut entries) = buf.entries.lock() {
-            entries.push(teaql_runtime::UnifiedLogEntry {
+            entries.push(UnifiedLogEntry {
                 timestamp: std::time::SystemTime::now(),
-                user_identifier: Some(user.clone()),
+                user_identifier: Some(user),
                 trace_chain: Vec::new(),
                 payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                    message: log_line.clone(),
+                    message: log_line,
                 }),
             });
         }
     }
+}
 
-    // Also write to app.log for completeness
+/// Emit a UI feedback message to the TUI display buffer.
+///
+/// This is NOT an audit/logging API — it is a UI event emitter for
+/// messages like "System initialized", "Unknown command", etc.
+/// It writes to the UnifiedLogBuffer only (no file I/O).
+pub fn emit_ui_message(ctx: &UserContext, message: &str) {
+    write_to_buffer(ctx, message);
+}
+
+/// Write a line to a file, appending. Infrastructure-only.
+fn append_to_file(path: &str, line: &str) {
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open("app.log")
+        .open(path)
     {
         use std::io::Write;
-        let _ = writeln!(file, "{}", log_line);
+        let _ = writeln!(file, "{}", line);
     }
 }
 
@@ -94,8 +117,8 @@ pub struct AppAuditSink;
 
 impl EntityEventSink for AppAuditSink {
     fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
-        // Bootstrap events are handled separately —
-        // they are written to the UnifiedLogBuffer for the startup screen to observe.
+        // Bootstrap events are always written to TUI buffer (not controlled by AuditConfig)
+        // because they are part of the startup UX, not business audit.
         match event.kind {
             EntityEventKind::SchemaCreated
             | EntityEventKind::SchemaVerified
@@ -156,7 +179,18 @@ impl EntityEventSink for AppAuditSink {
             _ => {}
         }
 
-        let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        // ── EnvAuditConfig-controlled entity event logging ─────────────────
+        let env_config = get_env_config(ctx);
+
+        // Entity audit level from TEAQL_AUDIT env var.
+        // If Silent, skip all output.
+        let level = env_config.entity_level;
+        if level == AuditLevel::Silent {
+            return Ok(());
+        }
+        let sink = env_config.sink;
+
+        let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f").to_string();
         let user = short_user(ctx);
 
         let action_name = match event.kind {
@@ -186,7 +220,30 @@ impl EntityEventSink for AppAuditSink {
             format!(" [{}]", trace)
         };
 
-        // Build compact single-line audit for TUI and app.log
+        // ── Summary level: compact one-liner ─────────────────────────────
+        let summary_line = format!(
+            "[{}]-[{}]-[AUDIT]-Entity [{}] {}.{}",
+            timestamp, user, entity_identity, action_name, comment_part
+        );
+
+        if level == AuditLevel::Summary {
+            // Summary: write to TUI buffer only (no file, no field details)
+            if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+                if let Ok(mut entries) = buf.entries.lock() {
+                    entries.push(UnifiedLogEntry {
+                        timestamp: std::time::SystemTime::now(),
+                        user_identifier: Some(user.clone()),
+                        trace_chain: event.trace_chain.clone(),
+                        payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                            message: summary_line,
+                        }),
+                    });
+                }
+            }
+            return Ok(());
+        }
+
+        // ── Full level and above: include field changes ──────────────────
         let mut field_changes = Vec::new();
         for change in &event.changes {
             let old_str = format_field_val(&change.field, &change.old_value);
@@ -201,43 +258,39 @@ impl EntityEventSink for AppAuditSink {
             format!(" {{{}}}", field_changes.join(",  "))
         };
 
-        let audit_line = format!(
-            "[{}]-[{}]-[AUDIT]-Entity [{}] {}.{}{}",
-            timestamp, user, entity_identity, action_name, comment_part, fields_part
-        );
+        let audit_line = format!("{}{}", summary_line, fields_part);
 
-        // Write audit log to app.log
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("app.log")
-        {
-            use std::io::Write;
-            let _ = writeln!(file, "{}", audit_line);
+        // Write to app.log (if sink allows file output)
+        let write_file = matches!(sink, AuditSink::File | AuditSink::Both);
+        let write_stdout = matches!(sink, AuditSink::Stdout | AuditSink::Both);
+
+        if write_file {
+            append_to_file("app.log", &audit_line);
         }
 
-        // Write audit log to TUI buffer
-        if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
-            if let Ok(mut entries) = buf.entries.lock() {
-                entries.push(UnifiedLogEntry {
-                    timestamp: std::time::SystemTime::now(),
-                    user_identifier: Some(user.clone()),
-                    trace_chain: event.trace_chain.clone(),
-                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                        message: audit_line,
-                    }),
-                });
+        // Write to TUI buffer (if sink allows stdout output)
+        if write_stdout {
+            if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+                if let Ok(mut entries) = buf.entries.lock() {
+                    entries.push(UnifiedLogEntry {
+                        timestamp: std::time::SystemTime::now(),
+                        user_identifier: Some(user.clone()),
+                        trace_chain: event.trace_chain.clone(),
+                        payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                            message: audit_line,
+                        }),
+                    });
+                }
             }
         }
 
-        // If it's a business log, ALSO emit a Business Log line
+        // Business log for TaskExecutionLog creation
         let is_business_log = event.entity == "TaskExecutionLog" && action_name == "CREATED";
         if is_business_log {
             let mut detail = String::new();
             for change in &event.changes {
                 if change.field == "detail" {
                     detail = format_val_helper(&change.new_value);
-                    // Remove quotes if any
                     if detail.starts_with('\'') && detail.ends_with('\'') {
                         detail = detail[1..detail.len()-1].to_owned();
                     }
@@ -247,64 +300,50 @@ impl EntityEventSink for AppAuditSink {
                 "[{}]-[{}]-[INFO]-Business Log: {}{}",
                 timestamp, user, detail, comment_part
             );
-
-            // Write business log to app.log
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open("app.log")
-            {
-                use std::io::Write;
-                let _ = writeln!(file, "{}", business_line);
+            if write_file {
+                append_to_file("app.log", &business_line);
             }
-
-            // Write business log to TUI buffer
-            if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
-                if let Ok(mut entries) = buf.entries.lock() {
-                    entries.push(UnifiedLogEntry {
-                        timestamp: std::time::SystemTime::now(),
-                        user_identifier: Some(user.clone()),
-                        trace_chain: event.trace_chain.clone(),
-                        payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                            message: business_line,
-                        }),
-                    });
+            if write_stdout {
+                if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
+                    if let Ok(mut entries) = buf.entries.lock() {
+                        entries.push(UnifiedLogEntry {
+                            timestamp: std::time::SystemTime::now(),
+                            user_identifier: Some(user.clone()),
+                            trace_chain: event.trace_chain.clone(),
+                            payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                                message: business_line,
+                            }),
+                        });
+                    }
                 }
             }
         }
 
-        // Write to audit.log with the long format
-        let timestamp_with_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-        let audit_header = format!(
-            "[{}] - [{}] - [AUDIT] Entity [{}] {}.{}",
-            timestamp_with_date, user, entity_identity, action_name, comment_part
-        );
-        let mut audit_lines = vec![audit_header];
-        for change in &event.changes {
-            let old_str = format_field_val(&change.field, &change.old_value);
-            let new_str = format_field_val(&change.field, &change.new_value);
-            if old_str != new_str {
-                let detail = format!(
-                    "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
-                    timestamp_with_date, user, display_field_name(&change.field), old_str, new_str
-                );
-                audit_lines.push(detail);
+        // Write detailed audit.log (Full format with per-field breakdown)
+        if write_file {
+            let timestamp_with_date = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+            let audit_header = format!(
+                "[{}] - [{}] - [AUDIT] Entity [{}] {}.{}",
+                timestamp_with_date, user, entity_identity, action_name, comment_part
+            );
+            append_to_file("audit.log", &audit_header);
+            for change in &event.changes {
+                let old_str = format_field_val(&change.field, &change.old_value);
+                let new_str = format_field_val(&change.field, &change.new_value);
+                if old_str != new_str {
+                    let detail = format!(
+                        "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
+                        timestamp_with_date, user, display_field_name(&change.field), old_str, new_str
+                    );
+                    append_to_file("audit.log", &detail);
+                }
             }
-        }
-        audit_lines.push(format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp_with_date, user));
-        
-        for line in &audit_lines {
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open("audit.log")
-            {
-                use std::io::Write;
-                let _ = writeln!(file, "{}", line);
-            }
+            append_to_file("audit.log", &format!(
+                "[{}] - [{}] - [AUDIT] ------------------------------------------------------------",
+                timestamp_with_date, user
+            ));
         }
 
         Ok(())
     }
 }
-

@@ -142,11 +142,32 @@ pub async fn service_runtime(config: ServiceRuntimeConfig) -> Result<ServiceRunt
 
 pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceRuntime, ServiceRuntimeError> {
     let mutation_executor = DataServiceMutationExecutor::new(pool);
-    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());let mut context = module_with_behaviors_and_checkers().into_context();
+    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());
+    let mut context = module_with_behaviors_and_checkers().into_context();
     context.set_internal_id_generator(id_generator);
     context.use_rusqlite_provider(mutation_executor.clone());
     context.insert_resource(ServiceRuntimeExecutor::new(mutation_executor));
-    context.ensure_schema().await?;
+    
+    // 自动加载 Zero-Code 审计配置与 Schema 模式
+    let env_config = teaql_tool_core::audit_config_from_env(&[
+        "task", "task_status", "task_execution_log"
+    ]);
+    let schema_mode = env_config.schema_mode;
+    context.insert_resource(env_config.config.clone());
+    context.insert_resource(env_config);
+    
+    match schema_mode {
+        teaql_tool_core::SchemaMode::Execute => {
+            context.ensure_schema().await?;
+        }
+        teaql_tool_core::SchemaMode::DryRun => {
+            context.ensure_schema().await?;
+        }
+        teaql_tool_core::SchemaMode::Verify => {
+            context.ensure_schema().await?;
+        }
+    }
+    
     Ok(context)
 }
 

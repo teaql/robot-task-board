@@ -3,6 +3,12 @@
 
 >>> Executing command: Review Mission Timeline
 
+    Create platform_data (4 fields)
+    Create task_data (5 fields)
+    Create task_execution_log_data (5 fields)
+    Create task_status_data (7 fields)
+    Seed platform_data (1 record inserted)
+    Seed task_status_data (5 records inserted)
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::task_status().comment("Load task statuses for cache").execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task statuses for cache] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)

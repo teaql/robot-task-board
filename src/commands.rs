@@ -21,21 +21,21 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
         match cmd.as_str() {
             "exit" | "quit" | "q" => {
                 app.should_quit = true;
-                app.service.log_info("Exiting application...");
+                app.service.emit_ui_message("Exiting application...");
             }
             "search" | "s" => {
                 if args.is_empty() {
                     app.search_term = None;
-                    app.service.log_info("Cleared active search query.");
+                    app.service.emit_ui_message("Cleared active search query.");
                 } else {
                     app.search_term = Some(args.to_owned());
-                    app.service.log_info(&format!("Searching for tasks by keyword: '{}'", args));
+                    app.service.emit_ui_message(&format!("Searching for tasks by keyword: '{}'", args));
                 }
                 app.reload_data().await?;
             }
             "add" => {
                 if args.is_empty() {
-                    app.service.log_info("Error: Task name cannot be empty. Usage: /add <task name>");
+                    app.service.emit_ui_message("Error: Task name cannot be empty. Usage: /add <task name>");
                 } else {
                     let _next_id = app.service.add_task(args).await?;
                     app.reload_data().await?;
@@ -43,18 +43,18 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
             }
             "delete" | "del" => {
                 if args.is_empty() {
-                    app.service.log_info("Error: Missing task ID. Usage: /del <id>");
+                    app.service.emit_ui_message("Error: Missing task ID. Usage: /del <id>");
                 } else if let Ok(id) = args.parse::<u64>() {
                     if app.service.delete_task(id).await? {
                         app.reload_data().await?;
                     }
                 } else {
-                    app.service.log_info(&format!("Error: Invalid task ID '{}'", args));
+                    app.service.emit_ui_message(&format!("Error: Invalid task ID '{}'", args));
                 }
             }
             "move" | "mv" => {
                 if args.is_empty() {
-                    app.service.log_info("Error: Missing arguments. Usage: /mv <id> [planned|ready|executing|verified|next]");
+                    app.service.emit_ui_message("Error: Missing arguments. Usage: /mv <id> [planned|ready|executing|verified|next]");
                     app.input.clear();
                     return Ok(());
                 }
@@ -84,11 +84,11 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                         }
                     }
                 } else {
-                    app.service.log_info(&format!("Error: Invalid task ID '{}'", move_parts[0]));
+                    app.service.emit_ui_message(&format!("Error: Invalid task ID '{}'", move_parts[0]));
                 }
             }
             _ => {
-                app.service.log_info(&format!("Unknown command: '/{}'. Type a task name directly or use /mv, /del, /s, /q", cmd));
+                app.service.emit_ui_message(&format!("Unknown command: '/{}'. Type a task name directly or use /mv, /del, /s, /q", cmd));
             }
         }
     } else {
