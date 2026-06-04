@@ -126,6 +126,32 @@ TeaQL propagates comments through nested queries, facets, and aggregates, so eve
 
 ---
 
+## Zero-Code Logging & Debugging
+
+TeaQL provides 7 environment variables to control the runtime behavior, schema migrations, and logging outputs—without modifying a single line of code. All builtin values are prefixed with an underscore (`_`) to avoid collisions with your entity names.
+
+| Environment Variable | Description | Default | Allowed Values |
+|---|---|---|---|
+| `TEAQL_AUDIT` | Entity data change logs | `_full` | `_silent`, `_summary`, `_full` |
+| `TEAQL_SQL` | SQL query logs | `_silent` | `_silent`, `_summary`, `_full` |
+| `TEAQL_SQL_TABLES` | Filter SQL logs to specific tables | (All tables) | `task,task_status`, etc. |
+| `TEAQL_TOOL` | `ctx` tool usage logs (HTTP, File, etc.) | `_silent` | `_silent`, `_summary`, `_full` |
+| `TEAQL_TOOL_FOCUS` | Filter tool logs to specific modules | (All modules) | `http,money`, etc. |
+| `TEAQL_SINK` | Output destination | `_both` | `_stdout`, `_file`, `_both` |
+| `TEAQL_SCHEMA` | Schema migration & verification mode | **`_verify`** | `_verify`, `_dryrun`, `_execute` |
+
+**Development / AI Assistant Debugging:**
+To run tests and see exactly what SQL statements are generated for a specific table:
+```bash
+# Auto-apply schema changes, log all SQL for the 'task' table
+TEAQL_SCHEMA=_execute TEAQL_SQL=_full TEAQL_SQL_TABLES=task cargo test -- --nocapture
+```
+
+**Production Safety:**
+The system enforces a strict whitelist. If you provide an unknown environment variable (e.g., `TEAQL_SQLL`) or an invalid value, the application will panic immediately at startup and refuse to run. The default `TEAQL_SCHEMA=_verify` ensures that the app will not blindly modify your production schema.
+
+---
+
 ## What Is TeaQL?
 
 TeaQL applications are composed of three layers.
