@@ -1,3 +1,6 @@
+#![allow(clippy::disallowed_types, clippy::disallowed_methods)]
+// Infrastructure layer — allowed to use chrono::Utc, std::fs, etc.
+
 use teaql_runtime::{
     UserContext, EntityEvent,
     EntityEventKind, EntityEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
@@ -60,34 +63,34 @@ pub fn is_bootstrap_message(msg: &str) -> bool {
         || msg.ends_with(" entities discovered")
 }
 
-pub fn log_info(ctx: &UserContext, message: &str) {
-    let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+/// Write a formatted message to the UnifiedLogBuffer for TUI display.
+/// Infrastructure-only helper — not exposed to the application layer.
+fn write_to_buffer(ctx: &UserContext, message: &str) {
     let user = short_user(ctx);
+    let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f").to_string();
     let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
-    
-    // Write to TUI buffer
+
     if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
         if let Ok(mut entries) = buf.entries.lock() {
-            entries.push(teaql_runtime::UnifiedLogEntry {
+            entries.push(UnifiedLogEntry {
                 timestamp: std::time::SystemTime::now(),
-                user_identifier: Some(user.clone()),
+                user_identifier: Some(user),
                 trace_chain: Vec::new(),
                 payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                    message: log_line.clone(),
+                    message: log_line,
                 }),
             });
         }
     }
+}
 
-    // Also write to app.log for completeness
-    if let Ok(mut file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("app.log")
-    {
-        use std::io::Write;
-        let _ = writeln!(file, "{}", log_line);
-    }
+/// Emit a UI feedback message to the TUI display buffer.
+///
+/// This is NOT an audit/logging API — it is a UI event emitter for
+/// messages like "System initialized", "Unknown command", etc.
+/// It writes to the UnifiedLogBuffer only (no file I/O).
+pub fn emit_ui_message(ctx: &UserContext, message: &str) {
+    write_to_buffer(ctx, message);
 }
 
 pub struct AppAuditSink;
@@ -156,7 +159,7 @@ impl EntityEventSink for AppAuditSink {
             _ => {}
         }
 
-        let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f").to_string();
         let user = short_user(ctx);
 
         let action_name = match event.kind {
@@ -274,7 +277,7 @@ impl EntityEventSink for AppAuditSink {
         }
 
         // Write to audit.log with the long format
-        let timestamp_with_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        let timestamp_with_date = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         let audit_header = format!(
             "[{}] - [{}] - [AUDIT] Entity [{}] {}.{}",
             timestamp_with_date, user, entity_identity, action_name, comment_part
@@ -307,4 +310,3 @@ impl EntityEventSink for AppAuditSink {
         Ok(())
     }
 }
-

@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut app = App::new(service);
     app.reload_data().await?;
-    app.service.log_info("=================================================================================================");
+    app.service.emit_ui_message("=================================================================================================");
 
     app.run(&mut terminal).await?;
 

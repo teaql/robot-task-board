@@ -45,7 +45,7 @@ impl TaskDomainBehavior for Task {
         }
         
         let comment = format!("Create task '{}'", cmd.name);
-        crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", comment));
+        crate::logging::emit_ui_message(ctx, &format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", comment));
         let mut task = Q::tasks().comment(&comment).new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
@@ -57,7 +57,7 @@ impl TaskDomainBehavior for Task {
 
     fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
         let comment = format!("Generate execution log for action '{}'", action);
-        crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::task_execution_logs().comment({:?}).new_entity(ctx)", comment));
+        crate::logging::emit_ui_message(ctx, &format!("Execute TeaQL - Q::task_execution_logs().comment({:?}).new_entity(ctx)", comment));
         let mut log = Q::task_execution_logs().comment(&comment).new_entity(ctx);
         teaql_core::Entity::set_comment(&mut log, comment);
         log.update_action(action.to_owned())
@@ -137,7 +137,7 @@ impl TaskService {
         ensure_rusqlite_schema_for(&ctx)?;
 
         let mut status_cache = std::collections::HashMap::new();
-        crate::logging::log_info(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").execute_for_list(&ctx)");
+        crate::logging::emit_ui_message(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").execute_for_list(&ctx)");
         let statuses = robot_kanban::Q::task_status()
             .comment("Load task statuses for cache")
             .execute_for_list(&ctx)
@@ -207,8 +207,8 @@ impl TaskService {
         &self.ctx
     }
 
-    pub fn log_info(&self, message: &str) {
-        crate::logging::log_info(&self.ctx, message);
+    pub fn emit_ui_message(&self, message: &str) {
+        crate::logging::emit_ui_message(&self.ctx, message);
     }
 
     pub async fn reload_data(
@@ -226,14 +226,14 @@ impl TaskService {
             .facet_by_status_as("status_stats", robot_kanban::Q::task_status().comment("Count status").count_tasks());
 
         // Unified logging: Log the query trace before running the query
-        self.log_info(&format!("Starting query: {}", search_comment));
+        self.emit_ui_message(&format!("Starting query: {}", search_comment));
         
         let teaql_code = if let Some(kw) = search_term {
             format!("Q::tasks().comment({:?}).with_name_like(\"%{}%\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())", search_comment, kw)
         } else {
             format!("Q::tasks().comment({:?}).facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())", search_comment)
         };
-        self.log_info(&format!("Execute TeaQL - {}", teaql_code));
+        self.emit_ui_message(&format!("Execute TeaQL - {}", teaql_code));
 
         let list_result = query.execute_for_list(&self.ctx).await?;
 
@@ -299,7 +299,7 @@ impl TaskService {
             }
         }
 
-        self.log_info(&format!("Finished query: {}", search_comment));
+        self.emit_ui_message(&format!("Finished query: {}", search_comment));
 
         Ok(ReloadedData {
             planned_tasks,
@@ -314,7 +314,7 @@ impl TaskService {
     }
 
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
-        self.log_info(&format!("Starting business action: Create task '{}'", name));
+        self.emit_ui_message(&format!("Starting business action: Create task '{}'", name));
         let next_id = self.ctx.next_id_for::<Task>()?;
         let cmd = CreateTaskCommand { name: name.to_owned() };
         let mut task = Task::create(&cmd, next_id, &self.ctx)?;
@@ -328,13 +328,13 @@ impl TaskService {
         
         task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-        self.log_info(&format!("Finished business action: Create task '{}'", name));
+        self.emit_ui_message(&format!("Finished business action: Create task '{}'", name));
         Ok(next_id)
     }
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
-        self.log_info(&format!("Starting business action: Delete task ID {}", id));
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").execute_for_one(&self.ctx)", id, id));
+        self.emit_ui_message(&format!("Starting business action: Delete task ID {}", id));
+        self.emit_ui_message(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").execute_for_one(&self.ctx)", id, id));
         
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
@@ -349,10 +349,10 @@ impl TaskService {
             task.mark_as_delete();
             task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-            self.log_info(&format!("Finished business action: Delete task ID {}", id));
+            self.emit_ui_message(&format!("Finished business action: Delete task ID {}", id));
             Ok(true)
         } else {
-            self.log_info(&format!("Finished business action: Error: Task with ID {} not found", id));
+            self.emit_ui_message(&format!("Finished business action: Error: Task with ID {} not found", id));
             Ok(false)
         }
     }
@@ -364,7 +364,7 @@ impl TaskService {
     ) -> Result<MoveResult, Box<dyn Error>> {
         let trimmed_status = target_status.trim();
 
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").execute_for_one(&self.ctx)", id, id));
+        self.emit_ui_message(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").execute_for_one(&self.ctx)", id, id));
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
             .comment(&format!("Load task {} for status transition", id))
@@ -391,7 +391,7 @@ impl TaskService {
                     
                     let task_name = task.name().to_string();
                     
-                    self.log_info(&format!("Starting business action: Move '{}' {} => {}", task_name, old_status_name, status_name));
+                    self.emit_ui_message(&format!("Starting business action: Move '{}' {} => {}", task_name, old_status_name, status_name));
 
                     let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
                     
@@ -408,24 +408,24 @@ impl TaskService {
                     // Save the aggregate root, which implicitly saves the child execution logs
                     task.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-                    self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
+                    self.emit_ui_message(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 
                     Ok(MoveResult::Moved {
                         status_name,
                     })
                 }
                 Ok(None) => {
-                    self.log_info(&format!("Action failed: Task {} already in final status", id));
+                    self.emit_ui_message(&format!("Action failed: Task {} already in final status", id));
                     Ok(MoveResult::AlreadyFinal)
                 }
                 Err(e) => {
                     let err_msg = format!("Transition error: {}", e);
-                    self.log_info(&format!("Action failed: {}", err_msg));
+                    self.emit_ui_message(&format!("Action failed: {}", err_msg));
                     Ok(MoveResult::Error { err_msg })
                 }
             }
         } else {
-            self.log_info(&format!("Action failed: Task {} not found", id));
+            self.emit_ui_message(&format!("Action failed: Task {} not found", id));
             Ok(MoveResult::NotFound)
         }
     }

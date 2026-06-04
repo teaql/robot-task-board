@@ -53,10 +53,10 @@ impl App {
             log_scroll_offset: 0,
             hide_logs: std::env::args().any(|arg| arg == "-c"),
         };
-        app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
-        app.service.log_info("System successfully initialized.");
-        app.service.log_info("Pre-loaded SQLite database 'robot_kanban.db'.");
-        app.service.log_info("TeaQL v1.0.3: Comment Propagation is fully active.");
+        app.service.emit_ui_message("TeaQL traces one business request into generated SQL, facets, and audit records.");
+        app.service.emit_ui_message("System successfully initialized.");
+        app.service.emit_ui_message("Pre-loaded SQLite database 'robot_kanban.db'.");
+        app.service.emit_ui_message("TeaQL v1.0.3: Comment Propagation is fully active.");
         app
     }
 
