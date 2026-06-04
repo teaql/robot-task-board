@@ -2,6 +2,17 @@ use teaql_core::Expr;
 
 use crate::*;
 
+pub struct PurposedQuery<T> {
+    pub inner: T,
+    pub purpose: String,
+}
+
+impl<T> PurposedQuery<T> {
+    pub fn new(inner: T, purpose: impl Into<String>) -> Self {
+        Self { inner, purpose: purpose.into() }
+    }
+}
+
 pub struct Q;
 
 impl Q {

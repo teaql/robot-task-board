@@ -1,7 +1,7 @@
 use std::error::Error;
 use chrono::Local;
 
-use robot_kanban::{CommentedSave, Q, Task};
+use robot_kanban::{AuditedSave, Q, Task};
 use teaql_core::{Entity, Value, TeaqlEntity};
 use teaql_runtime::{
     EntityEvent, EntityEventKind, EntityEventSink, UserContext, RuntimeError,
@@ -166,7 +166,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Saving a clone will trigger the CREATED event automatically, allowing us to reuse the local variable
     {
         let cloned = task.clone();
-        cloned.comment("Create task 'Analyze Network Traffic Logs'").save(&ctx).await?;
+        cloned.audit_as("Create task 'Analyze Network Traffic Logs'").save(&ctx).await?;
     }
 
     // 7. Action 2: Move the Task (Update status)
@@ -174,7 +174,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     task.update_status_to_ready();
     {
         let cloned = task.clone();
-        cloned.comment("Move task 'Analyze Network Traffic Logs' to Process").save(&ctx).await?;
+        cloned.audit_as("Move task 'Analyze Network Traffic Logs' to Process").save(&ctx).await?;
     }
 
     // 8. Action 3: Deleting the Task
@@ -183,13 +183,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Standard DDD/TeaQL practice: Load the latest entity state to get the correct database version
     let found_tasks = Q::tasks()
         .with_id_is(next_id)
+        .purpose("Load task by id")
         .execute_for_list(&ctx)
         .await?;
 
     if let Some(mut latest_task) = found_tasks.into_iter().next() {
         // Deleting via entity API emits the DELETED event
         latest_task.mark_as_delete();
-        latest_task.comment("Soft delete the test task").save(&ctx).await?;
+        latest_task.audit_as("Soft delete the test task").save(&ctx).await?;
     } else {
         println!("[ERROR] Task with ID {} could not be found for deletion.", next_id);
     }

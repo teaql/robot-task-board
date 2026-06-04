@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use teaql_core::Entity;
-use crate::{CommentedSave, TeaqlRuntime};
+use crate::{AuditedSave, TeaqlRuntime};
 use crate::Q;
 
 pub trait IntoU64 {
@@ -160,7 +160,7 @@ async fn load_root_platforms<C>(
 where
     C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
-    let list = Q::platforms().execute_for_list(ctx).await.unwrap_or_default();
+    let list = Q::platforms().purpose("test").execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
         state.add_reference("Platform", item.id().into_u64());
     }
@@ -174,7 +174,7 @@ async fn load_root_task_status<C>(
 where
     C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
-    let list = Q::task_status().execute_for_list(ctx).await.unwrap_or_default();
+    let list = Q::task_status().purpose("test").execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
         state.add_reference("Task Status", item.id().into_u64());
     }
@@ -233,7 +233,7 @@ where
 
 
 
-        let entity = entity.comment(format!("Seed Task {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;;
+        let entity = entity.audit_as(format!("Seed Task {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;;
 
         state.record_generated("Task");
 
@@ -290,7 +290,7 @@ where
 
 
 
-entity.comment(format!("Seed TaskExecutionLog {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;
+entity.audit_as(format!("Seed TaskExecutionLog {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;
 
         state.record_generated("Task Execution Log");
 

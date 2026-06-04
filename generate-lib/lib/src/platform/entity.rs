@@ -128,7 +128,7 @@ impl Platform {
     }
 }
 
-impl crate::CommentedSave for teaql_core::Commented<Platform> {
+impl crate::AuditedSave for teaql_core::Audited<Platform> {
     async fn save(self, ctx: &teaql_runtime::UserContext) -> Result<teaql_runtime::GraphNode, crate::RuntimeRepositoryError> {
         let entity = self.into_entity();
         let repository = ctx

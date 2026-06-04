@@ -95,7 +95,7 @@ impl<R> TaskExecutionLogRequest<R> {
         crate::TaskExecutionLog::runtime_new(ctx.user_context().entity_root())
     }
 
-    pub async fn execute_for_list<'a, C>(
+    pub(crate) async fn _execute_for_list<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -120,7 +120,7 @@ impl<R> TaskExecutionLogRequest<R> {
         Ok(rows)
     }
 
-    pub async fn execute_for_first<'a, C>(
+    pub(crate) async fn _execute_for_first<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -128,11 +128,11 @@ impl<R> TaskExecutionLogRequest<R> {
         C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
-        let rows = self.limit(1).execute_for_list(ctx).await?;
+        let rows = self.limit(1)._execute_for_list(ctx).await?;
         Ok(rows.into_iter().next())
     }
 
-    pub async fn execute_for_one<'a, C>(
+    pub(crate) async fn _execute_for_one<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -140,10 +140,10 @@ impl<R> TaskExecutionLogRequest<R> {
         C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
-        self.execute_for_first(ctx).await
+        self._execute_for_first(ctx).await
     }
 
-    pub async fn execute_by_id<'a, C>(
+    pub(crate) async fn _execute_by_id<'a, C>(
         self,
         ctx: &'a C,
         id: impl Into<teaql_core::Value>,
@@ -152,10 +152,10 @@ impl<R> TaskExecutionLogRequest<R> {
         C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
-        self.and_filter(Expr::eq("id", id)).execute_for_first(ctx).await
+        self.and_filter(Expr::eq("id", id))._execute_for_first(ctx).await
     }
 
-    pub async fn execute_for_page<'a, C>(
+    pub(crate) async fn _execute_for_page<'a, C>(
         self,
         ctx: &'a C,
         offset: u64,
@@ -165,13 +165,13 @@ impl<R> TaskExecutionLogRequest<R> {
         C: TeaqlRepositoryProvider + ?Sized,
         R: teaql_core::Entity,
     {
-        let total_count = self.clone().execute_for_count(ctx).await?;
-        let mut rows = self.page_offset(offset, limit).execute_for_list(ctx).await?;
+        let total_count = self.clone()._execute_for_count(ctx).await?;
+        let mut rows = self.page_offset(offset, limit)._execute_for_list(ctx).await?;
         rows.total_count = Some(total_count);
         Ok(rows)
     }
 
-    pub async fn execute_for_count<'a, C>(
+    pub(crate) async fn _execute_for_count<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<u64, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -195,7 +195,7 @@ impl<R> TaskExecutionLogRequest<R> {
             .ok_or_else(|| RepositoryError::Runtime(RuntimeError::Graph(format!("count result for TaskExecutionLog is missing or not numeric"))))
     }
 
-    pub async fn execute_for_exists<'a, C>(
+    pub(crate) async fn _execute_for_exists<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<bool, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -211,7 +211,7 @@ impl<R> TaskExecutionLogRequest<R> {
         Ok(!rows.is_empty())
     }
 
-    pub async fn execute_for_records<'a, C>(
+    pub(crate) async fn _execute_for_records<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<SmartList<Record>, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -233,14 +233,14 @@ impl<R> TaskExecutionLogRequest<R> {
         Ok(rows)
     }
 
-    pub async fn execute_for_record<'a, C>(
+    pub(crate) async fn _execute_for_record<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<Option<Record>, TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
     {
-        let records = self.limit(1).execute_for_records(ctx).await?;
+        let records = self.limit(1)._execute_for_records(ctx).await?;
         Ok(records.into_iter().next())
     }
 
@@ -327,6 +327,10 @@ impl<R> TaskExecutionLogRequest<R> {
     pub fn comment(mut self, comment: impl Into<String>) -> Self {
         self.query_options.comment = Some(comment.into());
         self
+    }
+
+    pub fn purpose(self, purpose: impl Into<String>) -> crate::q::PurposedQuery<Self> {
+        crate::q::PurposedQuery::new(self, purpose)
     }
 
     pub fn raw_sql(self, raw_sql: impl Into<String>) -> Self {
@@ -1632,5 +1636,57 @@ impl<R> From< TaskExecutionLogRequest<R> > for QuerySelection {
             child_enhancements: request.child_enhancements,
             query_options: request.query_options,
         }
+    }
+}
+
+
+impl<R: teaql_core::Entity> crate::q::PurposedQuery<TaskExecutionLogRequest<R>> {
+    pub async fn execute_for_list<C>(self, ctx: &C) -> Result<teaql_core::SmartList<R>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_for_list(ctx).await
+    }
+    
+    pub async fn execute_for_first<C>(self, ctx: &C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_for_first(ctx).await
+    }
+    
+    pub async fn execute_for_one<C>(self, ctx: &C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_for_one(ctx).await
+    }
+    
+    pub async fn execute_by_id<C>(self, ctx: &C, id: impl Into<teaql_core::Value>) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_by_id(ctx, id).await
+    }
+    
+    pub async fn execute_for_records<C>(self, ctx: &C) -> Result<teaql_core::SmartList<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_for_records(ctx).await
+    }
+    
+    pub async fn execute_for_record<C>(self, ctx: &C) -> Result<Option<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_for_record(ctx).await
+    }
+    
+    pub async fn execute_for_count<C>(self, ctx: &C) -> Result<u64, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'_>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.inner._execute_for_count(ctx).await
     }
 }

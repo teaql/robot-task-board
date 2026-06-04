@@ -150,7 +150,7 @@ pub type RuntimeRepositoryError = RepositoryError<<crate::runtime::DataServiceEx
 /// Extension trait that provides `.save(ctx)` on `Commented<T>`.
 /// This uses Rust's orphan rule: a local trait CAN be implemented for a foreign type.
 #[allow(async_fn_in_trait)]
-pub trait CommentedSave {
+pub trait AuditedSave {
     async fn save(self, ctx: &teaql_runtime::UserContext) -> Result<GraphNode, RuntimeRepositoryError>;
 }
 

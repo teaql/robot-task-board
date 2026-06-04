@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{CommentedSave, Q, Task, TaskExecutionLog};
+use robot_kanban::{AuditedSave, Q, Task, TaskExecutionLog};
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
     RusqliteMutationExecutor, RusqliteProviderExt,
@@ -137,9 +137,10 @@ impl TaskService {
         ensure_rusqlite_schema_for(&ctx)?;
 
         let mut status_cache = std::collections::HashMap::new();
-        crate::logging::log_info(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").execute_for_list(&ctx)");
+        crate::logging::log_info(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").purpose(\"Load task statuses for cache\").execute_for_list(&ctx)");
         let statuses = robot_kanban::Q::task_status()
             .comment("Load task statuses for cache")
+            .purpose("Load task statuses for cache")
             .execute_for_list(&ctx)
             .await?.data;
         for status in statuses {
@@ -235,7 +236,7 @@ impl TaskService {
         };
         self.log_info(&format!("Execute TeaQL - {}", teaql_code));
 
-        let list_result = query.execute_for_list(&self.ctx).await?;
+        let list_result = query.purpose("List tasks").execute_for_list(&self.ctx).await?;
 
         let mut planned_count = 0;
         let mut ready_count = 0;
@@ -325,7 +326,7 @@ impl TaskService {
         
         task.task_execution_log_list_mut().push(log);
         
-        task.comment(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Finished business action: Create task '{}'", name));
         Ok(next_id)
@@ -333,11 +334,12 @@ impl TaskService {
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
         self.log_info(&format!("Starting business action: Delete task ID {}", id));
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").execute_for_one(&self.ctx)", id, id));
+        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").purpose(\"Load task {} for deletion\").execute_for_one(&self.ctx)", id, id, id));
         
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
             .comment(&format!("Load task {} for deletion", id))
+            .purpose(&format!("Load task {} for deletion", id))
             .execute_for_one(&self.ctx).await?;
 
         if let Some(mut task) = task_opt {
@@ -345,7 +347,7 @@ impl TaskService {
             let comment = format!("Delete task '{}'", task_name);
             
             task.mark_as_delete();
-            task.comment(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
             self.log_info(&format!("Finished business action: Delete task ID {}", id));
             Ok(true)
@@ -362,10 +364,11 @@ impl TaskService {
     ) -> Result<MoveResult, Box<dyn Error>> {
         let trimmed_status = target_status.trim();
 
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").execute_for_one(&self.ctx)", id, id));
+        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").purpose(\"Load task {} for status transition\").execute_for_one(&self.ctx)", id, id, id));
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
             .comment(&format!("Load task {} for status transition", id))
+            .purpose(&format!("Load task {} for status transition", id))
             .execute_for_one(&self.ctx).await?;
 
         if let Some(mut task) = task_opt {
@@ -401,7 +404,7 @@ impl TaskService {
                     task.task_execution_log_list_mut().push(log);
 
                     // Save the aggregate root with mandatory comment
-                    task.comment(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
                     self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
 

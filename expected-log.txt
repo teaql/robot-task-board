@@ -9,7 +9,7 @@
     Create task_status_data (7 fields)
     Seed platform_data (1 record inserted)
     Seed task_status_data (5 records inserted)
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::task_status().comment("Load task statuses for cache").purpose("Load task statuses for cache").execute_for_list(&ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::task_status().comment("Load task statuses for cache").execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task statuses for cache] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[INFO]-TeaQL traces one business request into generated SQL, facets, and audit records.
@@ -464,7 +464,7 @@
 
 >>> Executing command: /mv 1
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").purpose("Load task 1 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 1 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' PLANNED => READY
@@ -494,7 +494,7 @@
 
 >>> Executing command: /mv 1
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").purpose("Load task 1 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 1 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' READY => EXECUTING
@@ -524,7 +524,7 @@
 
 >>> Executing command: /mv 1
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").purpose("Load task 1 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 1 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' EXECUTING => VERIFIED
@@ -554,7 +554,7 @@
 
 >>> Executing command: /mv 2
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").purpose("Load task 2 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 2 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' PLANNED => READY
@@ -584,7 +584,7 @@
 
 >>> Executing command: /mv 2
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").purpose("Load task 2 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 2 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' READY => EXECUTING
@@ -614,7 +614,7 @@
 
 >>> Executing command: /mv 2
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").purpose("Load task 2 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 2 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' EXECUTING => VERIFIED
@@ -644,7 +644,7 @@
 
 >>> Executing command: /mv 3
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").purpose("Load task 3 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 3 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' PLANNED => READY
@@ -674,7 +674,7 @@
 
 >>> Executing command: /mv 3
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").purpose("Load task 3 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 3 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' READY => EXECUTING
@@ -704,7 +704,7 @@
 
 >>> Executing command: /mv 3
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").purpose("Load task 3 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 3 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' EXECUTING => VERIFIED
@@ -734,7 +734,7 @@
 
 >>> Executing command: /mv 4
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").purpose("Load task 4 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 4 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' PLANNED => READY
@@ -764,7 +764,7 @@
 
 >>> Executing command: /mv 4
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").purpose("Load task 4 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 4 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' READY => EXECUTING
@@ -794,7 +794,7 @@
 
 >>> Executing command: /mv 4
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").purpose("Load task 4 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 4 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' EXECUTING => VERIFIED
@@ -824,7 +824,7 @@
 
 >>> Executing command: /mv 5
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(5).comment("Load task 5 for status transition").purpose("Load task 5 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(5).comment("Load task 5 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 5 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 5)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Load Flight Parameters' PLANNED => READY
@@ -854,7 +854,7 @@
 
 >>> Executing command: /mv 5
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(5).comment("Load task 5 for status transition").purpose("Load task 5 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(5).comment("Load task 5 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 5 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 5)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Load Flight Parameters' READY => EXECUTING
@@ -884,7 +884,7 @@
 
 >>> Executing command: /mv 6
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(6).comment("Load task 6 for status transition").purpose("Load task 6 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(6).comment("Load task 6 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 6 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 6)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Initialize Ground Telemetry' PLANNED => READY
@@ -914,7 +914,7 @@
 
 >>> Executing command: /mv 6
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(6).comment("Load task 6 for status transition").purpose("Load task 6 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(6).comment("Load task 6 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 6 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 6)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Initialize Ground Telemetry' READY => EXECUTING
@@ -944,7 +944,7 @@
 
 >>> Executing command: /mv 7
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(7).comment("Load task 7 for status transition").purpose("Load task 7 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(7).comment("Load task 7 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 7 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 7)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Telemetry Anomaly' PLANNED => READY
@@ -974,7 +974,7 @@
 
 >>> Executing command: /mv 7
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(7).comment("Load task 7 for status transition").purpose("Load task 7 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(7).comment("Load task 7 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 7 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 7)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Telemetry Anomaly' READY => EXECUTING
@@ -1004,7 +1004,7 @@
 
 >>> Executing command: /mv 8
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(8).comment("Load task 8 for status transition").purpose("Load task 8 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(8).comment("Load task 8 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 8 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 8)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Launch Criteria' PLANNED => READY
@@ -1034,7 +1034,7 @@
 
 >>> Executing command: /mv 8
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(8).comment("Load task 8 for status transition").purpose("Load task 8 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(8).comment("Load task 8 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 8 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 8)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Launch Criteria' READY => EXECUTING
@@ -1064,7 +1064,7 @@
 
 >>> Executing command: /mv 9
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(9).comment("Load task 9 for status transition").purpose("Load task 9 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(9).comment("Load task 9 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 9 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 9)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Range Safety Check' PLANNED => READY
@@ -1094,7 +1094,7 @@
 
 >>> Executing command: /mv 10
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(10).comment("Load task 10 for status transition").purpose("Load task 10 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(10).comment("Load task 10 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 10 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 10)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Begin Propellant Loading' PLANNED => READY
@@ -1124,7 +1124,7 @@
 
 >>> Executing command: /mv 11
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(11).comment("Load task 11 for status transition").purpose("Load task 11 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(11).comment("Load task 11 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 11 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 11)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Complete Cryogenic Fueling' PLANNED => READY
@@ -1154,7 +1154,7 @@
 
 >>> Executing command: /mv 12
 
-    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(12).comment("Load task 12 for status transition").purpose("Load task 12 for status transition").execute_for_one(&self.ctx)
+    [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(12).comment("Load task 12 for status transition").execute_for_one(&self.ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 12 for status transition] - [1 rows returned]
               SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 12)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Arm Flight Termination System' PLANNED => READY
