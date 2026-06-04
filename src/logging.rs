@@ -60,35 +60,6 @@ pub fn is_bootstrap_message(msg: &str) -> bool {
         || msg.ends_with(" entities discovered")
 }
 
-pub fn log_info(ctx: &UserContext, message: &str) {
-    let timestamp = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
-    let user = short_user(ctx);
-    let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
-    
-    // Write to TUI buffer
-    if let Some(buf) = ctx.get_resource::<UnifiedLogBuffer>() {
-        if let Ok(mut entries) = buf.entries.lock() {
-            entries.push(teaql_runtime::UnifiedLogEntry {
-                timestamp: std::time::SystemTime::now(),
-                user_identifier: Some(user.clone()),
-                trace_chain: Vec::new(),
-                payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                    message: log_line.clone(),
-                }),
-            });
-        }
-    }
-
-    // Also write to app.log for completeness
-    if let Ok(mut file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("app.log")
-    {
-        use std::io::Write;
-        let _ = writeln!(file, "{}", log_line);
-    }
-}
 
 pub struct AppAuditSink;
 

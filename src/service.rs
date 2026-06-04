@@ -45,7 +45,6 @@ impl TaskDomainBehavior for Task {
         }
         
         let comment = format!("Create task '{}'", cmd.name);
-        crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", comment));
         let mut task = Q::tasks().comment(&comment).new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
@@ -57,7 +56,6 @@ impl TaskDomainBehavior for Task {
 
     fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
         let comment = format!("Generate execution log for action '{}'", action);
-        crate::logging::log_info(ctx, &format!("Execute TeaQL - Q::task_execution_logs().comment({:?}).new_entity(ctx)", comment));
         let mut log = Q::task_execution_logs().comment(&comment).new_entity(ctx);
         teaql_core::Entity::set_comment(&mut log, comment);
         log.update_action(action.to_owned())
@@ -123,6 +121,13 @@ impl TaskService {
         ctx.insert_resource(log_buffer);
         ctx.set_event_sink(AppAuditSink);
 
+        // Control SQL logging via environment variable (default enabled for backwards compatibility in tests)
+        if let Ok(val) = std::env::var("TEAQL_SQL_LOG") {
+            if val == "off" || val == "false" || val == "0" {
+                ctx.set_sql_log_options(teaql_runtime::SqlLogOptions::disabled());
+            }
+        }
+
         // Register synchronous executors
         ctx.use_rusqlite_provider(inner_executor.clone());
         ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
@@ -137,7 +142,6 @@ impl TaskService {
         ensure_rusqlite_schema_for(&ctx)?;
 
         let mut status_cache = std::collections::HashMap::new();
-        crate::logging::log_info(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").purpose(\"Load task statuses for cache\").execute_for_list(&ctx)");
         let statuses = robot_kanban::Q::task_status()
             .comment("Load task statuses for cache")
             .purpose("Load task statuses for cache")
@@ -209,7 +213,6 @@ impl TaskService {
     }
 
     pub fn log_info(&self, message: &str) {
-        crate::logging::log_info(&self.ctx, message);
     }
 
     pub async fn reload_data(
@@ -229,13 +232,7 @@ impl TaskService {
         // Unified logging: Log the query trace before running the query
         self.log_info(&format!("Starting query: {}", search_comment));
         
-        let teaql_code = if let Some(kw) = search_term {
-            format!("Q::tasks().comment({:?}).with_name_like(\"%{}%\").facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())", search_comment, kw)
-        } else {
-            format!("Q::tasks().comment({:?}).facet_by_status_as(\"status_stats\", Q::task_status().comment(\"Count status\").count_tasks())", search_comment)
-        };
-        self.log_info(&format!("Execute TeaQL - {}", teaql_code));
-
+        // Execute query
         let list_result = query.purpose("List tasks").execute_for_list(&self.ctx).await?;
 
         let mut planned_count = 0;
@@ -334,7 +331,6 @@ impl TaskService {
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
         self.log_info(&format!("Starting business action: Delete task ID {}", id));
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").purpose(\"Load task {} for deletion\").execute_for_one(&self.ctx)", id, id, id));
         
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
@@ -364,7 +360,6 @@ impl TaskService {
     ) -> Result<MoveResult, Box<dyn Error>> {
         let trimmed_status = target_status.trim();
 
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").purpose(\"Load task {} for status transition\").execute_for_one(&self.ctx)", id, id, id));
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
             .comment(&format!("Load task {} for status transition", id))
