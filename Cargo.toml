@@ -21,6 +21,7 @@ teaql-macros = "2.0.0"
 teaql-sql = "2.0.0"
 teaql-provider-rusqlite = "2.0.0"
 teaql-data-service = "2.0.0"
+teaql-tool-core = { path = "../teaql-rust-utils/teaql-tool-core" }
 
 # Our generated TeaQL domain logic library
 robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }

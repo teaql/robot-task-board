@@ -118,10 +118,11 @@ impl TaskService {
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
 
-        // Register custom TUI log buffer and audit event sink
+        // Register custom TUI log buffer, audit event sink, and audit configuration
         let log_buffer = UnifiedLogBuffer::default();
         ctx.insert_resource(log_buffer);
         ctx.set_event_sink(AppAuditSink);
+        ctx.insert_resource(teaql_tool_core::AuditConfig::production());
 
         // Register synchronous executors
         ctx.use_rusqlite_provider(inner_executor.clone());
