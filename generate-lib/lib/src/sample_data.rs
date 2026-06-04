@@ -1,7 +1,10 @@
 use std::collections::BTreeMap;
-use teaql_core::Entity;
-use crate::{AuditedSave, TeaqlRuntime};
+use crate::TeaqlRuntime;
 use crate::Q;
+use teaql_core::Entity;
+use crate::PurposedQuery;
+use crate::request_support::TeaqlUserContextExt;
+use crate::request_support::AuditedSave;
 
 pub trait IntoU64 {
     fn into_u64(self) -> u64;
@@ -135,6 +138,7 @@ where
 
 
     use crate::request_support::TeaqlUserContextExt;
+use crate::request_support::AuditedSave;
     ctx.user_context().transaction_data(|| async {
         let res = async {
     generate_tasks(ctx, &mut state).await?;
@@ -160,7 +164,7 @@ async fn load_root_platforms<C>(
 where
     C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
-    let list = Q::platforms().purpose("test").execute_for_list(ctx).await.unwrap_or_default();
+    let list = Q::platforms().purpose("Init Sample Data").execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
         state.add_reference("Platform", item.id().into_u64());
     }
@@ -174,7 +178,7 @@ async fn load_root_task_status<C>(
 where
     C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
 {
-    let list = Q::task_status().purpose("test").execute_for_list(ctx).await.unwrap_or_default();
+    let list = Q::task_status().purpose("Init Sample Data").execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
         state.add_reference("Task Status", item.id().into_u64());
     }
@@ -233,7 +237,7 @@ where
 
 
 
-        let entity = entity.audit_as(format!("Seed Task {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;;
+        let entity = entity.audit_as("Init Sample Data").save(ctx).await.map_err(|e| e.to_string())?;
 
         state.record_generated("Task");
 
@@ -290,7 +294,7 @@ where
 
 
 
-entity.audit_as(format!("Seed TaskExecutionLog {}", i + 1)).save(ctx.user_context()).await.map_err(|e| e.to_string())?;
+entity.audit_as("Init Sample Data").save(ctx).await.map_err(|e| e.to_string())?;
 
         state.record_generated("Task Execution Log");
 

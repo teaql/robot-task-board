@@ -126,14 +126,17 @@ impl Platform {
         self.root.set_comment(comment);
         self
     }
-}
 
-impl crate::AuditedSave for teaql_core::Audited<Platform> {
-    async fn save(self, ctx: &teaql_runtime::UserContext) -> Result<teaql_runtime::GraphNode, crate::RuntimeRepositoryError> {
-        let entity = self.into_entity();
+    pub async fn save<'a, C>(
+        self,
+        ctx: &'a C,
+    ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::PlatformRepository<'a>>>
+    where
+        C: crate::TeaqlRepositoryProvider + ?Sized,
+    {
         let repository = ctx
-            .resolve_repository::<crate::runtime::DataServiceExecutor>("Platform")
+            .platform_repository()
             .map_err(|err| teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(err.to_string())))?;
-        crate::TeaqlEntityRepository::save_entity_graph(&repository, entity).await
+        crate::TeaqlEntityRepository::save_entity_graph(&repository, self).await
     }
 }

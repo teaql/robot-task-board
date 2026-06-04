@@ -95,6 +95,11 @@ impl<R> PlatformRequest<R> {
         crate::Platform::runtime_new(ctx.user_context().entity_root())
     }
 
+
+    pub fn purpose(self, purpose: impl Into<String>) -> crate::PurposedQuery<Self> {
+        crate::PurposedQuery::new(self, purpose)
+    }
+
     pub(crate) async fn _execute_for_list<'a, C>(
         self,
         ctx: &'a C,
@@ -155,7 +160,7 @@ impl<R> PlatformRequest<R> {
         self.and_filter(Expr::eq("id", id))._execute_for_first(ctx).await
     }
 
-    pub(crate) async fn _execute_for_page<'a, C>(
+    pub async fn execute_for_page<'a, C>(
         self,
         ctx: &'a C,
         offset: u64,
@@ -195,7 +200,7 @@ impl<R> PlatformRequest<R> {
             .ok_or_else(|| RepositoryError::Runtime(RuntimeError::Graph(format!("count result for Platform is missing or not numeric"))))
     }
 
-    pub(crate) async fn _execute_for_exists<'a, C>(
+    pub async fn execute_for_exists<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<bool, TeaqlRepositoryError<C::PlatformRepository<'a>>>
@@ -327,10 +332,6 @@ impl<R> PlatformRequest<R> {
     pub fn comment(mut self, comment: impl Into<String>) -> Self {
         self.query_options.comment = Some(comment.into());
         self
-    }
-
-    pub fn purpose(self, purpose: impl Into<String>) -> crate::q::PurposedQuery<Self> {
-        crate::q::PurposedQuery::new(self, purpose)
     }
 
     pub fn raw_sql(self, raw_sql: impl Into<String>) -> Self {
@@ -1584,50 +1585,59 @@ impl<R> From< PlatformRequest<R> > for QuerySelection {
 }
 
 
-impl<R: teaql_core::Entity> crate::q::PurposedQuery<PlatformRequest<R>> {
-    pub async fn execute_for_list<C>(self, ctx: &C) -> Result<teaql_core::SmartList<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::Platform> 
+where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
+{
+    type Error = crate::TeaqlRepositoryError<C::PlatformRepository<'a>>;
+    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
+        Box::pin(async move { self.into_entity().save(ctx).await })
+    }
+}
+
+impl<R: teaql_core::Entity> crate::PurposedQuery<PlatformRequest<R>> {
+    pub async fn execute_for_list<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.inner._execute_for_list(ctx).await
     }
-    
-    pub async fn execute_for_first<C>(self, ctx: &C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+
+    pub async fn execute_for_first<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.inner._execute_for_first(ctx).await
     }
-    
-    pub async fn execute_for_one<C>(self, ctx: &C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+
+    pub async fn execute_for_one<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.inner._execute_for_one(ctx).await
     }
-    
-    pub async fn execute_by_id<C>(self, ctx: &C, id: impl Into<teaql_core::Value>) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+
+    pub async fn execute_by_id<'a, C>(self, ctx: &'a C, id: impl Into<teaql_core::Value>) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.inner._execute_by_id(ctx, id).await
     }
-    
-    pub async fn execute_for_records<C>(self, ctx: &C) -> Result<teaql_core::SmartList<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+
+    pub async fn execute_for_records<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.inner._execute_for_records(ctx).await
     }
-    
-    pub async fn execute_for_record<C>(self, ctx: &C) -> Result<Option<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+
+    pub async fn execute_for_record<'a, C>(self, ctx: &'a C) -> Result<Option<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.inner._execute_for_record(ctx).await
     }
-    
-    pub async fn execute_for_count<C>(self, ctx: &C) -> Result<u64, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'_>>>
+
+    pub async fn execute_for_count<'a, C>(self, ctx: &'a C) -> Result<u64, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {

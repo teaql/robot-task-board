@@ -146,7 +146,28 @@ pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceR
     context.set_internal_id_generator(id_generator);
     context.use_rusqlite_provider(mutation_executor.clone());
     context.insert_resource(ServiceRuntimeExecutor::new(mutation_executor));
-    context.ensure_schema().await?;
+
+    // 自动加载 Zero-Code 审计配置与 Schema 模式
+    let env_config = teaql_tool_core::audit_config_from_env(&[
+        "platform_data", "task_status_data", "task_data", "task_execution_log_data"
+    ]);
+    let schema_mode = env_config.schema_mode;
+    context.insert_resource(env_config.config.clone());
+    context.insert_resource(env_config);
+
+    match schema_mode {
+        teaql_tool_core::SchemaMode::Execute => {
+            context.ensure_schema().await?;
+        }
+        teaql_tool_core::SchemaMode::DryRun => {
+            // DryRun: 目前等效于验证
+            context.ensure_schema().await?;
+        }
+        teaql_tool_core::SchemaMode::Verify => {
+            context.ensure_schema().await?;
+        }
+    }
+
     Ok(context)
 }
 

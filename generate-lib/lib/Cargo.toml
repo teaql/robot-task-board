@@ -19,3 +19,4 @@ teaql-data-service = { version = "3.0.0" }
 teaql-provider-rusqlite = { version = "3.0.0" }
 rusqlite = { version = "0.32", features = ["bundled", "chrono", "column_decltype"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+teaql-tool-core = { version = "0.1" }
