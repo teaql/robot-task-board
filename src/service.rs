@@ -2,8 +2,7 @@ use std::error::Error;
 use std::sync::Mutex;
 use robot_kanban::{Q, Task, TaskExecutionLog};
 use teaql_provider_rusqlite::{
-    ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
-    RusqliteMutationExecutor, RusqliteProviderExt,
+    RusqliteMutationExecutor
 };
 use teaql_runtime::{
     UserContext, UnifiedLogBuffer, LogPayload,
@@ -113,55 +112,18 @@ impl TaskService {
     /// - `DataSeeded` events are fired for each entity type seeded
     pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
         let conn = rusqlite::Connection::open(db_path)?;
-        let inner_executor = RusqliteMutationExecutor::new(conn);
+        
+        // 使用生成器暴露的集成 API，完全对业务层隐藏底层的环境加载和 Schema 迁移逻辑。
+        let mut ctx = robot_kanban::service_runtime_from_pool(conn).await
+            .map_err(|e| format!("Failed to initialize runtime: {}", e))?;
 
-
-        let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
-
-        // Register custom TUI log buffer, audit event sink, and env-driven audit configuration.
-        // The known_tables list below is project-specific. In a generated project,
-        // the code generator produces this list automatically.
+        // 仅添加业务层特有的 UI 日志收集器
         let log_buffer = UnifiedLogBuffer::default();
         ctx.insert_resource(log_buffer);
         ctx.set_event_sink(AppAuditSink);
-        let env_config = teaql_tool_core::audit_config_from_env(&[
-            "task", "task_status", "task_execution_log",
-        ]);
-        let schema_mode = env_config.schema_mode;
-        ctx.insert_resource(env_config.config.clone());
-        ctx.insert_resource(env_config);
 
-        // Register synchronous executors
-        ctx.use_rusqlite_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
+        let inner_executor = ctx.get_resource::<RusqliteMutationExecutor>().ok_or("Failed to get executor")?.clone();
 
-        // Also register ServiceRuntimeExecutor for the generated repository lookups
-        let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
-        ctx.insert_resource(service_runtime_executor);
-
-        // Schema migration — controlled by TEAQL_SCHEMA env var.
-        // Default is Verify: check schema matches model, panic if not.
-        match schema_mode {
-            teaql_tool_core::SchemaMode::Execute => {
-                // Development/CI: auto-apply all schema changes
-                ensure_rusqlite_schema_for(&ctx)?;
-            }
-            teaql_tool_core::SchemaMode::DryRun => {
-                // Staging: print what would be done, then exit
-                crate::logging::emit_ui_message(&ctx, "[SCHEMA DRY-RUN] Checking schema...");
-                // In dry-run mode, still run ensure but in the future this should
-                // only emit the SQL without executing. For now, we run verify logic.
-                ensure_rusqlite_schema_for(&ctx)?;
-                crate::logging::emit_ui_message(&ctx, "[SCHEMA DRY-RUN] Schema changes applied (dry-run not fully implemented yet, ran ensure).");
-            }
-            teaql_tool_core::SchemaMode::Verify => {
-                // Production default: run ensure to verify, panic if schema differs.
-                // ensure_rusqlite_schema_for already verifies existing tables and only
-                // creates missing ones — in production, any schema change triggers
-                // SchemaCreated events which indicate unexpected drift.
-                ensure_rusqlite_schema_for(&ctx)?;
-            }
-        }
 
         let mut status_cache = std::collections::HashMap::new();
         crate::logging::emit_ui_message(&ctx, "Execute TeaQL - Q::task_status().comment(\"Load task statuses for cache\").execute_for_list(&ctx)");

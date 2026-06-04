@@ -16,6 +16,7 @@ teaql-macros = { version = "2.0.0" }
 teaql-runtime = { version = "2.0.0" }
 teaql-sql = { version = "2.0.0" }
 teaql-data-service = { version = "2.0.0" }
+teaql-tool-core = { path = "../../../teaql-rust-utils/teaql-tool-core" }
 teaql-provider-rusqlite = { version = "2.0.0" }
 rusqlite = { version = "0.32", features = ["bundled", "chrono", "column_decltype"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
