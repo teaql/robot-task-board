@@ -35,9 +35,22 @@ let deadline = ctx.time().today().add_days(7).comment("Calculate 7-day grace per
 let data = ctx.file().read(path).comment("Load tenant specific configuration file").await?;
 ```
 
-**Forbidden Examples:**
 ```rust
 let now = T::time().today(); // ERROR: Banned usage, no timezone!
 let id = T::id().uuid(); // ERROR: Cannot extract string without .comment()!
 let data = std::fs::read(path); // ERROR: Banned IO library!
 ```
+
+## 6. ZERO-CODE LOGGING & DEBUGGING (ENVIRONMENT VARIABLES)
+- Do **NOT** insert `println!`, `tracing::info!`, or manually write custom log messages in the application layer code to debug data/SQL issues.
+- When you need to investigate SQL execution, entity changes, or tool calls during `cargo run` or `cargo test`, you MUST use the built-in 7 `TEAQL_` environment variables:
+  - `TEAQL_AUDIT`: Controls entity data change logs (`_silent`, `_summary`, `_full`).
+  - `TEAQL_SQL`: Controls SQL query logs (`_silent`, `_summary`, `_full`).
+  - `TEAQL_SQL_TABLES`: Filters SQL logs to specific tables (e.g., `task,task_status`).
+  - `TEAQL_TOOL`: Controls `ctx` tool usage logs (`_silent`, `_summary`, `_full`).
+  - `TEAQL_TOOL_FOCUS`: Filters tool logs to specific modules (e.g., `http,file`).
+  - `TEAQL_SINK`: Output destination (`_stdout`, `_file`, `_both`).
+  - `TEAQL_SCHEMA`: Controls schema migration (`_verify` [default], `_dryrun`, `_execute`). **Tests modifying schema MUST use `TEAQL_SCHEMA=_execute`.**
+- Example: If you want to see all SQL generated for the `task` table during a test, run:
+  `TEAQL_SCHEMA=_execute TEAQL_SQL=_full TEAQL_SQL_TABLES=task cargo test -- --nocapture`
+- The system enforces a strict whitelist. An invalid env var name (like `TEAQL_SQLL`) or invalid value will immediately panic and halt the process.
