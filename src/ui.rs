@@ -282,10 +282,11 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             ]
         } else {
             vec![
-                Constraint::Percentage(60), // 1. Log area
-                Constraint::Min(5),         // 2. Columns (Planned, Ready, Executing, Verified)
-                Constraint::Length(3),      // 3. Command Line Area
-                Constraint::Length(3),      // 4. Command Help Area
+                Constraint::Percentage(50), // 1. Log area
+                Constraint::Length(4),      // 2. SQL Latency Timeline
+                Constraint::Min(5),         // 3. Columns (Planned, Ready, Executing, Verified)
+                Constraint::Length(3),      // 4. Command Line Area
+                Constraint::Length(3),      // 5. Command Help Area
             ]
         })
         .split(f.area());
@@ -294,7 +295,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     let log_height = chunks[0].height as usize - 2; // Subtract borders
     let total_logs = app.logs.len();
     let max_scroll = total_logs.saturating_sub(log_height);
-    let scroll_offset = app.log_scroll_offset.min(max_scroll);
+    let scroll_offset = ((max_scroll as f64) * (1.0 - app.scroll_percent)).round() as usize;
 
     let skip_count = total_logs.saturating_sub(log_height + scroll_offset);
     let log_lines: Vec<Line> = app.logs.iter()
@@ -309,7 +310,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         "None"
     };
 
-    let _scroll_str = if scroll_offset == 0 {
+    let scroll_str = if scroll_offset == 0 {
         "Bottom".to_owned()
     } else {
         format!("Up {}/{}", scroll_offset, max_scroll)
@@ -318,8 +319,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     let title_str = if app.hide_logs {
         format!(" System Info | CPU: {} | MEM: {} | Search: {} ", app.cpu_model, app.mem_size, search_str)
     } else {
-        format!(" TeaQL Trace Viewer | Domain Action → SQL → Audit → UI State | Rust + SQLite ")
-        // format!(" TeaQL Trace Viewer | Domain Action → SQL → Audit → UI State | Rust + SQLite | Scroll: {} | Search: {} ", scroll_str, search_str)
+        format!(" TeaQL Trace Viewer | Domain Action → SQL → Audit → UI State | Scroll: {} | Search: {} ", scroll_str, search_str)
     };
 
     let log_paragraph = Paragraph::new(if app.hide_logs { vec![] } else { log_lines })
@@ -333,6 +333,59 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(log_paragraph, chunks[0]);
 
+    // 1.5. Render SQL Latency Timeline (Filled Area Chart) & Playhead
+    if !app.hide_logs {
+        use ratatui::widgets::{Chart, Dataset, GraphType};
+        use ratatui::symbols;
+
+        let chart_data: Vec<(f64, f64)> = app.sql_latencies.iter().enumerate()
+            .map(|(i, &lat)| (i as f64, lat))
+            .collect();
+
+        let max_val = app.sql_latencies.iter().cloned().fold(0.0f64, f64::max);
+        let y_max = if max_val > 0.0 { max_val * 1.2 } else { 1.0 };
+        let x_max = chart_data.len() as f64;
+
+        let dataset = Dataset::default()
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Area)
+            .fill_to_y(0.0)
+            .style(Style::default().fg(Color::Cyan))
+            .data(&chart_data);
+
+        let timeline_rect = chunks[1];
+        let chart = Chart::new(vec![dataset])
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .title(" SQL Latency Timeline (Filled Area) ")
+                    .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+                    .border_style(Style::default().fg(Color::Indexed(240))),
+            )
+            .x_axis(ratatui::widgets::Axis::default().bounds([0.0, x_max]))
+            .y_axis(ratatui::widgets::Axis::default().bounds([0.0, y_max]));
+
+        f.render_widget(chart, timeline_rect);
+
+        // Draw Playhead Red line
+        let inner_w = timeline_rect.width.saturating_sub(2);
+        if inner_w > 0 {
+            let red_line_x = (app.scroll_percent * (inner_w.saturating_sub(1) as f64)).round() as u16;
+            let abs_x = timeline_rect.x + 1 + red_line_x;
+            let buf = f.buffer_mut();
+            for y in (timeline_rect.y + 1)..(timeline_rect.y + timeline_rect.height - 1) {
+                if let Some(cell) = buf.cell_mut((abs_x, y)) {
+                    cell.set_fg(Color::Red);
+                    cell.set_bg(Color::Rgb(80, 20, 20));
+                    cell.set_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD));
+                }
+            }
+        }
+    }
+
+    let col_idx = if app.hide_logs { 1 } else { 2 };
+
     // 2. Render task list columns (4 columns)
     let col_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -342,7 +395,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             Constraint::Percentage(25),
             Constraint::Percentage(25),
         ])
-        .split(chunks[1]);
+        .split(chunks[col_idx]);
 
     // Planned Tasks column
     let planned_lines = app
@@ -433,12 +486,12 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(cmd_input, chunks[2]);
+    f.render_widget(cmd_input, chunks[col_idx + 1]);
 
     // Position and show the cursor inside the input area (adjusted +6: 1 for left border + 5 for prompt arrow)
     f.set_cursor_position((
-        chunks[2].x + 6 + app.input.chars().count() as u16,
-        chunks[2].y + 1,
+        chunks[col_idx + 1].x + 6 + app.input.chars().count() as u16,
+        chunks[col_idx + 1].y + 1,
     ));
 
     let help_text = vec![
@@ -456,7 +509,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             Span::raw("|"),
             Span::styled("ESC", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw(" Quit  "),
-            Span::styled("↑↓/PgUp/PgDn", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled("←→/PgUp/PgDn", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw(" Scroll logs"),
         ]),
     ];
@@ -468,7 +521,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(help_box, chunks[3]);
+    f.render_widget(help_box, chunks[col_idx + 2]);
 
     if let Some(id) = app.pending_delete {
         let area = centered_rect(50, 20, f.area());

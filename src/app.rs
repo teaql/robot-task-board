@@ -27,9 +27,11 @@ pub struct App {
     pub should_quit: bool,
     pub cpu_model: String,
     pub mem_size: String,
-    pub log_scroll_offset: usize,
     pub hide_logs: bool,
     pub pending_delete: Option<u64>,
+    pub scroll_percent: f64,
+    pub timeline_width: u16,
+    pub sql_latencies: VecDeque<f64>,
 }
 
 impl App {
@@ -51,9 +53,17 @@ impl App {
             should_quit: false,
             cpu_model: sys_info.cpu_model,
             mem_size: sys_info.mem_size,
-            log_scroll_offset: 0,
             hide_logs: std::env::args().any(|arg| arg == "-c"),
             pending_delete: None,
+            scroll_percent: 1.0,
+            timeline_width: 100,
+            sql_latencies: {
+                let mut d = VecDeque::new();
+                for _ in 0..100 {
+                    d.push_back(0.0);
+                }
+                d
+            },
         };
         app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
         app.service.log_info("System successfully initialized.");
@@ -63,16 +73,32 @@ impl App {
     }
 
     pub fn add_log(&mut self, msg: &str) {
-        let was_scrolled = self.log_scroll_offset > 0;
         if self.logs.len() >= MAX_LOGS {
             self.logs.pop_front();
-            if self.log_scroll_offset > 0 {
-                self.log_scroll_offset -= 1;
-            }
         }
         self.logs.push_back(msg.to_owned());
-        if was_scrolled {
-            self.log_scroll_offset += 1;
+
+        // Parse latency from log line e.g. [1234µs] or [5.6ms]
+        let mut parsed_latency = None;
+        if let Some(start_idx) = msg.find('[') {
+            if let Some(end_idx) = msg[start_idx..].find(']') {
+                let tag = &msg[start_idx + 1..start_idx + end_idx];
+                if tag.ends_with("µs") {
+                    if let Ok(val) = tag[..tag.len() - 3].parse::<f64>() {
+                        parsed_latency = Some(val / 1000.0);
+                    }
+                } else if tag.ends_with("ms") {
+                    if let Ok(val) = tag[..tag.len() - 2].parse::<f64>() {
+                        parsed_latency = Some(val);
+                    }
+                }
+            }
+        }
+
+        let latency = parsed_latency.unwrap_or(0.0);
+        self.sql_latencies.push_back(latency);
+        if self.sql_latencies.len() > 100 {
+            self.sql_latencies.pop_front();
         }
     }
 
@@ -142,29 +168,19 @@ impl App {
                             KeyCode::Esc => {
                                 self.should_quit = true;
                             }
-                            KeyCode::Up => {
-                                let log_height = if let Ok(size) = terminal.size() {
-                                    ((size.height / 2) as usize).saturating_sub(2)
-                                } else {
-                                    10
-                                };
-                                let max_scroll = self.logs.len().saturating_sub(log_height);
-                                self.log_scroll_offset = (self.log_scroll_offset + 1).min(max_scroll);
+                            KeyCode::Left => {
+                                let inner_w = self.timeline_width.saturating_sub(2).max(10) as f64;
+                                self.scroll_percent = (self.scroll_percent - 1.0 / inner_w).max(0.0);
                             }
                             KeyCode::PageUp => {
-                                let log_height = if let Ok(size) = terminal.size() {
-                                    ((size.height / 2) as usize).saturating_sub(2)
-                                } else {
-                                    10
-                                };
-                                let max_scroll = self.logs.len().saturating_sub(log_height);
-                                self.log_scroll_offset = (self.log_scroll_offset + 10).min(max_scroll);
+                                self.scroll_percent = (self.scroll_percent - 0.1).max(0.0);
                             }
-                            KeyCode::Down => {
-                                self.log_scroll_offset = self.log_scroll_offset.saturating_sub(1);
+                            KeyCode::Right => {
+                                let inner_w = self.timeline_width.saturating_sub(2).max(10) as f64;
+                                self.scroll_percent = (self.scroll_percent + 1.0 / inner_w).min(1.0);
                             }
                             KeyCode::PageDown => {
-                                self.log_scroll_offset = self.log_scroll_offset.saturating_sub(10);
+                                self.scroll_percent = (self.scroll_percent + 0.1).min(1.0);
                             }
                             _ => {}
                         }

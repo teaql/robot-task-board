@@ -5,7 +5,7 @@ use crate::models::MoveResult;
 
 /// Parse and execute a user command. Called when the user presses Enter.
 pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
-    app.log_scroll_offset = 0;
+    app.scroll_percent = 1.0;
     let trimmed = app.input.trim().to_owned();
     if trimmed.is_empty() {
         return Ok(());
