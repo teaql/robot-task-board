@@ -333,41 +333,46 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(log_paragraph, chunks[0]);
 
-    // 1.5. Render SQL Latency Timeline (Filled Area Chart)
+    // 1.5. Render SQL Latency Timeline (Vertical lines per execution)
     if !app.hide_logs {
         use ratatui::widgets::{Chart, Dataset, GraphType};
         use ratatui::symbols;
 
         let timeline_rect = chunks[1];
-        let chart_data: Vec<(f64, f64)> = app.sql_latencies.iter().enumerate()
-            .map(|(i, &lat)| {
-                // Logarithmic scale: convert ms to µs, add 1.0, and take natural log
-                let log_lat = if lat > 0.0 {
-                    (lat * 1000.0 + 1.0).ln()
-                } else {
-                    0.0
-                };
-                (i as f64, log_lat)
-            })
-            .collect();
+        let n_data = app.sql_latencies.len();
 
-        let max_val = chart_data.iter().map(|(_, y)| *y).fold(0.0f64, f64::max);
-        let y_max = if max_val > 0.0 { max_val * 1.2 } else { 5.0 };
-        let x_max = if chart_data.is_empty() { 10.0 } else { chart_data.len() as f64 };
+        // Dynamically scale Y-axis bounds: baseline of 1000ms, autoscaling to max if higher
+        let max_lat = app.sql_latencies.iter().cloned().fold(0.0f64, f64::max);
+        let y_max = max_lat.max(1000.0);
+        let x_max = if n_data == 0 { 10.0 } else { n_data as f64 };
 
-        let dataset = Dataset::default()
-            .marker(symbols::Marker::Braille)
-            .graph_type(GraphType::Area)
-            .fill_to_y(0.0)
-            .style(Style::default().fg(Color::Cyan))
-            .data(&chart_data);
+        // Store vertical line point slices to satisfy the Dataset borrow requirements
+        let mut points_storage: Vec<Vec<(f64, f64)>> = Vec::new();
+        for (i, &lat) in app.sql_latencies.iter().enumerate() {
+            points_storage.push(vec![
+                (i as f64, 0.0),
+                (i as f64, lat),
+            ]);
+        }
 
-        let chart = Chart::new(vec![dataset])
+        // Construct separate datasets to draw discrete vertical lines
+        let mut datasets = Vec::new();
+        for i in 0..n_data {
+            datasets.push(
+                Dataset::default()
+                    .marker(symbols::Marker::Braille)
+                    .graph_type(GraphType::Line)
+                    .style(Style::default().fg(Color::Cyan))
+                    .data(&points_storage[i])
+            );
+        }
+
+        let chart = Chart::new(datasets)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
-                    .title(" SQL Latency Timeline (Logarithmic Area) ")
+                    .title(" SQL Latency Timeline (ms) ")
                     .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
                     .border_style(Style::default().fg(Color::Indexed(240))),
             )
