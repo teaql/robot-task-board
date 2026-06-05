@@ -333,73 +333,48 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(log_paragraph, chunks[0]);
 
-    // 1.5. Render SQL Latency Timeline (Filled Area Chart) & Playhead
+    // 1.5. Render SQL Latency Timeline (Filled Area Chart)
     if !app.hide_logs {
         use ratatui::widgets::{Chart, Dataset, GraphType};
         use ratatui::symbols;
 
         let timeline_rect = chunks[1];
-        let inner_w = timeline_rect.width.saturating_sub(2);
+        let chart_data: Vec<(f64, f64)> = app.sql_latencies.iter().enumerate()
+            .map(|(i, &lat)| {
+                // Logarithmic scale: convert ms to µs, add 1.0, and take natural log
+                let log_lat = if lat > 0.0 {
+                    (lat * 1000.0 + 1.0).ln()
+                } else {
+                    0.0
+                };
+                (i as f64, log_lat)
+            })
+            .collect();
 
-        if inner_w > 0 {
-            // Playhead Red line is fixed at 2/3 of the width
-            let red_line_x = ((inner_w as f64) * 2.0 / 3.0).round() as u16;
+        let max_val = chart_data.iter().map(|(_, y)| *y).fold(0.0f64, f64::max);
+        let y_max = if max_val > 0.0 { max_val * 1.2 } else { 5.0 };
+        let x_max = chart_data.len() as f64;
 
-            // Map the scrolled focus position to the index of sql_latencies
-            let focus_idx = (app.scroll_percent * (app.sql_latencies.len() as f64 - 1.0)).round() as isize;
+        let dataset = Dataset::default()
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Area)
+            .fill_to_y(0.0)
+            .style(Style::default().fg(Color::Cyan))
+            .data(&chart_data);
 
-            let mut chart_data = Vec::new();
-            for x in 0..inner_w {
-                // Calculate the corresponding index in sql_latencies for this x pixel
-                let data_idx = focus_idx - (red_line_x as isize - x as isize);
-                if data_idx >= 0 && data_idx < app.sql_latencies.len() as isize {
-                    let lat = app.sql_latencies[data_idx as usize];
-                    // Logarithmic scale: convert ms to µs, add 1.0, and take natural log
-                    let log_lat = if lat > 0.0 {
-                        (lat * 1000.0 + 1.0).ln()
-                    } else {
-                        0.0
-                    };
-                    chart_data.push((x as f64, log_lat));
-                }
-            }
+        let chart = Chart::new(vec![dataset])
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .title(" SQL Latency Timeline (Logarithmic Area) ")
+                    .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+                    .border_style(Style::default().fg(Color::Indexed(240))),
+            )
+            .x_axis(ratatui::widgets::Axis::default().bounds([0.0, x_max]))
+            .y_axis(ratatui::widgets::Axis::default().bounds([0.0, y_max]));
 
-            let max_val = chart_data.iter().map(|(_, y)| *y).fold(0.0f64, f64::max);
-            let y_max = if max_val > 0.0 { max_val * 1.2 } else { 5.0 };
-            let x_max = inner_w as f64;
-
-            let dataset = Dataset::default()
-                .marker(symbols::Marker::Braille)
-                .graph_type(GraphType::Area)
-                .fill_to_y(0.0)
-                .style(Style::default().fg(Color::Cyan))
-                .data(&chart_data);
-
-            let chart = Chart::new(vec![dataset])
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .title(" SQL Latency Timeline (Logarithmic Area) ")
-                        .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-                        .border_style(Style::default().fg(Color::Indexed(240))),
-                )
-                .x_axis(ratatui::widgets::Axis::default().bounds([0.0, x_max]))
-                .y_axis(ratatui::widgets::Axis::default().bounds([0.0, y_max]));
-
-            f.render_widget(chart, timeline_rect);
-
-            // Draw Playhead Red line at 2/3 width
-            let abs_x = timeline_rect.x + 1 + red_line_x;
-            let buf = f.buffer_mut();
-            for y in (timeline_rect.y + 1)..(timeline_rect.y + timeline_rect.height - 1) {
-                if let Some(cell) = buf.cell_mut((abs_x, y)) {
-                    cell.set_fg(Color::Red);
-                    cell.set_bg(Color::Rgb(80, 20, 20));
-                    cell.set_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD));
-                }
-            }
-        }
+        f.render_widget(chart, timeline_rect);
     }
 
     let col_idx = if app.hide_logs { 1 } else { 2 };
