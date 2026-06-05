@@ -521,6 +521,8 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             Span::raw(" Delete  "),
             Span::styled("/s <kw>", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw(" Search  "),
+            Span::styled("/r", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Reload  "),
             Span::styled("/q", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw("|"),
             Span::styled("ESC", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),

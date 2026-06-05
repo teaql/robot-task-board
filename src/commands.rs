@@ -33,6 +33,10 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                 }
                 app.reload_data().await?;
             }
+            "reload" | "r" => {
+                app.service.log_info("Reloading task data from database...");
+                app.reload_data().await?;
+            }
             "add" => {
                 if args.is_empty() {
                     app.service.log_info("Error: Task name cannot be empty. Usage: /add <task name>");
@@ -87,7 +91,7 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                 }
             }
             _ => {
-                app.service.log_info(&format!("Unknown command: '/{}'. Type a task name directly or use /mv, /del, /s, /q", cmd));
+                app.service.log_info(&format!("Unknown command: '/{}'. Type a task name directly or use /r, /mv, /del, /s, /q", cmd));
             }
         }
     } else {
