@@ -339,25 +339,36 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         use ratatui::symbols;
 
         let timeline_rect = chunks[1];
+        let inner_w = timeline_rect.width.saturating_sub(2) as usize;
         let n_data = app.sql_latencies.len();
 
-        // Dynamically scale Y-axis bounds: baseline of 1000ms, autoscaling to max if higher
-        let max_lat = app.sql_latencies.iter().cloned().fold(0.0f64, f64::max);
-        let y_max = max_lat.max(1000.0);
-        let x_max = if n_data == 0 { 10.0 } else { n_data as f64 };
+        // Each vertical line needs ~3 braille columns to be clearly visible.
+        // Braille has 2 dots per character horizontally, so capacity ≈ inner_w * 2 / 3.
+        let capacity = ((inner_w * 2) / 3).max(10);
 
-        // Store vertical line point slices to satisfy the Dataset borrow requirements
+        // When data exceeds capacity, only show the most recent entries (scroll)
+        let visible_start = n_data.saturating_sub(capacity);
+        let visible: Vec<f64> = app.sql_latencies.iter().skip(visible_start).cloned().collect();
+        let visible_count = visible.len();
+
+        // Dynamically scale Y-axis: baseline 1000ms, expand if any query exceeds it
+        let max_lat = visible.iter().cloned().fold(0.0f64, f64::max);
+        let y_max = max_lat.max(1000.0);
+        // x_max is always the full capacity so lines stay left-aligned and don't stretch
+        let x_max = capacity as f64;
+
+        // Build vertical line point pairs for each visible data point
         let mut points_storage: Vec<Vec<(f64, f64)>> = Vec::new();
-        for (i, &lat) in app.sql_latencies.iter().enumerate() {
+        for (i, &lat) in visible.iter().enumerate() {
             points_storage.push(vec![
                 (i as f64, 0.0),
                 (i as f64, lat),
             ]);
         }
 
-        // Construct separate datasets to draw discrete vertical lines
+        // Each data point is a separate dataset → discrete vertical lines
         let mut datasets = Vec::new();
-        for i in 0..n_data {
+        for i in 0..visible_count {
             datasets.push(
                 Dataset::default()
                     .marker(symbols::Marker::Braille)
@@ -367,12 +378,16 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             );
         }
 
+        let title = format!(" SQL Latency Timeline  {} queries  (max {}ms) ",
+            n_data,
+            if max_lat > 0.0 { format!("{:.1}", max_lat) } else { "-".to_string() });
+
         let chart = Chart::new(datasets)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
-                    .title(" SQL Latency Timeline (ms) ")
+                    .title(title)
                     .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
                     .border_style(Style::default().fg(Color::Indexed(240))),
             )
