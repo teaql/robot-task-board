@@ -540,12 +540,6 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     f.render_widget(help_box, chunks[col_idx + 2]);
 
     if let Some(id) = app.pending_delete {
-        // Apply overlay shadow: dim all cells in the buffer to make them appear background-faded
-        let buf = f.buffer_mut();
-        for cell in &mut buf.content {
-            cell.set_style(Style::default().fg(Color::Indexed(238)).bg(Color::Black));
-        }
-
         let area = centered_rect(50, 20, f.area());
         f.render_widget(ratatui::widgets::Clear, area);
 
@@ -555,7 +549,9 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title(" CONFIRM DELETE ")
             .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::Red))
-            .shadow(Shadow::dark_shade().offset(Offset::new(2, 1)));
+            .shadow(Shadow::overlay()
+                .style(Style::default().fg(Color::Indexed(238)).bg(Color::Black))
+                .offset(Offset::new(2, 1)));
 
         let lines = vec![
             Line::from(""),
