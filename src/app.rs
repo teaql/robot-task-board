@@ -127,6 +127,9 @@ impl App {
     /// Main application loop: draw UI, handle keyboard input, dispatch commands.
     pub async fn run(&mut self, terminal: &mut Tui) -> io::Result<()> {
         loop {
+            if let Ok(size) = terminal.size() {
+                self.timeline_width = size.width;
+            }
             self.check_sql_logs();
             terminal.draw(|f| crate::ui::ui(f, self))?;
 
