@@ -288,7 +288,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
                 Constraint::Length(3),      // 4. Command Help Area
             ]
         })
-        .split(f.size());
+        .split(f.area());
 
     // 1. Render Log Area (Keeps beautiful syntax-highlighted logs)
     let log_height = chunks[0].height as usize - 2; // Subtract borders
@@ -436,10 +436,10 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     f.render_widget(cmd_input, chunks[2]);
 
     // Position and show the cursor inside the input area (adjusted +6: 1 for left border + 5 for prompt arrow)
-    f.set_cursor(
+    f.set_cursor_position((
         chunks[2].x + 6 + app.input.chars().count() as u16,
         chunks[2].y + 1,
-    );
+    ));
 
     let help_text = vec![
         Line::from(vec![
@@ -469,4 +469,67 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .border_style(Style::default().fg(Color::White)),
     );
     f.render_widget(help_box, chunks[3]);
+
+    if let Some(id) = app.pending_delete {
+        let area = centered_rect(50, 20, f.area());
+        f.render_widget(ratatui::widgets::Clear, area);
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(" CONFIRM DELETE ")
+            .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+            .border_style(Style::default().fg(Color::Red))
+            .shadow(ratatui::widgets::Shadow::default());
+
+        let lines = vec![
+            Line::from(""),
+            Line::from(vec![
+                Span::raw("Are you sure you want to delete Task #"),
+                Span::styled(id.to_string(), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                Span::raw("?"),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::raw("Press ["),
+                Span::styled("Y", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                Span::raw("] / ["),
+                Span::styled("Enter", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                Span::raw("] to confirm."),
+            ]),
+            Line::from(vec![
+                Span::raw("Press ["),
+                Span::styled("N", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                Span::raw("] / ["),
+                Span::styled("Esc", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                Span::raw("] to cancel."),
+            ]),
+        ];
+
+        let paragraph = Paragraph::new(lines)
+            .block(block)
+            .alignment(ratatui::layout::Alignment::Center);
+
+        f.render_widget(paragraph, area);
+    }
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: ratatui::layout::Rect) -> ratatui::layout::Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }

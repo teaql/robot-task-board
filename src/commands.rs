@@ -45,9 +45,8 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                 if args.is_empty() {
                     app.service.log_info("Error: Missing task ID. Usage: /del <id>");
                 } else if let Ok(id) = args.parse::<u64>() {
-                    if app.service.delete_task(id).await? {
-                        app.reload_data().await?;
-                    }
+                    app.pending_delete = Some(id);
+                    app.service.log_info(&format!("Confirm delete task #{}. Waiting for confirmation (y/n)...", id));
                 } else {
                     app.service.log_info(&format!("Error: Invalid task ID '{}'", args));
                 }

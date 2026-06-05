@@ -6,7 +6,7 @@ default-run = "robot-task-board"
 
 [dependencies]
 crossterm = { version = "0.27", features = ["event-stream"] }
-ratatui = "0.26"
+ratatui = "0.30"
 rusqlite = { version = "0.32", features = ["bundled", "column_decltype"] }
 chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde"] }

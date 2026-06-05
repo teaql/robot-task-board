@@ -29,6 +29,7 @@ pub struct App {
     pub mem_size: String,
     pub log_scroll_offset: usize,
     pub hide_logs: bool,
+    pub pending_delete: Option<u64>,
 }
 
 impl App {
@@ -52,6 +53,7 @@ impl App {
             mem_size: sys_info.mem_size,
             log_scroll_offset: 0,
             hide_logs: std::env::args().any(|arg| arg == "-c"),
+            pending_delete: None,
         };
         app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
         app.service.log_info("System successfully initialized.");
@@ -105,6 +107,26 @@ impl App {
             if crossterm::event::poll(Duration::from_millis(100))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == event::KeyEventKind::Press {
+                        if let Some(id) = self.pending_delete {
+                            match key.code {
+                                KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => {
+                                    if let Err(e) = self.service.delete_task(id).await {
+                                        self.add_log(&format!("Error deleting task: {}", e));
+                                    } else {
+                                        let _ = self.reload_data().await;
+                                    }
+                                    self.pending_delete = None;
+                                    self.input.clear();
+                                }
+                                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                                    self.pending_delete = None;
+                                    self.input.clear();
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         match key.code {
                             KeyCode::Char(c) => {
                                 self.input.push(c);
