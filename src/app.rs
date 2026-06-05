@@ -57,13 +57,7 @@ impl App {
             pending_delete: None,
             scroll_percent: 1.0,
             timeline_width: 100,
-            sql_latencies: {
-                let mut d = VecDeque::new();
-                for _ in 0..100 {
-                    d.push_back(0.0);
-                }
-                d
-            },
+            sql_latencies: VecDeque::new(),
         };
         app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
         app.service.log_info("System successfully initialized.");
@@ -78,27 +72,35 @@ impl App {
         }
         self.logs.push_back(msg.to_owned());
 
-        // Parse latency from log line e.g. [1234µs] or [5.6ms]
+        // Parse latency from log line by scanning all brackets
         let mut parsed_latency = None;
-        if let Some(start_idx) = msg.find('[') {
-            if let Some(end_idx) = msg[start_idx..].find(']') {
-                let tag = &msg[start_idx + 1..start_idx + end_idx];
+        let mut search_str = msg;
+        while let Some(start_idx) = search_str.find('[') {
+            if let Some(end_idx) = search_str[start_idx..].find(']') {
+                let abs_end = start_idx + end_idx;
+                let tag = &search_str[start_idx + 1..abs_end];
                 if tag.ends_with("µs") {
                     if let Ok(val) = tag[..tag.len() - 3].parse::<f64>() {
                         parsed_latency = Some(val / 1000.0);
+                        break;
                     }
                 } else if tag.ends_with("ms") {
                     if let Ok(val) = tag[..tag.len() - 2].parse::<f64>() {
                         parsed_latency = Some(val);
+                        break;
                     }
                 }
+                search_str = &search_str[abs_end + 1..];
+            } else {
+                break;
             }
         }
 
-        let latency = parsed_latency.unwrap_or(0.0);
-        self.sql_latencies.push_back(latency);
-        if self.sql_latencies.len() > 100 {
-            self.sql_latencies.pop_front();
+        if let Some(latency) = parsed_latency {
+            self.sql_latencies.push_back(latency);
+            if self.sql_latencies.len() > 100 {
+                self.sql_latencies.pop_front();
+            }
         }
     }
 

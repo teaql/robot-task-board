@@ -353,7 +353,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
 
         let max_val = chart_data.iter().map(|(_, y)| *y).fold(0.0f64, f64::max);
         let y_max = if max_val > 0.0 { max_val * 1.2 } else { 5.0 };
-        let x_max = chart_data.len() as f64;
+        let x_max = if chart_data.is_empty() { 10.0 } else { chart_data.len() as f64 };
 
         let dataset = Dataset::default()
             .marker(symbols::Marker::Braille)
