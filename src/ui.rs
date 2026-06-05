@@ -1,7 +1,7 @@
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::layout::{Constraint, Direction, Layout, Offset};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Shadow};
 
 use crate::app::App;
 
@@ -480,7 +480,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title(" CONFIRM DELETE ")
             .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::Red))
-            .shadow(ratatui::widgets::Shadow::default());
+            .shadow(Shadow::dark_shade().offset(Offset::new(2, 1)));
 
         let lines = vec![
             Line::from(""),
