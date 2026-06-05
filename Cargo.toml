@@ -40,6 +40,3 @@ teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
 teaql-sql = { path = "../teaql-rs/teaql-sql" }
 teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
 teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
-teaql-tool-core = { path = "../teaql-rust-utils/teaql-tool-core" }
-teaql-tool-context = { path = "../teaql-rust-utils/teaql-tool-context" }
-teaql-tool-std = { path = "../teaql-rust-utils/teaql-tool-std" }
