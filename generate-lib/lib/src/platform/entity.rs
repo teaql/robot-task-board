@@ -9,8 +9,10 @@ pub struct Platform {
 #[teaql(id)]
     id: u64,
 
+// @source model.xml:8
     name: String,
 
+// @source model.xml:8
     founded: chrono::DateTime<chrono::Utc>,
 #[teaql(version)]
     version: i64,
@@ -20,6 +22,8 @@ pub struct Platform {
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
     root: teaql_runtime::EntityRoot,
+    #[teaql(skip)]
+    pub __load_state: teaql_core::eval::LoadState,
 }
 
 impl Platform {
@@ -36,6 +40,7 @@ impl Platform {
             task_list: Default::default(),
             dynamic: BTreeMap::new(),
             root,
+            __load_state: teaql_core::eval::LoadState::FullyLoaded,
         }
     }
 
@@ -48,6 +53,14 @@ impl Platform {
         for entity in &mut self.task_list {
             entity.attach_root_recursive(root.clone());
         }
+    }
+
+    pub fn is_loaded(&self, field_or_relation: &str) -> bool {
+        self.__load_state.is_loaded(field_or_relation)
+    }
+
+    pub fn set_load_state(&mut self, state: teaql_core::eval::LoadState) {
+        self.__load_state = state;
     }
 
     pub fn id(&self) -> u64 {
@@ -65,6 +78,13 @@ impl Platform {
         self.root.get(&self.entity_key(), "id")
     }
 
+    pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
+        if !self.is_loaded("id") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.id())
+                }}
+
     pub fn name(&self) -> String {
         self.changed_name().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.name.clone())
     }
@@ -79,6 +99,13 @@ impl Platform {
     pub fn changed_name(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "name")
     }
+
+    pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("name") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.name())
+                }}
 
     pub fn founded(&self) -> chrono::DateTime<chrono::Utc> {
         self.changed_founded().and_then(|value| value.try_timestamp()).unwrap_or(self.founded)
@@ -95,6 +122,13 @@ impl Platform {
         self.root.get(&self.entity_key(), "founded")
     }
 
+    pub fn eval_founded(&self) -> teaql_core::eval::EvalResult<chrono::DateTime<chrono::Utc>> {
+        if !self.is_loaded("founded") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "founded".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.founded())
+                }}
+
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
     }
@@ -109,12 +143,27 @@ impl Platform {
     pub fn changed_version(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "version")
     }
+
+    pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
+        if !self.is_loaded("version") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.version())
+                }}
     pub fn task_list(&self) -> &SmartList<crate::Task> {
         &self.task_list
     }
 
     pub fn task_list_mut(&mut self) -> &mut SmartList<crate::Task> {
         &mut self.task_list
+    }
+
+    pub fn eval_task_list(&self) -> teaql_core::eval::EvalResult<&SmartList<crate::Task>> {
+        if !self.is_loaded("task_list") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_list".to_string() }
+        } else {
+            teaql_core::eval::EvalResult::Value(&self.task_list)
+        }
     }
 
     pub fn mark_as_delete(&mut self) -> &mut Self {

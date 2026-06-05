@@ -156,7 +156,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("--- Action 1: Creating a Task ---");
     let next_id = ctx.generate_id(&Task::entity_descriptor().name)?.expect("ID generator configured");
 
-    let mut task = Q::tasks().new_entity(&ctx);
+    let mut task = Q::tasks().purpose("Create audit task").new_entity(&ctx);
     task.update_id(next_id)
         .update_name("Analyze Network Traffic Logs".to_owned())
         .update_version(1_i64)

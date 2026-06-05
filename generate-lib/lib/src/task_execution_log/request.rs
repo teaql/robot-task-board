@@ -88,13 +88,6 @@ impl<R> TaskExecutionLogRequest<R> {
         self.query
     }
 
-    pub fn new_entity<C>(&self, ctx: &C) -> crate::TaskExecutionLog
-    where
-        C: TeaqlRuntime + ?Sized,
-    {
-        crate::TaskExecutionLog::runtime_new(ctx.user_context().entity_root())
-    }
-
 
     pub fn purpose(self, purpose: impl Into<String>) -> crate::PurposedQuery<Self> {
         crate::PurposedQuery::new(self, purpose)
@@ -1651,6 +1644,13 @@ where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
 }
 
 impl<R: teaql_core::Entity> crate::PurposedQuery<TaskExecutionLogRequest<R>> {
+    pub fn new_entity<C>(&self, ctx: &C) -> crate::TaskExecutionLog
+    where
+        C: crate::TeaqlRuntime + ?Sized,
+    {
+        crate::TaskExecutionLog::runtime_new(ctx.user_context().entity_root())
+    }
+
     pub async fn execute_for_list<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<R>, crate::request_support::TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,

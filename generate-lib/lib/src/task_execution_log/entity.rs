@@ -8,19 +8,25 @@ pub struct TaskExecutionLog {
 #[teaql(id)]
     id: u64,
 
+// @source model.xml:48
     action: String,
 
+// @source model.xml:48
     detail: String,
 #[teaql(version)]
     version: i64,
+// @source model.xml:48
 #[teaql(column = "task")]
     task_id: u64,
+// @source model.xml:48
 #[teaql(relation(target = "Task", local_key = "task_id", foreign_key = "id"))]
     task: Option<crate::Task>,
     #[teaql(dynamic)]
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
     root: teaql_runtime::EntityRoot,
+    #[teaql(skip)]
+    pub __load_state: teaql_core::eval::LoadState,
 }
 
 impl TaskExecutionLog {
@@ -38,6 +44,7 @@ impl TaskExecutionLog {
             task: None,
             dynamic: BTreeMap::new(),
             root,
+            __load_state: teaql_core::eval::LoadState::FullyLoaded,
         }
     }
 
@@ -50,6 +57,14 @@ impl TaskExecutionLog {
         if let Some(entity) = &mut self.task {
             entity.attach_root_recursive(root.clone());
         }
+    }
+
+    pub fn is_loaded(&self, field_or_relation: &str) -> bool {
+        self.__load_state.is_loaded(field_or_relation)
+    }
+
+    pub fn set_load_state(&mut self, state: teaql_core::eval::LoadState) {
+        self.__load_state = state;
     }
 
     pub fn id(&self) -> u64 {
@@ -67,6 +82,13 @@ impl TaskExecutionLog {
         self.root.get(&self.entity_key(), "id")
     }
 
+    pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
+        if !self.is_loaded("id") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.id())
+                }}
+
     pub fn action(&self) -> String {
         self.changed_action().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.action.clone())
     }
@@ -81,6 +103,13 @@ impl TaskExecutionLog {
     pub fn changed_action(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "action")
     }
+
+    pub fn eval_action(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("action") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "action".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.action())
+                }}
 
     pub fn detail(&self) -> String {
         self.changed_detail().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.detail.clone())
@@ -97,6 +126,13 @@ impl TaskExecutionLog {
         self.root.get(&self.entity_key(), "detail")
     }
 
+    pub fn eval_detail(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("detail") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "detail".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.detail())
+                }}
+
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
     }
@@ -111,6 +147,13 @@ impl TaskExecutionLog {
     pub fn changed_version(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "version")
     }
+
+    pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
+        if !self.is_loaded("version") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.version())
+                }}
     pub fn task_id(&self) -> u64 {
         self.changed_task_id().and_then(|value| value.try_u64()).unwrap_or(self.task_id)
     }
@@ -125,8 +168,26 @@ impl TaskExecutionLog {
     pub fn changed_task_id(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "task_id")
     }
+
+    pub fn eval_task_id(&self) -> teaql_core::eval::EvalResult<u64> {
+        if !self.is_loaded("task_id") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_id".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.task_id())
+                }}
     pub fn task(&self) -> Option<&crate::Task> {
         self.task.as_ref()
+    }
+
+    pub fn eval_task(&self) -> teaql_core::eval::EvalResult<&crate::Task> {
+        if !self.is_loaded("task") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task".to_string() }
+        } else {
+            match &self.task {
+                Some(v) => teaql_core::eval::EvalResult::Value(v),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
     }
 
     pub fn mark_as_delete(&mut self) -> &mut Self {

@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use crate::TeaqlRuntime;
 use crate::Q;
 use teaql_core::Entity;
-use crate::PurposedQuery;
 use crate::request_support::TeaqlUserContextExt;
 use crate::request_support::AuditedSave;
 
@@ -137,8 +136,6 @@ where
     load_root_task_status(ctx, &mut state).await?; //depth: 0
 
 
-    use crate::request_support::TeaqlUserContextExt;
-use crate::request_support::AuditedSave;
     ctx.user_context().transaction_data(|| async {
         let res = async {
     generate_tasks(ctx, &mut state).await?;
@@ -218,7 +215,7 @@ where
     log::info!("Generating sample data for Task (expected: {})...", fanout);
 
     for i in 0..fanout {
-        let mut entity = Q::tasks().new_entity(ctx);
+        let mut entity = Q::tasks().purpose("Init Sample Data").new_entity(ctx);
         let mut used_refs = std::collections::HashSet::new();
 
                 if let Some(ref_id) = state.pick_unused_id("Task Status", i as usize, &used_refs) {
@@ -279,7 +276,7 @@ where
     log::info!("Generating sample data for Task Execution Log (expected: {})...", fanout);
 
     for i in 0..fanout {
-        let mut entity = Q::task_execution_logs().new_entity(ctx);
+        let mut entity = Q::task_execution_logs().purpose("Init Sample Data").new_entity(ctx);
         let mut used_refs = std::collections::HashSet::new();
 
                 if let Some(ref_id) = state.pick_unused_id("Task", i as usize, &used_refs) {

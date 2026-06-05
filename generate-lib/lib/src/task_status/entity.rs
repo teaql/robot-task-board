@@ -6,17 +6,23 @@ use teaql_macros::TeaqlEntity;
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
 #[teaql(entity = "TaskStatus", table = "task_status_data")]
 pub struct TaskStatus {
+// @source model.xml:23
 #[teaql(id)]
     id: u64,
 
+// @source model.xml:23
     name: String,
 
+// @source model.xml:23
     code: String,
 
+// @source model.xml:23
     color: String,
 
+// @source model.xml:23
     display_order: rust_decimal::Decimal,
 
+// @source model.xml:23
     progress: rust_decimal::Decimal,
 #[teaql(version)]
     version: i64,
@@ -26,6 +32,8 @@ pub struct TaskStatus {
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
     root: teaql_runtime::EntityRoot,
+    #[teaql(skip)]
+    pub __load_state: teaql_core::eval::LoadState,
 }
 
 impl TaskStatus {
@@ -45,6 +53,7 @@ impl TaskStatus {
             task_list: Default::default(),
             dynamic: BTreeMap::new(),
             root,
+            __load_state: teaql_core::eval::LoadState::FullyLoaded,
         }
     }
 
@@ -57,6 +66,14 @@ impl TaskStatus {
         for entity in &mut self.task_list {
             entity.attach_root_recursive(root.clone());
         }
+    }
+
+    pub fn is_loaded(&self, field_or_relation: &str) -> bool {
+        self.__load_state.is_loaded(field_or_relation)
+    }
+
+    pub fn set_load_state(&mut self, state: teaql_core::eval::LoadState) {
+        self.__load_state = state;
     }
 
     pub fn id(&self) -> u64 {
@@ -74,6 +91,13 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "id")
     }
 
+    pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
+        if !self.is_loaded("id") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.id())
+                }}
+
     pub fn name(&self) -> String {
         self.changed_name().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.name.clone())
     }
@@ -88,6 +112,13 @@ impl TaskStatus {
     pub fn changed_name(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "name")
     }
+
+    pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("name") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.name())
+                }}
 
     pub fn code(&self) -> String {
         self.changed_code().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.code.clone())
@@ -104,6 +135,13 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "code")
     }
 
+    pub fn eval_code(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("code") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "code".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.code())
+                }}
+
     pub fn color(&self) -> String {
         self.changed_color().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.color.clone())
     }
@@ -118,6 +156,13 @@ impl TaskStatus {
     pub fn changed_color(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "color")
     }
+
+    pub fn eval_color(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("color") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "color".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.color())
+                }}
 
     pub fn display_order(&self) -> rust_decimal::Decimal {
         self.changed_display_order().and_then(|value| value.try_decimal()).unwrap_or(self.display_order)
@@ -134,6 +179,13 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "display_order")
     }
 
+    pub fn eval_display_order(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
+        if !self.is_loaded("display_order") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "display_order".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.display_order())
+                }}
+
     pub fn progress(&self) -> rust_decimal::Decimal {
         self.changed_progress().and_then(|value| value.try_decimal()).unwrap_or(self.progress)
     }
@@ -149,6 +201,13 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "progress")
     }
 
+    pub fn eval_progress(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
+        if !self.is_loaded("progress") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "progress".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.progress())
+                }}
+
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
     }
@@ -163,12 +222,27 @@ impl TaskStatus {
     pub fn changed_version(&self) -> Option<teaql_core::Value> {
         self.root.get(&self.entity_key(), "version")
     }
+
+    pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
+        if !self.is_loaded("version") {
+                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.version())
+                }}
     pub fn task_list(&self) -> &SmartList<crate::Task> {
         &self.task_list
     }
 
     pub fn task_list_mut(&mut self) -> &mut SmartList<crate::Task> {
         &mut self.task_list
+    }
+
+    pub fn eval_task_list(&self) -> teaql_core::eval::EvalResult<&SmartList<crate::Task>> {
+        if !self.is_loaded("task_list") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_list".to_string() }
+        } else {
+            teaql_core::eval::EvalResult::Value(&self.task_list)
+        }
     }
 
     pub fn mark_as_delete(&mut self) -> &mut Self {

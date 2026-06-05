@@ -93,10 +93,10 @@ let rows = Q::platforms()
 Avoid direct `sqlx::query(...)` unless raw SQL is explicitly requested. Do NOT call generated repositories directly.
 
 ### 2. Creating (Create)
-Use `Q::platforms().new_entity(&ctx)` to create a new entity with the correct root context, then use graph save:
+Use `Q::platforms().purpose("purpose").new_entity(&ctx)` to create a new entity with the correct root context, then use graph save:
 
 ```rust
-let mut entity = Q::platforms().new_entity(&ctx);
+let mut entity = Q::platforms().purpose("Create example entity").new_entity(&ctx);
 // entity.update_name("example");
 entity.set_comment("Created new Platform for user request")
       .save(&ctx).await?;

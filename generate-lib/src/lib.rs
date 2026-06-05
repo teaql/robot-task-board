@@ -1,0 +1,108 @@
+pub mod entities;
+pub mod q;
+pub mod runtime;
+
+pub use entities::*;
+pub use q::*;
+pub use runtime::*;
+
+pub struct ServiceRuntimeExecutor {
+    pub inner: teaql_sql::SqlDataServiceExecutor<
+        teaql_provider_rusqlite::RusqliteDialect,
+        teaql_provider_rusqlite::RusqliteMutationExecutor,
+        teaql_runtime::InMemoryMetadataStore,
+    >,
+}
+impl ServiceRuntimeExecutor {
+    pub fn new(inner: teaql_provider_rusqlite::RusqliteMutationExecutor) -> Self {
+        Self {
+            inner: teaql_sql::SqlDataServiceExecutor::new(
+                teaql_provider_rusqlite::RusqliteDialect,
+                inner,
+                module_with_behaviors_and_checkers().metadata.clone(),
+            ),
+        }
+    }
+
+    pub fn begin_transaction(&self) -> Result<teaql_runtime::GraphTransactionBoundary, teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>> {
+        self.inner.transport.begin_transaction().map_err(teaql_sql::SqlExecutorError::Transport)?;
+        Ok(teaql_runtime::GraphTransactionBoundary::Started)
+    }
+
+    pub fn commit_transaction(&self) -> Result<(), teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>> {
+        self.inner.transport.commit_transaction().map_err(teaql_sql::SqlExecutorError::Transport)
+    }
+
+    pub fn rollback_transaction(&self) -> Result<(), teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>> {
+        self.inner.transport.rollback_transaction().map_err(teaql_sql::SqlExecutorError::Transport)
+    }
+}
+
+impl teaql_data_service::DataServiceExecutor for ServiceRuntimeExecutor {
+    type Error = teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>;
+
+    fn capabilities(&self) -> teaql_data_service::DataServiceCapabilities {
+        teaql_data_service::DataServiceExecutor::capabilities(&self.inner)
+    }
+}
+
+impl teaql_data_service::QueryExecutor for ServiceRuntimeExecutor {
+    async fn query(&self, request: teaql_data_service::QueryRequest) -> Result<teaql_data_service::QueryResult, Self::Error> {
+        teaql_data_service::QueryExecutor::query(&self.inner, request).await
+    }
+}
+
+impl teaql_data_service::MutationExecutor for ServiceRuntimeExecutor {
+    async fn mutate(&self, request: teaql_data_service::MutationRequest) -> Result<teaql_data_service::MutationResult, Self::Error> {
+        teaql_data_service::MutationExecutor::mutate(&self.inner, request).await
+    }
+}
+
+pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
+    let mut module = teaql_runtime::RuntimeModule::new();
+    
+    module = module.entity::<Platform>();
+    
+    module = module.entity::<TaskStatus>();
+    
+    module = module.entity::<Task>();
+    
+    module = module.entity::<TaskExecutionLog>();
+    
+    module
+        .initial_graph(teaql_runtime::GraphNode::new("platform")
+            .value("id", teaql_core::Value::U64(1))
+            .value("name", teaql_core::Value::Text("Robot System".to_string()))
+            .value("version", teaql_core::Value::I64(1))
+            .value("deleted", teaql_core::Value::Bool(false))
+        )
+        .initial_graph(teaql_runtime::GraphNode::new("task_status")
+            .value("id", teaql_core::Value::U64(1001))
+            .value("code", teaql_core::Value::Text("PLANNED".to_string()))
+            .value("name", teaql_core::Value::Text("Planned".to_string()))
+            .value("version", teaql_core::Value::I64(1))
+            .value("deleted", teaql_core::Value::Bool(false))
+        )
+        .initial_graph(teaql_runtime::GraphNode::new("task_status")
+            .value("id", teaql_core::Value::U64(1002))
+            .value("code", teaql_core::Value::Text("READY".to_string()))
+            .value("name", teaql_core::Value::Text("Ready".to_string()))
+            .value("version", teaql_core::Value::I64(1))
+            .value("deleted", teaql_core::Value::Bool(false))
+        )
+        .initial_graph(teaql_runtime::GraphNode::new("task_status")
+            .value("id", teaql_core::Value::U64(1003))
+            .value("code", teaql_core::Value::Text("EXECUTING".to_string()))
+            .value("name", teaql_core::Value::Text("Executing".to_string()))
+            .value("version", teaql_core::Value::I64(1))
+            .value("deleted", teaql_core::Value::Bool(false))
+        )
+        .initial_graph(teaql_runtime::GraphNode::new("task_status")
+            .value("id", teaql_core::Value::U64(1004))
+            .value("code", teaql_core::Value::Text("VERIFIED".to_string()))
+            .value("name", teaql_core::Value::Text("Verified".to_string()))
+            .value("version", teaql_core::Value::I64(1))
+            .value("deleted", teaql_core::Value::Bool(false))
+        )
+}
+
