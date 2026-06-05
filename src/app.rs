@@ -27,8 +27,11 @@ pub struct App {
     pub should_quit: bool,
     pub cpu_model: String,
     pub mem_size: String,
-    pub log_scroll_offset: usize,
     pub hide_logs: bool,
+    pub pending_delete: Option<u64>,
+    pub scroll_percent: f64,
+    pub timeline_width: u16,
+    pub sql_latencies: VecDeque<f64>,
 }
 
 impl App {
@@ -50,8 +53,11 @@ impl App {
             should_quit: false,
             cpu_model: sys_info.cpu_model,
             mem_size: sys_info.mem_size,
-            log_scroll_offset: 0,
             hide_logs: std::env::args().any(|arg| arg == "-c"),
+            pending_delete: None,
+            scroll_percent: 1.0,
+            timeline_width: 100,
+            sql_latencies: VecDeque::new(),
         };
         app.service.log_info("TeaQL traces one business request into generated SQL, facets, and audit records.");
         app.service.log_info("System successfully initialized.");
@@ -61,23 +67,27 @@ impl App {
     }
 
     pub fn add_log(&mut self, msg: &str) {
-        let was_scrolled = self.log_scroll_offset > 0;
+        self.add_log_with_latency(msg, None);
+    }
+
+    pub fn add_log_with_latency(&mut self, msg: &str, latency: Option<f64>) {
         if self.logs.len() >= MAX_LOGS {
             self.logs.pop_front();
-            if self.log_scroll_offset > 0 {
-                self.log_scroll_offset -= 1;
-            }
         }
         self.logs.push_back(msg.to_owned());
-        if was_scrolled {
-            self.log_scroll_offset += 1;
+
+        if let Some(lat) = latency {
+            self.sql_latencies.push_back(lat);
+            if self.sql_latencies.len() > 100 {
+                self.sql_latencies.pop_front();
+            }
         }
     }
 
     pub fn check_sql_logs(&mut self) {
-        let new_logs = self.service.check_sql_logs();
-        for log in new_logs {
-            self.add_log(&log);
+        let new_logs = self.service.check_sql_logs_metadata();
+        for (log, latency) in new_logs {
+            self.add_log_with_latency(&log, latency);
         }
     }
 
@@ -99,12 +109,35 @@ impl App {
     /// Main application loop: draw UI, handle keyboard input, dispatch commands.
     pub async fn run(&mut self, terminal: &mut Tui) -> io::Result<()> {
         loop {
+            if let Ok(size) = terminal.size() {
+                self.timeline_width = size.width;
+            }
             self.check_sql_logs();
             terminal.draw(|f| crate::ui::ui(f, self))?;
 
             if crossterm::event::poll(Duration::from_millis(100))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == event::KeyEventKind::Press {
+                        if let Some(id) = self.pending_delete {
+                            match key.code {
+                                KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => {
+                                    if let Err(e) = self.service.delete_task(id).await {
+                                        self.add_log(&format!("Error deleting task: {}", e));
+                                    } else {
+                                        let _ = self.reload_data().await;
+                                    }
+                                    self.pending_delete = None;
+                                    self.input.clear();
+                                }
+                                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                                    self.pending_delete = None;
+                                    self.input.clear();
+                                }
+                                _ => {}
+                            }
+                            continue;
+                        }
+
                         match key.code {
                             KeyCode::Char(c) => {
                                 self.input.push(c);
@@ -120,29 +153,19 @@ impl App {
                             KeyCode::Esc => {
                                 self.should_quit = true;
                             }
-                            KeyCode::Up => {
-                                let log_height = if let Ok(size) = terminal.size() {
-                                    ((size.height / 2) as usize).saturating_sub(2)
-                                } else {
-                                    10
-                                };
-                                let max_scroll = self.logs.len().saturating_sub(log_height);
-                                self.log_scroll_offset = (self.log_scroll_offset + 1).min(max_scroll);
+                            KeyCode::Left => {
+                                let inner_w = self.timeline_width.saturating_sub(2).max(10) as f64;
+                                self.scroll_percent = (self.scroll_percent - 1.0 / inner_w).max(0.0);
                             }
                             KeyCode::PageUp => {
-                                let log_height = if let Ok(size) = terminal.size() {
-                                    ((size.height / 2) as usize).saturating_sub(2)
-                                } else {
-                                    10
-                                };
-                                let max_scroll = self.logs.len().saturating_sub(log_height);
-                                self.log_scroll_offset = (self.log_scroll_offset + 10).min(max_scroll);
+                                self.scroll_percent = (self.scroll_percent - 0.1).max(0.0);
                             }
-                            KeyCode::Down => {
-                                self.log_scroll_offset = self.log_scroll_offset.saturating_sub(1);
+                            KeyCode::Right => {
+                                let inner_w = self.timeline_width.saturating_sub(2).max(10) as f64;
+                                self.scroll_percent = (self.scroll_percent + 1.0 / inner_w).min(1.0);
                             }
                             KeyCode::PageDown => {
-                                self.log_scroll_offset = self.log_scroll_offset.saturating_sub(10);
+                                self.scroll_percent = (self.scroll_percent + 0.1).min(1.0);
                             }
                             _ => {}
                         }

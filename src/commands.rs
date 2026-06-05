@@ -5,7 +5,7 @@ use crate::models::MoveResult;
 
 /// Parse and execute a user command. Called when the user presses Enter.
 pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
-    app.log_scroll_offset = 0;
+    app.scroll_percent = 1.0;
     let trimmed = app.input.trim().to_owned();
     if trimmed.is_empty() {
         return Ok(());
@@ -33,6 +33,10 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                 }
                 app.reload_data().await?;
             }
+            "reload" | "r" => {
+                app.service.log_info("Reloading task data from database...");
+                app.reload_data().await?;
+            }
             "add" => {
                 if args.is_empty() {
                     app.service.log_info("Error: Task name cannot be empty. Usage: /add <task name>");
@@ -45,9 +49,8 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                 if args.is_empty() {
                     app.service.log_info("Error: Missing task ID. Usage: /del <id>");
                 } else if let Ok(id) = args.parse::<u64>() {
-                    if app.service.delete_task(id).await? {
-                        app.reload_data().await?;
-                    }
+                    app.pending_delete = Some(id);
+                    app.service.log_info(&format!("Confirm delete task #{}. Waiting for confirmation (y/n)...", id));
                 } else {
                     app.service.log_info(&format!("Error: Invalid task ID '{}'", args));
                 }
@@ -88,7 +91,7 @@ pub async fn execute(app: &mut App) -> Result<(), Box<dyn Error>> {
                 }
             }
             _ => {
-                app.service.log_info(&format!("Unknown command: '/{}'. Type a task name directly or use /mv, /del, /s, /q", cmd));
+                app.service.log_info(&format!("Unknown command: '/{}'. Type a task name directly or use /r, /mv, /del, /s, /q", cmd));
             }
         }
     } else {

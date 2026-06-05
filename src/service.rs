@@ -197,14 +197,7 @@ impl TaskService {
             results.push((boot_entries[i].0.clone(), elapsed_ms));
         }
 
-        // Remove bootstrap entries from the buffer so they don't appear in the TUI logs
-        entries.retain(|entry| {
-            if let LogPayload::Info(info) = &entry.payload {
-                !is_bootstrap_message(&info.message)
-            } else {
-                true
-            }
-        });
+        // Keep bootstrap entries in the buffer so they appear in the TUI log window
         results
     }
 
@@ -213,6 +206,22 @@ impl TaskService {
     }
 
     pub fn log_info(&self, message: &str) {
+        let user = crate::logging::short_user(&self.ctx);
+        let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f").to_string();
+        let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
+
+        if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
+            if let Ok(mut entries) = buf.entries.lock() {
+                entries.push(teaql_runtime::UnifiedLogEntry {
+                    timestamp: std::time::SystemTime::now(),
+                    user_identifier: Some(user),
+                    trace_chain: Vec::new(),
+                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
+                        message: log_line,
+                    }),
+                });
+            }
+        }
     }
 
     pub async fn reload_data(
@@ -229,9 +238,9 @@ impl TaskService {
             .comment(search_comment)
             .facet_by_status_as("status_stats", robot_kanban::Q::task_status().comment("Count status").count_tasks());
 
-        // Unified logging: Log the query trace before running the query
+        // Unified logging: Log the TeaQL expression and query trace
         self.log_info(&format!("Starting query: {}", search_comment));
-        
+        self.log_info(&format!("Execute TeaQL - Q::tasks().comment({:?}).facet_by_status_as(\"status_stats\", Q::task_status().count_tasks()).execute_for_list(&ctx)", search_comment));
         // Execute query
         let list_result = query.purpose("List tasks").execute_for_list(&self.ctx).await?;
 
@@ -313,6 +322,7 @@ impl TaskService {
 
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
         self.log_info(&format!("Starting business action: Create task '{}'", name));
+        self.log_info(&format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", format!("Create task '{}'", name)));
         let next_id = self.ctx.next_id_for::<Task>()?;
         let cmd = CreateTaskCommand { name: name.to_owned() };
         let mut task = Task::create(&cmd, next_id, &self.ctx)?;
@@ -331,6 +341,7 @@ impl TaskService {
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
         self.log_info(&format!("Starting business action: Delete task ID {}", id));
+        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").execute_for_one(&ctx)", id, id));
         
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
@@ -360,6 +371,7 @@ impl TaskService {
     ) -> Result<MoveResult, Box<dyn Error>> {
         let trimmed_status = target_status.trim();
 
+        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").execute_for_one(&ctx)", id, id));
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
             .comment(&format!("Load task {} for status transition", id))
@@ -424,6 +436,10 @@ impl TaskService {
     }
 
     pub fn check_sql_logs(&self) -> Vec<String> {
+        self.check_sql_logs_metadata().into_iter().map(|(text, _)| text).collect()
+    }
+
+    pub fn check_sql_logs_metadata(&self) -> Vec<(String, Option<f64>)> {
         let mut new_logs = Vec::new();
         if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
             if let Ok(mut last_log) = self.last_log_index.lock() {
@@ -444,11 +460,12 @@ impl TaskService {
                                     let elapsed_us = (sql_entry.elapsed.as_secs_f64() * 1_000_000.0).round() as u64;
                                     let line1 = format!("[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}]", ts, uid, elapsed_us, trace, sql_entry.result_summary);
                                     let line2 = format!("          {}", sql_entry.pretty_sql.replace("\n", " "));
-                                    new_logs.push(line1);
-                                    new_logs.push(line2);
+                                    let lat_ms = sql_entry.elapsed.as_secs_f64() * 1000.0;
+                                    new_logs.push((line1, Some(lat_ms)));
+                                    new_logs.push((line2, None));
                                 }
                                 LogPayload::Info(info) => {
-                                    new_logs.push(info.message.clone());
+                                    new_logs.push((info.message.clone(), None));
                                 }
                             }
                         }

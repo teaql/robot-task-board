@@ -45,7 +45,7 @@ fn get_arch_display() -> String {
 /// Screen 1: Welcome screen
 pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
     terminal.draw(|f| {
-        let area = f.size();
+        let area = f.area();
         f.render_widget(Clear, area);
 
         let box_width: u16 = 74;
@@ -115,7 +115,7 @@ pub fn draw_welcome<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 .style(Style::default().fg(DIM_GRAY));
             f.render_widget(sysinfo_paragraph, sysinfo_rect);
         }
-    })?;
+    }).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
     Ok(())
 }
 
@@ -136,7 +136,7 @@ pub fn draw_bootstrap<B: Backend>(
     summary_line: Option<&str>,
 ) -> io::Result<()> {
     terminal.draw(|f| {
-        let area = f.size();
+        let area = f.area();
         f.render_widget(Clear, area);
 
         let box_width: u16 = 74;
@@ -242,7 +242,7 @@ pub fn draw_bootstrap<B: Backend>(
                 .style(Style::default().fg(DIM_GRAY));
             f.render_widget(sysinfo_paragraph, sysinfo_rect);
         }
-    })?;
+    }).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
     Ok(())
 }
 

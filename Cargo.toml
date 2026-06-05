@@ -6,7 +6,7 @@ default-run = "robot-task-board"
 
 [dependencies]
 crossterm = { version = "0.27", features = ["event-stream"] }
-ratatui = "0.26"
+ratatui = "0.30"
 rusqlite = { version = "0.32", features = ["bundled", "column_decltype"] }
 chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde"] }
@@ -40,6 +40,3 @@ teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
 teaql-sql = { path = "../teaql-rs/teaql-sql" }
 teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
 teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
-teaql-tool-core = { path = "../teaql-rust-utils/teaql-tool-core" }
-teaql-tool-context = { path = "../teaql-rust-utils/teaql-tool-context" }
-teaql-tool-std = { path = "../teaql-rust-utils/teaql-tool-std" }

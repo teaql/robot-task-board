@@ -1,7 +1,7 @@
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::layout::{Constraint, Direction, Layout, Offset};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Shadow};
 
 use crate::app::App;
 
@@ -282,19 +282,20 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             ]
         } else {
             vec![
-                Constraint::Percentage(60), // 1. Log area
-                Constraint::Min(5),         // 2. Columns (Planned, Ready, Executing, Verified)
-                Constraint::Length(3),      // 3. Command Line Area
-                Constraint::Length(3),      // 4. Command Help Area
+                Constraint::Percentage(50), // 1. Log area
+                Constraint::Length(4),      // 2. SQL Latency Timeline
+                Constraint::Min(5),         // 3. Columns (Planned, Ready, Executing, Verified)
+                Constraint::Length(3),      // 4. Command Line Area
+                Constraint::Length(3),      // 5. Command Help Area
             ]
         })
-        .split(f.size());
+        .split(f.area());
 
     // 1. Render Log Area (Keeps beautiful syntax-highlighted logs)
     let log_height = chunks[0].height as usize - 2; // Subtract borders
     let total_logs = app.logs.len();
     let max_scroll = total_logs.saturating_sub(log_height);
-    let scroll_offset = app.log_scroll_offset.min(max_scroll);
+    let scroll_offset = ((max_scroll as f64) * (1.0 - app.scroll_percent)).round() as usize;
 
     let skip_count = total_logs.saturating_sub(log_height + scroll_offset);
     let log_lines: Vec<Line> = app.logs.iter()
@@ -309,7 +310,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         "None"
     };
 
-    let _scroll_str = if scroll_offset == 0 {
+    let scroll_str = if scroll_offset == 0 {
         "Bottom".to_owned()
     } else {
         format!("Up {}/{}", scroll_offset, max_scroll)
@@ -318,8 +319,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     let title_str = if app.hide_logs {
         format!(" System Info | CPU: {} | MEM: {} | Search: {} ", app.cpu_model, app.mem_size, search_str)
     } else {
-        format!(" TeaQL Trace Viewer | Domain Action → SQL → Audit → UI State | Rust + SQLite ")
-        // format!(" TeaQL Trace Viewer | Domain Action → SQL → Audit → UI State | Rust + SQLite | Scroll: {} | Search: {} ", scroll_str, search_str)
+        format!(" TeaQL Trace Viewer | Domain Action → SQL → Audit → UI State | Scroll: {} | Search: {} ", scroll_str, search_str)
     };
 
     let log_paragraph = Paragraph::new(if app.hide_logs { vec![] } else { log_lines })
@@ -333,6 +333,75 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
     );
     f.render_widget(log_paragraph, chunks[0]);
 
+    // 1.5. Render SQL Latency Timeline (Vertical lines per execution)
+    if !app.hide_logs {
+        use ratatui::widgets::{Chart, Dataset, GraphType};
+        use ratatui::symbols;
+
+        let timeline_rect = chunks[1];
+        let inner_w = timeline_rect.width.saturating_sub(2) as usize;
+        let n_data = app.sql_latencies.len();
+
+        // Each vertical line occupies 1 terminal character width (2 braille dots).
+        // Lines are packed tightly — one right next to another with zero gap.
+        let capacity = inner_w.max(10);
+
+        // When data exceeds capacity, only show the most recent entries (scroll)
+        let visible_start = n_data.saturating_sub(capacity);
+        let visible: Vec<f64> = app.sql_latencies.iter().skip(visible_start).cloned().collect();
+        let visible_count = visible.len();
+
+        // Y-axis baseline: 1000µs = 1.0ms. Expands automatically if any query exceeds it.
+        // e.g. 0.6ms → 60% height, 0.127ms → 12.7% height
+        let max_lat = visible.iter().cloned().fold(0.0f64, f64::max);
+        let y_max = max_lat.max(1.0);
+        let x_max = capacity as f64;
+
+        // Build vertical line point pairs for each visible data point
+        let mut points_storage: Vec<Vec<(f64, f64)>> = Vec::new();
+        for (i, &lat) in visible.iter().enumerate() {
+            points_storage.push(vec![
+                (i as f64, 0.0),
+                (i as f64, lat),
+            ]);
+        }
+
+        // Each data point is a separate dataset → discrete vertical lines
+        let mut datasets = Vec::new();
+        for i in 0..visible_count {
+            datasets.push(
+                Dataset::default()
+                    .marker(symbols::Marker::Braille)
+                    .graph_type(GraphType::Line)
+                    .style(Style::default().fg(Color::Cyan))
+                    .data(&points_storage[i])
+            );
+        }
+
+        let max_display = if max_lat > 0.0 {
+            format!("{:.0}µs", max_lat * 1000.0)
+        } else {
+            "-".to_string()
+        };
+        let title = format!(" SQL Latency Timeline  {} queries  (max {}) ", n_data, max_display);
+
+        let chart = Chart::new(datasets)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .title(title)
+                    .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+                    .border_style(Style::default().fg(Color::Indexed(240))),
+            )
+            .x_axis(ratatui::widgets::Axis::default().bounds([0.0, x_max]))
+            .y_axis(ratatui::widgets::Axis::default().bounds([0.0, y_max]));
+
+        f.render_widget(chart, timeline_rect);
+    }
+
+    let col_idx = if app.hide_logs { 1 } else { 2 };
+
     // 2. Render task list columns (4 columns)
     let col_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -342,7 +411,7 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             Constraint::Percentage(25),
             Constraint::Percentage(25),
         ])
-        .split(chunks[1]);
+        .split(chunks[col_idx]);
 
     // Planned Tasks column
     let planned_lines = app
@@ -433,13 +502,13 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(cmd_input, chunks[2]);
+    f.render_widget(cmd_input, chunks[col_idx + 1]);
 
     // Position and show the cursor inside the input area (adjusted +6: 1 for left border + 5 for prompt arrow)
-    f.set_cursor(
-        chunks[2].x + 6 + app.input.chars().count() as u16,
-        chunks[2].y + 1,
-    );
+    f.set_cursor_position((
+        chunks[col_idx + 1].x + 6 + app.input.chars().count() as u16,
+        chunks[col_idx + 1].y + 1,
+    ));
 
     let help_text = vec![
         Line::from(vec![
@@ -452,11 +521,13 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             Span::raw(" Delete  "),
             Span::styled("/s <kw>", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw(" Search  "),
+            Span::styled("/r", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw(" Reload  "),
             Span::styled("/q", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw("|"),
             Span::styled("ESC", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw(" Quit  "),
-            Span::styled("↑↓/PgUp/PgDn", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled("←→/PgUp/PgDn", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::raw(" Scroll logs"),
         ]),
     ];
@@ -468,5 +539,70 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
             .border_style(Style::default().fg(Color::White)),
     );
-    f.render_widget(help_box, chunks[3]);
+    f.render_widget(help_box, chunks[col_idx + 2]);
+
+    if let Some(id) = app.pending_delete {
+        let area = centered_rect(50, 20, f.area());
+        f.render_widget(ratatui::widgets::Clear, area);
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(" CONFIRM DELETE ")
+            .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+            .border_style(Style::default().fg(Color::Red))
+            .shadow(Shadow::overlay()
+                .style(Style::default().fg(Color::Indexed(238)).bg(Color::Black))
+                .offset(Offset::new(2, 1)));
+
+        let lines = vec![
+            Line::from(""),
+            Line::from(vec![
+                Span::raw("Are you sure you want to delete Task #"),
+                Span::styled(id.to_string(), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                Span::raw("?"),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::raw("Press ["),
+                Span::styled("Y", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                Span::raw("] / ["),
+                Span::styled("Enter", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                Span::raw("] to confirm."),
+            ]),
+            Line::from(vec![
+                Span::raw("Press ["),
+                Span::styled("N", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                Span::raw("] / ["),
+                Span::styled("Esc", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                Span::raw("] to cancel."),
+            ]),
+        ];
+
+        let paragraph = Paragraph::new(lines)
+            .block(block)
+            .alignment(ratatui::layout::Alignment::Center);
+
+        f.render_widget(paragraph, area);
+    }
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: ratatui::layout::Rect) -> ratatui::layout::Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(25),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage(75u16.saturating_sub(percent_y)),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }
