@@ -342,19 +342,19 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
         let inner_w = timeline_rect.width.saturating_sub(2) as usize;
         let n_data = app.sql_latencies.len();
 
-        // Each vertical line needs ~3 braille columns to be clearly visible.
-        // Braille has 2 dots per character horizontally, so capacity ≈ inner_w * 2 / 3.
-        let capacity = ((inner_w * 2) / 3).max(10);
+        // Each vertical line occupies 1 terminal character width (2 braille dots).
+        // Lines are packed tightly — one right next to another with zero gap.
+        let capacity = inner_w.max(10);
 
         // When data exceeds capacity, only show the most recent entries (scroll)
         let visible_start = n_data.saturating_sub(capacity);
         let visible: Vec<f64> = app.sql_latencies.iter().skip(visible_start).cloned().collect();
         let visible_count = visible.len();
 
-        // Dynamically scale Y-axis: baseline 1000ms, expand if any query exceeds it
+        // Y-axis baseline: 1000µs = 1.0ms. Expands automatically if any query exceeds it.
+        // e.g. 0.6ms → 60% height, 0.127ms → 12.7% height
         let max_lat = visible.iter().cloned().fold(0.0f64, f64::max);
-        let y_max = max_lat.max(1000.0);
-        // x_max is always the full capacity so lines stay left-aligned and don't stretch
+        let y_max = max_lat.max(1.0);
         let x_max = capacity as f64;
 
         // Build vertical line point pairs for each visible data point
@@ -378,9 +378,12 @@ pub fn ui(f: &mut ratatui::Frame, app: &App) {
             );
         }
 
-        let title = format!(" SQL Latency Timeline  {} queries  (max {}ms) ",
-            n_data,
-            if max_lat > 0.0 { format!("{:.1}", max_lat) } else { "-".to_string() });
+        let max_display = if max_lat > 0.0 {
+            format!("{:.0}µs", max_lat * 1000.0)
+        } else {
+            "-".to_string()
+        };
+        let title = format!(" SQL Latency Timeline  {} queries  (max {}) ", n_data, max_display);
 
         let chart = Chart::new(datasets)
             .block(
