@@ -67,37 +67,17 @@ impl App {
     }
 
     pub fn add_log(&mut self, msg: &str) {
+        self.add_log_with_latency(msg, None);
+    }
+
+    pub fn add_log_with_latency(&mut self, msg: &str, latency: Option<f64>) {
         if self.logs.len() >= MAX_LOGS {
             self.logs.pop_front();
         }
         self.logs.push_back(msg.to_owned());
 
-        // Parse latency from log line by scanning all brackets
-        let mut parsed_latency = None;
-        let mut search_str = msg;
-        while let Some(start_idx) = search_str.find('[') {
-            if let Some(end_idx) = search_str[start_idx..].find(']') {
-                let abs_end = start_idx + end_idx;
-                let tag = &search_str[start_idx + 1..abs_end];
-                if tag.ends_with("µs") {
-                    if let Ok(val) = tag[..tag.len() - 3].parse::<f64>() {
-                        parsed_latency = Some(val / 1000.0);
-                        break;
-                    }
-                } else if tag.ends_with("ms") {
-                    if let Ok(val) = tag[..tag.len() - 2].parse::<f64>() {
-                        parsed_latency = Some(val);
-                        break;
-                    }
-                }
-                search_str = &search_str[abs_end + 1..];
-            } else {
-                break;
-            }
-        }
-
-        if let Some(latency) = parsed_latency {
-            self.sql_latencies.push_back(latency);
+        if let Some(lat) = latency {
+            self.sql_latencies.push_back(lat);
             if self.sql_latencies.len() > 100 {
                 self.sql_latencies.pop_front();
             }
@@ -105,9 +85,9 @@ impl App {
     }
 
     pub fn check_sql_logs(&mut self) {
-        let new_logs = self.service.check_sql_logs();
-        for log in new_logs {
-            self.add_log(&log);
+        let new_logs = self.service.check_sql_logs_metadata();
+        for (log, latency) in new_logs {
+            self.add_log_with_latency(&log, latency);
         }
     }
 

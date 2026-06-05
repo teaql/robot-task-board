@@ -424,6 +424,10 @@ impl TaskService {
     }
 
     pub fn check_sql_logs(&self) -> Vec<String> {
+        self.check_sql_logs_metadata().into_iter().map(|(text, _)| text).collect()
+    }
+
+    pub fn check_sql_logs_metadata(&self) -> Vec<(String, Option<f64>)> {
         let mut new_logs = Vec::new();
         if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
             if let Ok(mut last_log) = self.last_log_index.lock() {
@@ -444,11 +448,12 @@ impl TaskService {
                                     let elapsed_us = (sql_entry.elapsed.as_secs_f64() * 1_000_000.0).round() as u64;
                                     let line1 = format!("[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}]", ts, uid, elapsed_us, trace, sql_entry.result_summary);
                                     let line2 = format!("          {}", sql_entry.pretty_sql.replace("\n", " "));
-                                    new_logs.push(line1);
-                                    new_logs.push(line2);
+                                    let lat_ms = sql_entry.elapsed.as_secs_f64() * 1000.0;
+                                    new_logs.push((line1, Some(lat_ms)));
+                                    new_logs.push((line2, None));
                                 }
                                 LogPayload::Info(info) => {
-                                    new_logs.push(info.message.clone());
+                                    new_logs.push((info.message.clone(), None));
                                 }
                             }
                         }
