@@ -197,14 +197,7 @@ impl TaskService {
             results.push((boot_entries[i].0.clone(), elapsed_ms));
         }
 
-        // Remove bootstrap entries from the buffer so they don't appear in the TUI logs
-        entries.retain(|entry| {
-            if let LogPayload::Info(info) = &entry.payload {
-                !is_bootstrap_message(&info.message)
-            } else {
-                true
-            }
-        });
+        // Keep bootstrap entries in the buffer so they appear in the TUI log window
         results
     }
 
