@@ -1,19 +1,26 @@
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
-
+// @source model.xml:30
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Task {
+// @source model.xml:30
     pub id: u64,
+// @source model.xml:30
     pub name: Option<String>,
+// @source model.xml:30
     pub status: Option<Box<crate::entities::task_status::TaskStatus>>,
     pub status_id: Option<u64>,
+// @source model.xml:30
     pub platform: Option<Box<crate::entities::platform::Platform>>,
     pub platform_id: Option<u64>,
+// @source model.xml:40
     pub task_execution_logs: Vec<crate::entities::task_execution_log::TaskExecutionLog>,
     pub version: i64,
     pub comment: String,
     pub deleted: bool,
+    #[serde(skip)]
+    pub __load_state: teaql_core::eval::LoadState,
 }
 
 impl Task {
@@ -29,6 +36,7 @@ impl Task {
             version: 0,
             comment: String::new(),
             deleted: false,
+            __load_state: teaql_core::eval::LoadState::FullyLoaded,
         }
     }
     
@@ -57,6 +65,14 @@ impl Task {
     pub fn mark_as_delete(&mut self) {
         self.deleted = true;
     }
+
+    pub fn is_loaded(&self, field_or_relation: &str) -> bool {
+        self.__load_state.is_loaded(field_or_relation)
+    }
+
+    pub fn set_load_state(&mut self, state: teaql_core::eval::LoadState) {
+        self.__load_state = state;
+    }
     pub fn task_execution_logs_mut(&mut self) -> &mut Vec<crate::entities::task_execution_log::TaskExecutionLog> {
         &mut self.task_execution_logs
     }
@@ -67,6 +83,16 @@ impl Task {
         self.name = Some(value.into());
         self
     }
+    pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.__load_state.is_loaded("name") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+        } else {
+            match &self.name {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.clone()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
+    }
     pub fn status_id(&self) -> u64 {
         self.status_id.unwrap_or_default()
     }
@@ -75,6 +101,17 @@ impl Task {
         self.status_id = Some(value.into());
         self
     }
+
+    pub fn eval_status(&self) -> teaql_core::eval::EvalResult<&crate::entities::task_status::TaskStatus> {
+        if !self.__load_state.is_loaded("status") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "status".to_string() }
+        } else {
+            match &self.status {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.as_ref()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
+    }
     pub fn platform_id(&self) -> u64 {
         self.platform_id.unwrap_or_default()
     }
@@ -82,6 +119,24 @@ impl Task {
     pub fn update_platform_id(&mut self, value: impl Into<u64>) -> &mut Self {
         self.platform_id = Some(value.into());
         self
+    }
+
+    pub fn eval_platform(&self) -> teaql_core::eval::EvalResult<&crate::entities::platform::Platform> {
+        if !self.__load_state.is_loaded("platform") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "platform".to_string() }
+        } else {
+            match &self.platform {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.as_ref()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
+    }
+    pub fn eval_task_execution_logs(&self) -> teaql_core::eval::EvalResult<&[crate::entities::task_execution_log::TaskExecutionLog]> {
+        if !self.__load_state.is_loaded("task_execution_log_list") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_execution_log_list".to_string() }
+        } else {
+            teaql_core::eval::EvalResult::Value(&self.task_execution_logs)
+        }
     }
     pub fn update_status_to_planned(&mut self) -> &mut Self {
         self.status_id = Some(1001);
@@ -110,9 +165,13 @@ impl Task {
         Ok(())
     }
 
-    pub fn save(mut self, ctx: &teaql_runtime::UserContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, std::io::Error>> + Send + '_>> {
+    pub fn audit_as(self, comment: impl Into<String>) -> teaql_core::entity::Audited<Self> {
+        teaql_core::entity::Audited::new(self, comment)
+    }
+    
+    pub(crate) fn _save(mut self, ctx: &teaql_runtime::UserContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, std::io::Error>> + Send + '_>> {
         Box::pin(async move {
-            let repo = ctx.resolve_repository::<teaql_provider_rusqlite::RusqliteDialect, crate::ServiceRuntimeExecutor>("task")
+            let repo = ctx.resolve_repository::<crate::ServiceRuntimeExecutor>("task")
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
             let mut node = teaql_runtime::GraphNode::new("task");
             if self.deleted {
@@ -145,7 +204,7 @@ impl Task {
             
             let values = teaql_core::Entity::into_record(self);
             node.values = values;
-            repo.save_graph(node).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+            repo.save_graph(node).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
         })
     }
 }

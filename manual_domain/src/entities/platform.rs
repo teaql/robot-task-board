@@ -1,34 +1,35 @@
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
-
+// @source model.xml:2
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TaskStatus {
+pub struct Platform {
+// @source model.xml:2
     pub id: u64,
+// @source model.xml:2
     pub name: Option<String>,
-    pub code: Option<String>,
-    pub color: Option<String>,
-    pub display_order: Option<i32>,
-    pub progress: Option<i32>,
+// @source model.xml:2
+    pub founded: Option<chrono::DateTime<chrono::Utc>>,
+// @source model.xml:30
     pub tasks: Vec<crate::entities::task::Task>,
     pub version: i64,
     pub comment: String,
     pub deleted: bool,
+    #[serde(skip)]
+    pub __load_state: teaql_core::eval::LoadState,
 }
 
-impl TaskStatus {
+impl Platform {
     pub fn new() -> Self {
         Self {
             id: 0,
             name: None,
-            code: None,
-            color: None,
-            display_order: None,
-            progress: None,
+            founded: None,
             tasks: Vec::new(),
             version: 0,
             comment: String::new(),
             deleted: false,
+            __load_state: teaql_core::eval::LoadState::FullyLoaded,
         }
     }
     
@@ -57,6 +58,14 @@ impl TaskStatus {
     pub fn mark_as_delete(&mut self) {
         self.deleted = true;
     }
+
+    pub fn is_loaded(&self, field_or_relation: &str) -> bool {
+        self.__load_state.is_loaded(field_or_relation)
+    }
+
+    pub fn set_load_state(&mut self, state: teaql_core::eval::LoadState) {
+        self.__load_state = state;
+    }
     pub fn tasks_mut(&mut self) -> &mut Vec<crate::entities::task::Task> {
         &mut self.tasks
     }
@@ -67,40 +76,50 @@ impl TaskStatus {
         self.name = Some(value.into());
         self
     }
-    pub fn code(&self) -> String {
-        self.code.clone().unwrap_or_default()
+    pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.__load_state.is_loaded("name") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+        } else {
+            match &self.name {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.clone()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
     }
-    pub fn update_code(&mut self, value: impl Into<String>) -> &mut Self {
-        self.code = Some(value.into());
+    pub fn founded(&self) -> chrono::DateTime<chrono::Utc> {
+        self.founded.clone().unwrap_or_default()
+    }
+    pub fn update_founded(&mut self, value: impl Into<chrono::DateTime<chrono::Utc>>) -> &mut Self {
+        self.founded = Some(value.into());
         self
     }
-    pub fn color(&self) -> String {
-        self.color.clone().unwrap_or_default()
+    pub fn eval_founded(&self) -> teaql_core::eval::EvalResult<chrono::DateTime<chrono::Utc>> {
+        if !self.__load_state.is_loaded("founded") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "founded".to_string() }
+        } else {
+            match &self.founded {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.clone()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
     }
-    pub fn update_color(&mut self, value: impl Into<String>) -> &mut Self {
-        self.color = Some(value.into());
-        self
-    }
-    pub fn display_order(&self) -> i32 {
-        self.display_order.clone().unwrap_or_default()
-    }
-    pub fn update_display_order(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.display_order = Some(value.into());
-        self
-    }
-    pub fn progress(&self) -> i32 {
-        self.progress.clone().unwrap_or_default()
-    }
-    pub fn update_progress(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.progress = Some(value.into());
-        self
+    pub fn eval_tasks(&self) -> teaql_core::eval::EvalResult<&[crate::entities::task::Task]> {
+        if !self.__load_state.is_loaded("task_list") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_list".to_string() }
+        } else {
+            teaql_core::eval::EvalResult::Value(&self.tasks)
+        }
     }
 
-    pub fn save(mut self, ctx: &teaql_runtime::UserContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, std::io::Error>> + Send + '_>> {
+    pub fn audit_as(self, comment: impl Into<String>) -> teaql_core::entity::Audited<Self> {
+        teaql_core::entity::Audited::new(self, comment)
+    }
+    
+    pub(crate) fn _save(mut self, ctx: &teaql_runtime::UserContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, std::io::Error>> + Send + '_>> {
         Box::pin(async move {
-            let repo = ctx.resolve_repository::<teaql_provider_rusqlite::RusqliteDialect, crate::ServiceRuntimeExecutor>("task_status")
+            let repo = ctx.resolve_repository::<crate::ServiceRuntimeExecutor>("platform")
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-            let mut node = teaql_runtime::GraphNode::new("task_status");
+            let mut node = teaql_runtime::GraphNode::new("platform");
             if self.deleted {
                 node.operation = teaql_runtime::GraphOperation::Remove;
             } else if self.id == 0 {
@@ -131,16 +150,16 @@ impl TaskStatus {
             
             let values = teaql_core::Entity::into_record(self);
             node.values = values;
-            repo.save_graph(node).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+            repo.save_graph(node).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
         })
     }
 }
 
-impl teaql_core::TeaqlEntity for TaskStatus {
+impl teaql_core::TeaqlEntity for Platform {
     fn entity_descriptor() -> teaql_core::EntityDescriptor {
         teaql_core::EntityDescriptor { 
-            name: "task_status".to_string(),
-            table_name: "task_status_data".to_string(),
+            name: "platform".to_string(),
+            table_name: "platform_data".to_string(),
             properties: vec![
                 teaql_core::PropertyDescriptor {
                     name: "id".to_string(),
@@ -176,60 +195,9 @@ impl teaql_core::TeaqlEntity for TaskStatus {
                     is_version: false,
                 },
                 teaql_core::PropertyDescriptor {
-                    name: "code".to_string(),
-                    column_name: "code".to_string(),
-                    data_type: match "Option<String>" {
-                        "String" | "Option<String>" => teaql_core::DataType::Text,
-                        "u64" | "Option<u64>" => teaql_core::DataType::U64,
-                        "i64" | "Option<i64>" => teaql_core::DataType::I64,
-                        "i32" | "Option<i32>" => teaql_core::DataType::I64,
-                        "bool" | "Option<bool>" => teaql_core::DataType::Bool,
-                        "chrono::NaiveDate" | "Option<chrono::NaiveDate>" => teaql_core::DataType::Date,
-                        "chrono::DateTime<chrono::Utc>" | "Option<chrono::DateTime<chrono::Utc>>" => teaql_core::DataType::Timestamp,
-                        _ => teaql_core::DataType::Text,
-                    },
-                    nullable: true,
-                    is_id: false,
-                    is_version: false,
-                },
-                teaql_core::PropertyDescriptor {
-                    name: "color".to_string(),
-                    column_name: "color".to_string(),
-                    data_type: match "Option<String>" {
-                        "String" | "Option<String>" => teaql_core::DataType::Text,
-                        "u64" | "Option<u64>" => teaql_core::DataType::U64,
-                        "i64" | "Option<i64>" => teaql_core::DataType::I64,
-                        "i32" | "Option<i32>" => teaql_core::DataType::I64,
-                        "bool" | "Option<bool>" => teaql_core::DataType::Bool,
-                        "chrono::NaiveDate" | "Option<chrono::NaiveDate>" => teaql_core::DataType::Date,
-                        "chrono::DateTime<chrono::Utc>" | "Option<chrono::DateTime<chrono::Utc>>" => teaql_core::DataType::Timestamp,
-                        _ => teaql_core::DataType::Text,
-                    },
-                    nullable: true,
-                    is_id: false,
-                    is_version: false,
-                },
-                teaql_core::PropertyDescriptor {
-                    name: "display_order".to_string(),
-                    column_name: "display_order".to_string(),
-                    data_type: match "Option<i32>" {
-                        "String" | "Option<String>" => teaql_core::DataType::Text,
-                        "u64" | "Option<u64>" => teaql_core::DataType::U64,
-                        "i64" | "Option<i64>" => teaql_core::DataType::I64,
-                        "i32" | "Option<i32>" => teaql_core::DataType::I64,
-                        "bool" | "Option<bool>" => teaql_core::DataType::Bool,
-                        "chrono::NaiveDate" | "Option<chrono::NaiveDate>" => teaql_core::DataType::Date,
-                        "chrono::DateTime<chrono::Utc>" | "Option<chrono::DateTime<chrono::Utc>>" => teaql_core::DataType::Timestamp,
-                        _ => teaql_core::DataType::Text,
-                    },
-                    nullable: true,
-                    is_id: false,
-                    is_version: false,
-                },
-                teaql_core::PropertyDescriptor {
-                    name: "progress".to_string(),
-                    column_name: "progress".to_string(),
-                    data_type: match "Option<i32>" {
+                    name: "founded".to_string(),
+                    column_name: "founded".to_string(),
+                    data_type: match "Option<chrono::DateTime<chrono::Utc>>" {
                         "String" | "Option<String>" => teaql_core::DataType::Text,
                         "u64" | "Option<u64>" => teaql_core::DataType::U64,
                         "i64" | "Option<i64>" => teaql_core::DataType::I64,
@@ -249,7 +217,7 @@ impl teaql_core::TeaqlEntity for TaskStatus {
                     name: "task_list".to_string(),
                     target_entity: "task".to_string(),
                     local_key: "id".to_string(),
-                    foreign_key: "status_id".to_string(),
+                    foreign_key: "platform_id".to_string(),
                     many: true,
                     attach: false,
                     delete_missing: false,
@@ -259,7 +227,7 @@ impl teaql_core::TeaqlEntity for TaskStatus {
     }
 }
 
-impl teaql_core::Entity for TaskStatus {
+impl teaql_core::Entity for Platform {
     fn from_record(mut record: std::collections::BTreeMap<String, teaql_core::Value>) -> Result<Self, teaql_core::EntityError> {
         let mut entity = Self::new();
         if let Some(val) = record.remove("id") {
@@ -272,15 +240,7 @@ impl teaql_core::Entity for TaskStatus {
         if let Some(val) = record.remove("name") {
             if let teaql_core::Value::Text(v) = val { entity.name = Some(v); }
         }
-        if let Some(val) = record.remove("code") {
-            if let teaql_core::Value::Text(v) = val { entity.code = Some(v); }
-        }
-        if let Some(val) = record.remove("color") {
-            if let teaql_core::Value::Text(v) = val { entity.color = Some(v); }
-        }
-        if let Some(val) = record.remove("display_order") {
-        }
-        if let Some(val) = record.remove("progress") {
+        if let Some(val) = record.remove("founded") {
         }
         Ok(entity)
     }
@@ -290,8 +250,6 @@ impl teaql_core::Entity for TaskStatus {
         record.insert("id".to_string(), teaql_core::Value::U64(self.id));
         record.insert("version".to_string(), teaql_core::Value::I64(self.version));
         if let Some(v) = self.name { record.insert("name".to_string(), teaql_core::Value::Text(v)); }
-        if let Some(v) = self.code { record.insert("code".to_string(), teaql_core::Value::Text(v)); }
-        if let Some(v) = self.color { record.insert("color".to_string(), teaql_core::Value::Text(v)); }
         record
     }
 }

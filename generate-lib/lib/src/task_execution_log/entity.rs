@@ -84,7 +84,7 @@ impl TaskExecutionLog {
 
     pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "id".to_string(), attempted_path: "id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
@@ -106,7 +106,7 @@ impl TaskExecutionLog {
 
     pub fn eval_action(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("action") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "action".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "action".to_string(), attempted_path: "action".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.action())
                 }}
@@ -128,7 +128,7 @@ impl TaskExecutionLog {
 
     pub fn eval_detail(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("detail") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "detail".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "detail".to_string(), attempted_path: "detail".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.detail())
                 }}
@@ -150,7 +150,7 @@ impl TaskExecutionLog {
 
     pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
         if !self.is_loaded("version") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "version".to_string(), attempted_path: "version".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
@@ -171,7 +171,7 @@ impl TaskExecutionLog {
 
     pub fn eval_task_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("task_id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "task_id".to_string(), attempted_path: "task_id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.task_id())
                 }}
@@ -181,7 +181,7 @@ impl TaskExecutionLog {
 
     pub fn eval_task(&self) -> teaql_core::eval::EvalResult<&crate::Task> {
         if !self.is_loaded("task") {
-            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task".to_string() }
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "task".to_string(), attempted_path: "task".to_string() }
         } else {
             match &self.task {
                 Some(v) => teaql_core::eval::EvalResult::Value(v),

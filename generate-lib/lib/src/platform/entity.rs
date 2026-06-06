@@ -80,7 +80,7 @@ impl Platform {
 
     pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "id".to_string(), attempted_path: "id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
@@ -102,7 +102,7 @@ impl Platform {
 
     pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("name") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "name".to_string(), attempted_path: "name".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.name())
                 }}
@@ -124,7 +124,7 @@ impl Platform {
 
     pub fn eval_founded(&self) -> teaql_core::eval::EvalResult<chrono::DateTime<chrono::Utc>> {
         if !self.is_loaded("founded") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "founded".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "founded".to_string(), attempted_path: "founded".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.founded())
                 }}
@@ -146,7 +146,7 @@ impl Platform {
 
     pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
         if !self.is_loaded("version") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "version".to_string(), attempted_path: "version".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
@@ -160,7 +160,7 @@ impl Platform {
 
     pub fn eval_task_list(&self) -> teaql_core::eval::EvalResult<&SmartList<crate::Task>> {
         if !self.is_loaded("task_list") {
-            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_list".to_string() }
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "task_list".to_string(), attempted_path: "task_list".to_string() }
         } else {
             teaql_core::eval::EvalResult::Value(&self.task_list)
         }

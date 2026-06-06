@@ -23,7 +23,7 @@ teaql-provider-rusqlite = "3.0.0"
 teaql-data-service = "3.0.0"
 
 # Our generated TeaQL domain logic library
-robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
+robot_kanban = { path = "./generate-lib/lib", package = "robot_kanban_service" }
 whoami = "2.1.2"
 
 [profile.release]

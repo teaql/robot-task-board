@@ -1,17 +1,23 @@
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
-
+// @source model.xml:40
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskExecutionLog {
+// @source model.xml:40
     pub id: u64,
+// @source model.xml:40
     pub action: Option<String>,
+// @source model.xml:40
     pub detail: Option<String>,
+// @source model.xml:40
     pub task: Option<Box<crate::entities::task::Task>>,
     pub task_id: Option<u64>,
     pub version: i64,
     pub comment: String,
     pub deleted: bool,
+    #[serde(skip)]
+    pub __load_state: teaql_core::eval::LoadState,
 }
 
 impl TaskExecutionLog {
@@ -25,6 +31,7 @@ impl TaskExecutionLog {
             version: 0,
             comment: String::new(),
             deleted: false,
+            __load_state: teaql_core::eval::LoadState::FullyLoaded,
         }
     }
     
@@ -53,6 +60,14 @@ impl TaskExecutionLog {
     pub fn mark_as_delete(&mut self) {
         self.deleted = true;
     }
+
+    pub fn is_loaded(&self, field_or_relation: &str) -> bool {
+        self.__load_state.is_loaded(field_or_relation)
+    }
+
+    pub fn set_load_state(&mut self, state: teaql_core::eval::LoadState) {
+        self.__load_state = state;
+    }
     pub fn action(&self) -> String {
         self.action.clone().unwrap_or_default()
     }
@@ -60,12 +75,32 @@ impl TaskExecutionLog {
         self.action = Some(value.into());
         self
     }
+    pub fn eval_action(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.__load_state.is_loaded("action") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "action".to_string() }
+        } else {
+            match &self.action {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.clone()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
+    }
     pub fn detail(&self) -> String {
         self.detail.clone().unwrap_or_default()
     }
     pub fn update_detail(&mut self, value: impl Into<String>) -> &mut Self {
         self.detail = Some(value.into());
         self
+    }
+    pub fn eval_detail(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.__load_state.is_loaded("detail") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "detail".to_string() }
+        } else {
+            match &self.detail {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.clone()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
     }
     pub fn task_id(&self) -> u64 {
         self.task_id.unwrap_or_default()
@@ -76,9 +111,24 @@ impl TaskExecutionLog {
         self
     }
 
-    pub fn save(mut self, ctx: &teaql_runtime::UserContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, std::io::Error>> + Send + '_>> {
+    pub fn eval_task(&self) -> teaql_core::eval::EvalResult<&crate::entities::task::Task> {
+        if !self.__load_state.is_loaded("task") {
+            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task".to_string() }
+        } else {
+            match &self.task {
+                Some(v) => teaql_core::eval::EvalResult::Value(v.as_ref()),
+                None => teaql_core::eval::EvalResult::Null,
+            }
+        }
+    }
+
+    pub fn audit_as(self, comment: impl Into<String>) -> teaql_core::entity::Audited<Self> {
+        teaql_core::entity::Audited::new(self, comment)
+    }
+    
+    pub(crate) fn _save(mut self, ctx: &teaql_runtime::UserContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, std::io::Error>> + Send + '_>> {
         Box::pin(async move {
-            let repo = ctx.resolve_repository::<teaql_provider_rusqlite::RusqliteDialect, crate::ServiceRuntimeExecutor>("task_execution_log")
+            let repo = ctx.resolve_repository::<crate::ServiceRuntimeExecutor>("task_execution_log")
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
             let mut node = teaql_runtime::GraphNode::new("task_execution_log");
             if self.deleted {
@@ -94,7 +144,7 @@ impl TaskExecutionLog {
             
             let values = teaql_core::Entity::into_record(self);
             node.values = values;
-            repo.save_graph(node).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+            repo.save_graph(node).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
         })
     }
 }

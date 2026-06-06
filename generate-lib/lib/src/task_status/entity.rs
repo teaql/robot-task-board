@@ -93,7 +93,7 @@ impl TaskStatus {
 
     pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "id".to_string(), attempted_path: "id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
@@ -115,7 +115,7 @@ impl TaskStatus {
 
     pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("name") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "name".to_string(), attempted_path: "name".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.name())
                 }}
@@ -137,7 +137,7 @@ impl TaskStatus {
 
     pub fn eval_code(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("code") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "code".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "code".to_string(), attempted_path: "code".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.code())
                 }}
@@ -159,7 +159,7 @@ impl TaskStatus {
 
     pub fn eval_color(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("color") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "color".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "color".to_string(), attempted_path: "color".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.color())
                 }}
@@ -181,7 +181,7 @@ impl TaskStatus {
 
     pub fn eval_display_order(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
         if !self.is_loaded("display_order") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "display_order".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "display_order".to_string(), attempted_path: "display_order".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.display_order())
                 }}
@@ -203,7 +203,7 @@ impl TaskStatus {
 
     pub fn eval_progress(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
         if !self.is_loaded("progress") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "progress".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "progress".to_string(), attempted_path: "progress".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.progress())
                 }}
@@ -225,7 +225,7 @@ impl TaskStatus {
 
     pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
         if !self.is_loaded("version") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "version".to_string(), attempted_path: "version".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
@@ -239,7 +239,7 @@ impl TaskStatus {
 
     pub fn eval_task_list(&self) -> teaql_core::eval::EvalResult<&SmartList<crate::Task>> {
         if !self.is_loaded("task_list") {
-            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_list".to_string() }
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "task_list".to_string(), attempted_path: "task_list".to_string() }
         } else {
             teaql_core::eval::EvalResult::Value(&self.task_list)
         }

@@ -100,7 +100,7 @@ impl Task {
 
     pub fn eval_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "id".to_string(), attempted_path: "id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
@@ -122,7 +122,7 @@ impl Task {
 
     pub fn eval_name(&self) -> teaql_core::eval::EvalResult<String> {
         if !self.is_loaded("name") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "name".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "name".to_string(), attempted_path: "name".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.name())
                 }}
@@ -144,7 +144,7 @@ impl Task {
 
     pub fn eval_version(&self) -> teaql_core::eval::EvalResult<i64> {
         if !self.is_loaded("version") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "version".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "version".to_string(), attempted_path: "version".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
@@ -165,7 +165,7 @@ impl Task {
 
     pub fn eval_status_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("status_id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "status_id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "status_id".to_string(), attempted_path: "status_id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.status_id())
                 }}
@@ -187,7 +187,7 @@ impl Task {
 
     pub fn eval_platform_id(&self) -> teaql_core::eval::EvalResult<u64> {
         if !self.is_loaded("platform_id") {
-                    teaql_core::eval::EvalResult::NotLoaded { missing_path: "platform_id".to_string() }
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "platform_id".to_string(), attempted_path: "platform_id".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.platform_id())
                 }}
@@ -225,7 +225,7 @@ impl Task {
 
     pub fn eval_status(&self) -> teaql_core::eval::EvalResult<&crate::TaskStatus> {
         if !self.is_loaded("status") {
-            teaql_core::eval::EvalResult::NotLoaded { missing_path: "status".to_string() }
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "status".to_string(), attempted_path: "status".to_string() }
         } else {
             match &self.status {
                 Some(v) => teaql_core::eval::EvalResult::Value(v),
@@ -240,7 +240,7 @@ impl Task {
 
     pub fn eval_platform(&self) -> teaql_core::eval::EvalResult<&crate::Platform> {
         if !self.is_loaded("platform") {
-            teaql_core::eval::EvalResult::NotLoaded { missing_path: "platform".to_string() }
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "platform".to_string(), attempted_path: "platform".to_string() }
         } else {
             match &self.platform {
                 Some(v) => teaql_core::eval::EvalResult::Value(v),
@@ -258,7 +258,7 @@ impl Task {
 
     pub fn eval_task_execution_log_list(&self) -> teaql_core::eval::EvalResult<&SmartList<crate::TaskExecutionLog>> {
         if !self.is_loaded("task_execution_log_list") {
-            teaql_core::eval::EvalResult::NotLoaded { missing_path: "task_execution_log_list".to_string() }
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "task_execution_log_list".to_string(), attempted_path: "task_execution_log_list".to_string() }
         } else {
             teaql_core::eval::EvalResult::Value(&self.task_execution_log_list)
         }
