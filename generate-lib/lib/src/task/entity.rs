@@ -4,27 +4,27 @@ use teaql_core::SmartList;
 use teaql_macros::TeaqlEntity;
 
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "Task", table = "task_data")]
+#[teaql(entity = "Task", table = "task_data", data_service = "rusqlite")]
 pub struct Task {
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:38
+// @source model.xml:41
     name: String,
 #[teaql(version)]
     version: i64,
-// @source model.xml:38
+// @source model.xml:41
 #[teaql(column = "status")]
     status_id: u64,
 
-// @source model.xml:38
+// @source model.xml:41
 #[teaql(column = "platform")]
     platform_id: u64,
-// @source model.xml:38
+// @source model.xml:41
 #[teaql(relation(target = "TaskStatus", local_key = "status_id", foreign_key = "id"))]
     status: Option<crate::TaskStatus>,
 
-// @source model.xml:38
+// @source model.xml:41
 #[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
     platform: Option<crate::Platform>,
 #[teaql(relation(target = "TaskExecutionLog", local_key = "id", foreign_key = "task_id", many))]

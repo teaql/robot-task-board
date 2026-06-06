@@ -4,16 +4,19 @@ use teaql_core::SmartList;
 use teaql_macros::TeaqlEntity;
 
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "Platform", table = "platform_data")]
+#[teaql(entity = "Platform", table = "platform_data", data_service = "rusqlite")]
 pub struct Platform {
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:8
+// @source model.xml:9
     name: String,
 
-// @source model.xml:8
+// @source model.xml:9
     founded: chrono::DateTime<chrono::Utc>,
+
+// @source model.xml:9
+    user_email: String,
 #[teaql(version)]
     version: i64,
 #[teaql(relation(target = "Task", local_key = "id", foreign_key = "platform_id", many))]
@@ -36,6 +39,7 @@ impl Platform {
             id: 0_u64,
             name: String::new(),
             founded: chrono::Utc::now(),
+            user_email: String::new(),
             version: 0_i64,
             task_list: Default::default(),
             dynamic: BTreeMap::new(),
@@ -127,6 +131,28 @@ impl Platform {
                     teaql_core::eval::EvalResult::NotLoaded { failed_node: "founded".to_string(), attempted_path: "founded".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.founded())
+                }}
+
+    pub fn user_email(&self) -> String {
+        self.changed_user_email().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.user_email.clone())
+    }
+
+    pub fn update_user_email(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
+        let value = value.into();
+        self.user_email = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.user_email.clone());
+        self.root.set(self.entity_key(), "user_email", value);
+        self
+    }
+
+    pub fn changed_user_email(&self) -> Option<teaql_core::Value> {
+        self.root.get(&self.entity_key(), "user_email")
+    }
+
+    pub fn eval_user_email(&self) -> teaql_core::eval::EvalResult<String> {
+        if !self.is_loaded("user_email") {
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "user_email".to_string(), attempted_path: "user_email".to_string() }
+                } else {
+                    teaql_core::eval::EvalResult::Value(self.user_email())
                 }}
 
     pub fn version(&self) -> i64 {

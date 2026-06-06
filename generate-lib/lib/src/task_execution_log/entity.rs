@@ -3,22 +3,22 @@ use std::collections::BTreeMap;
 use teaql_macros::TeaqlEntity;
 
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "TaskExecutionLog", table = "task_execution_log_data")]
+#[teaql(entity = "TaskExecutionLog", table = "task_execution_log_data", data_service = "meilisearch", audit_mask_fields = "detail", audit_value_max_len = 2048)]
 pub struct TaskExecutionLog {
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:48
+// @source model.xml:54
     action: String,
 
-// @source model.xml:48
+// @source model.xml:54
     detail: String,
 #[teaql(version)]
     version: i64,
-// @source model.xml:48
+// @source model.xml:54
 #[teaql(column = "task")]
     task_id: u64,
-// @source model.xml:48
+// @source model.xml:54
 #[teaql(relation(target = "Task", local_key = "task_id", foreign_key = "id"))]
     task: Option<crate::Task>,
     #[teaql(dynamic)]

@@ -119,7 +119,7 @@ impl TaskService {
         // Register custom TUI log buffer and audit event sink
         let log_buffer = UnifiedLogBuffer::default();
         ctx.insert_resource(log_buffer);
-        ctx.set_event_sink(AppAuditSink);
+        ctx.set_custom_event_sink(AppAuditSink);
 
         // Control SQL logging via environment variable (default enabled for backwards compatibility in tests)
         if let Ok(val) = std::env::var("TEAQL_SQL_LOG") {

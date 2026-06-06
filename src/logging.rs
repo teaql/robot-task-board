@@ -1,6 +1,6 @@
 use teaql_runtime::{
-    UserContext, EntityEvent,
-    EntityEventKind, EntityEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
+    UserContext, SafeAuditEvent,
+    RawAuditEventKind, SafeAuditEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
 };
 use teaql_core::Value;
 
@@ -8,39 +8,6 @@ use teaql_core::Value;
 pub fn short_user(ctx: &UserContext) -> String {
     let full = ctx.user_identifier().unwrap_or("unknown");
     full.split('@').next().unwrap_or(full).to_owned()
-}
-
-fn format_val_helper(val: &Option<Value>) -> String {
-    match val {
-        Some(Value::Null) | None => "NULL".to_owned(),
-        Some(Value::Text(s)) => format!("'{}'", s),
-        Some(Value::I64(n)) => n.to_string(),
-        Some(Value::U64(n)) => n.to_string(),
-        Some(Value::Bool(b)) => b.to_string(),
-        Some(Value::Timestamp(t)) => t.format("%Y-%m-%d %H:%M:%S").to_string(),
-        Some(other) => format!("{:?}", other),
-    }
-}
-
-/// Resolve a status ID value to a human-readable code.
-fn resolve_status_name(raw: &str) -> String {
-    match raw {
-        "1001" => "PLANNED".to_owned(),
-        "1002" => "READY".to_owned(),
-        "1003" => "EXECUTING".to_owned(),
-        "1004" => "VERIFIED".to_owned(),
-        other => other.to_owned(),
-    }
-}
-
-/// Format a field change value, resolving known ID fields to names.
-fn format_field_val(field: &str, val: &Option<Value>) -> String {
-    let raw = format_val_helper(val);
-    if field == "status_id" || field == "status" {
-        resolve_status_name(&raw)
-    } else {
-        raw
-    }
 }
 
 /// Map internal field names to user-friendly display names.
@@ -60,54 +27,42 @@ pub fn is_bootstrap_message(msg: &str) -> bool {
         || msg.ends_with(" entities discovered")
 }
 
-
 pub struct AppAuditSink;
 
-impl EntityEventSink for AppAuditSink {
-    fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
-        // Bootstrap events are handled separately —
-        // they are written to the UnifiedLogBuffer for the startup screen to observe.
+impl SafeAuditEventSink for AppAuditSink {
+    fn on_safe_event(&self, ctx: &UserContext, event: &SafeAuditEvent) -> Result<(), RuntimeError> {
+        // Helper to extract a string value from SafeAuditField
+        let get_field = |name: &str| -> String {
+            event.fields.iter()
+                .find(|f| f.name == name)
+                .and_then(|f| f.value.clone())
+                .unwrap_or_else(|| "unknown".to_owned())
+        };
+
+        // Bootstrap events are handled separately
         match event.kind {
-            EntityEventKind::SchemaCreated
-            | EntityEventKind::SchemaVerified
-            | EntityEventKind::FieldAdded
-            | EntityEventKind::DataSeeded => {
-                let table_name = event.values.get("table_name")
-                    .map(|v| match v { Value::Text(s) => s.as_str(), _ => "unknown" })
-                    .unwrap_or("unknown");
-                let field_count = event.values.get("field_count")
-                    .map(|v| match v { Value::I64(n) => *n as usize, _ => 0 })
-                    .unwrap_or(0);
+            RawAuditEventKind::SchemaCreated
+            | RawAuditEventKind::SchemaVerified
+            | RawAuditEventKind::FieldAdded
+            | RawAuditEventKind::DataSeeded => {
+                let table_name = get_field("table_name").trim_matches('\'').to_string();
+                let field_count: usize = get_field("field_count").parse().unwrap_or(0);
 
                 let message = match event.kind {
-                    EntityEventKind::SchemaCreated => {
+                    RawAuditEventKind::SchemaCreated => {
                         format!("Create {} ({} fields)", table_name, field_count)
                     }
-                    EntityEventKind::SchemaVerified => {
+                    RawAuditEventKind::SchemaVerified => {
                         format!("Verified {} ({} fields)", table_name, field_count)
                     }
-                    EntityEventKind::FieldAdded => {
-                        let field_name = event.values.get("field_name")
-                            .map(|v| match v { Value::Text(s) => s.as_str(), _ => "?" })
-                            .unwrap_or("?");
+                    RawAuditEventKind::FieldAdded => {
+                        let field_name = get_field("field_name").trim_matches('\'').to_string();
                         format!("  + field {} on {}", field_name, table_name)
                     }
-                    EntityEventKind::DataSeeded => {
-                        let inserted = event.values.get("inserted")
-                            .map(|v| match v { Value::I64(n) => *n as usize, _ => 0 })
-                            .unwrap_or(0);
-                        let updated = event.values.get("updated")
-                            .map(|v| match v { Value::I64(n) => *n as usize, _ => 0 })
-                            .unwrap_or(0);
-                        if updated > 0 && inserted > 0 {
-                            format!("Seed {} ({} inserted, {} updated)", table_name, inserted, updated)
-                        } else if updated > 0 {
-                            let word = if updated == 1 { "record" } else { "records" };
-                            format!("Seed {} ({} {})", table_name, updated, word)
-                        } else {
-                            let word = if inserted == 1 { "record" } else { "records" };
-                            format!("Seed {} ({} {} inserted)", table_name, inserted, word)
-                        }
+                    RawAuditEventKind::DataSeeded => {
+                        let inserted: usize = get_field("inserted").parse().unwrap_or(0);
+                        let updated: usize = get_field("updated").parse().unwrap_or(0);
+                        format!("Seed {}: {} inserted, {} updated", table_name, inserted, updated)
                     }
                     _ => unreachable!(),
                 };
@@ -131,24 +86,14 @@ impl EntityEventSink for AppAuditSink {
         let user = short_user(ctx);
 
         let action_name = match event.kind {
-            EntityEventKind::Created => "CREATED",
-            EntityEventKind::Updated => "UPDATED",
-            EntityEventKind::Deleted => "DELETED",
-            EntityEventKind::Recovered => "RECOVERED",
+            RawAuditEventKind::Created => "CREATED",
+            RawAuditEventKind::Updated => "UPDATED",
+            RawAuditEventKind::Deleted => "DELETED",
+            RawAuditEventKind::Recovered => "RECOVERED",
             _ => unreachable!(),
         };
 
-        let entity_id_str = match event.values.get("id") {
-            Some(id_val) => match id_val {
-                Value::Text(s) => s.clone(),
-                Value::I64(n) => n.to_string(),
-                Value::U64(n) => n.to_string(),
-                Value::Null => "NULL".to_owned(),
-                other => format!("{:?}", other),
-            },
-            None => "UNKNOWN".to_owned(),
-        };
-        let entity_identity = format!("{}({})", event.entity, entity_id_str);
+        let entity_identity = format!("{}", event.entity);
 
         let comment_part = if event.trace_chain.is_empty() {
             "".to_owned()
@@ -159,12 +104,11 @@ impl EntityEventSink for AppAuditSink {
 
         // Build compact single-line audit for TUI and app.log
         let mut field_changes = Vec::new();
-        for change in &event.changes {
-            let old_str = format_field_val(&change.field, &change.old_value);
-            let new_str = format_field_val(&change.field, &change.new_value);
-            if old_str != new_str {
-                field_changes.push(format!("{}: [{} ➔ {}]", display_field_name(&change.field), old_str, new_str));
-            }
+        for field in &event.fields {
+            let mut val_str = field.value.clone().unwrap_or_else(|| "NULL".to_owned());
+            if field.masked { val_str.push_str(" [MASKED]"); }
+            if field.truncated { val_str.push_str(" [TRUNCATED]"); }
+            field_changes.push(format!("{}: {}", display_field_name(&field.name), val_str));
         }
         let fields_part = if field_changes.is_empty() {
             String::new()
@@ -205,13 +149,15 @@ impl EntityEventSink for AppAuditSink {
         let is_business_log = event.entity == "TaskExecutionLog" && action_name == "CREATED";
         if is_business_log {
             let mut detail = String::new();
-            for change in &event.changes {
-                if change.field == "detail" {
-                    detail = format_val_helper(&change.new_value);
+            for field in &event.fields {
+                if field.name == "detail" {
+                    detail = field.value.clone().unwrap_or_default();
                     // Remove quotes if any
                     if detail.starts_with('\'') && detail.ends_with('\'') {
                         detail = detail[1..detail.len()-1].to_owned();
                     }
+                    if field.masked { detail.push_str(" [MASKED]"); }
+                    if field.truncated { detail.push_str(" [TRUNCATED]"); }
                 }
             }
             let business_line = format!(
@@ -251,16 +197,16 @@ impl EntityEventSink for AppAuditSink {
             timestamp_with_date, user, entity_identity, action_name, comment_part
         );
         let mut audit_lines = vec![audit_header];
-        for change in &event.changes {
-            let old_str = format_field_val(&change.field, &change.old_value);
-            let new_str = format_field_val(&change.field, &change.new_value);
-            if old_str != new_str {
-                let detail = format!(
-                    "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
-                    timestamp_with_date, user, display_field_name(&change.field), old_str, new_str
-                );
-                audit_lines.push(detail);
-            }
+        for field in &event.fields {
+            let mut val_str = field.value.clone().unwrap_or_else(|| "NULL".to_owned());
+            if field.masked { val_str.push_str(" [MASKED]"); }
+            if field.truncated { val_str.push_str(" [TRUNCATED]"); }
+
+            let detail = format!(
+                "[{}] - [{}] - [AUDIT]   -> Field [{}]: {}",
+                timestamp_with_date, user, display_field_name(&field.name), val_str
+            );
+            audit_lines.push(detail);
         }
         audit_lines.push(format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp_with_date, user));
         

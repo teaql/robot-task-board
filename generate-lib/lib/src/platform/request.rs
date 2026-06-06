@@ -242,6 +242,11 @@ impl<R> PlatformRequest<R> {
         Ok(records.into_iter().next())
     }
 
+    pub fn search_with_text(mut self, text: impl Into<String>) -> Self {
+        self.query = self.query.search_with_text(text);
+        self
+    }
+
     pub fn filter(mut self, filter: Expr) -> Self {
         self.query = self.query.filter(filter);
         self
@@ -450,6 +455,7 @@ impl<R> PlatformRequest<R> {
             "id" => Some("id"),
             "name" => Some("name"),
             "founded" => Some("founded"),
+            "user_email" => Some("user_email"),
             "version" => Some("version"),
             _ => None,
         }
@@ -544,6 +550,7 @@ impl<R> PlatformRequest<R> {
         self.query = self.query.project("id");
         self.query = self.query.project("name");
         self.query = self.query.project("founded");
+        self.query = self.query.project("user_email");
         self.query = self.query.project("version");
         self
     }
@@ -1328,6 +1335,271 @@ impl<R> PlatformRequest<R> {
         self
     }
 
+    pub fn select_user_email(mut self) -> Self {
+        self.query = self.query.project("user_email");
+        self
+    }
+
+    pub fn project_user_email(self) -> Self {
+        self.select_user_email()
+    }
+
+    pub fn select_user_email_raw(self, raw_sql_segment: impl Into<String>) -> Self {
+        self.select_user_email_unsafe_raw(UnsafeRawSqlSegment::trusted(raw_sql_segment))
+    }
+
+    pub fn select_user_email_unsafe_raw(mut self, raw_sql_segment: UnsafeRawSqlSegment) -> Self {
+        self.query_options
+            .raw_projections
+            .push(RawProjection::new("user_email", raw_sql_segment));
+        self
+    }
+
+    pub fn group_by_user_email(self) -> Self {
+        self.group_by("user_email")
+    }
+
+    pub fn group_by_user_email_as(self, alias: impl Into<String>) -> Self {
+        let alias = alias.into();
+        let mut request = self.group_by("user_email");
+        request.query = request
+            .query
+            .project_expr(alias, Expr::column("user_email"));
+        request
+    }
+
+    pub fn group_by_user_email_with_function(
+        self,
+        alias: impl Into<String>,
+        function: AggregateFunction,
+    ) -> Self {
+        self.group_by("user_email")
+            .aggregate_with_function("user_email", alias, function)
+    }
+
+    pub fn count_user_email(self) -> Self {
+        self.count_user_email_as("user_email_count")
+    }
+
+    pub fn count_user_email_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_count_field("user_email", alias)
+    }
+
+    pub fn sum_user_email(self) -> Self {
+        self.sum_user_email_as("sum_user_email")
+    }
+
+    pub fn sum_user_email_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_sum("user_email", alias)
+    }
+
+    pub fn avg_user_email(self) -> Self {
+        self.avg_user_email_as("avg_user_email")
+    }
+
+    pub fn avg_user_email_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_avg("user_email", alias)
+    }
+
+    pub fn min_user_email(self) -> Self {
+        self.min_user_email_as("min_user_email")
+    }
+
+    pub fn min_user_email_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_min("user_email", alias)
+    }
+
+    pub fn max_user_email(self) -> Self {
+        self.max_user_email_as("max_user_email")
+    }
+
+    pub fn max_user_email_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_max("user_email", alias)
+    }
+
+    pub fn unselect_user_email(mut self) -> Self {
+        self.query.projection.retain(|field| field != "user_email");
+        self.query_options.raw_projections.retain(|projection| projection.property_name != "user_email");
+        self
+    }
+
+
+    pub fn with_user_email(
+        mut self,
+        operator: FieldOperator,
+        values: impl IntoIterator<Item = impl Into<teaql_core::Value>>,
+    ) -> Self {
+        self.query = self.query.and_filter(field_operator_expr(
+            "user_email",
+            operator,
+            values.into_iter().map(Into::into).collect(),
+        ));
+        self
+    }
+
+    pub fn create_user_email_criteria(
+        operator: FieldOperator,
+        values: impl IntoIterator<Item = impl Into<teaql_core::Value>>,
+    ) -> Expr {
+        field_operator_expr(
+            "user_email",
+            operator,
+            values.into_iter().map(Into::into).collect(),
+        )
+    }
+
+    pub fn with_user_email_is(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::eq("user_email", value));
+        self
+    }
+
+
+
+    pub fn with_user_email_is_not(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::ne("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_greater_than(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::gt("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_greater_than_or_equal_to(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::gte("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_less_than(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::lt("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_less_than_or_equal_to(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::lte("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_between(
+        mut self,
+        lower: impl Into<teaql_core::Value>,
+        upper: impl Into<teaql_core::Value>,
+    ) -> Self {
+        self.query = self.query.and_filter(Expr::between("user_email", lower, upper));
+        self
+    }
+
+    pub fn with_user_email_between_range<T>(mut self, range: DateRange<T>) -> Self
+    where
+        T: Into<teaql_core::Value>,
+    {
+        self.query = self.query.and_filter(Expr::between(
+            "user_email",
+            range.start,
+            range.end,
+        ));
+        self
+    }
+
+    pub fn with_user_email_in(
+        mut self,
+        values: impl IntoIterator<Item = impl Into<teaql_core::Value>>,
+    ) -> Self {
+        self.query = self.query.and_filter(Expr::in_list(
+            "user_email",
+            values.into_iter().map(Into::into),
+        ));
+        self
+    }
+
+    pub fn with_user_email_not_in(
+        mut self,
+        values: impl IntoIterator<Item = impl Into<teaql_core::Value>>,
+    ) -> Self {
+        self.query = self.query.and_filter(Expr::not_in_list(
+            "user_email",
+            values.into_iter().map(Into::into),
+        ));
+        self
+    }
+
+    pub fn with_user_email_containing(mut self, value: impl Into<String>) -> Self {
+        self.query = self.query.and_filter(Expr::contain("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_not_containing(mut self, value: impl Into<String>) -> Self {
+        self.query = self.query.and_filter(Expr::not_contain("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_starting_with(mut self, value: impl Into<String>) -> Self {
+        self.query = self.query.and_filter(Expr::begin_with("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_not_starting_with(mut self, value: impl Into<String>) -> Self {
+        self.query = self.query.and_filter(Expr::not_begin_with("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_ending_with(mut self, value: impl Into<String>) -> Self {
+        self.query = self.query.and_filter(Expr::end_with("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_not_ending_with(mut self, value: impl Into<String>) -> Self {
+        self.query = self.query.and_filter(Expr::not_end_with("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_sounding_like(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::sound_like("user_email", value));
+        self
+    }
+    pub fn with_user_email_before(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::lt("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_after(mut self, value: impl Into<teaql_core::Value>) -> Self {
+        self.query = self.query.and_filter(Expr::gt("user_email", value));
+        self
+    }
+
+    pub fn with_user_email_is_unknown(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::is_null("user_email"));
+        self
+    }
+
+
+
+    pub fn with_user_email_is_known(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::is_not_null("user_email"));
+        self
+    }
+
+
+    pub fn order_by_user_email_asc(mut self) -> Self {
+        self.query = self.query.order_asc("user_email");
+        self
+    }
+
+    pub fn order_by_user_email_desc(mut self) -> Self {
+        self.query = self.query.order_desc("user_email");
+        self
+    }
+
+    pub fn order_by_user_email_asc_using_gbk(mut self) -> Self {
+        self.query = self.query.order_gbk_asc("user_email");
+        self
+    }
+
+    pub fn order_by_user_email_desc_using_gbk(mut self) -> Self {
+        self.query = self.query.order_gbk_desc("user_email");
+        self
+    }
+
     pub fn select_version(mut self) -> Self {
         self.query = self.query.project("version");
         self
@@ -1467,6 +1739,22 @@ impl<R> PlatformRequest<R> {
 
 
 
+    pub fn user_email_is_string(self) -> Self {
+        self.with_user_email_is("string()")
+    }
+
+    pub fn with_user_email_is_string(self) -> Self {
+        self.with_user_email_is("string()")
+    }
+
+
+
+    pub fn with_user_email_is_not_string(self) -> Self {
+        self.with_user_email_is_not("string()")
+    }
+
+
+
 
     pub fn have_tasks(self) -> Self {
         self.with_task_list_matching(SelectQuery::new("Task"))
@@ -1595,52 +1883,61 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<PlatformRequest<R>> {
         crate::Platform::runtime_new(ctx.user_context().entity_root())
     }
 
+    fn into_inner_with_trace(mut self) -> PlatformRequest<R> {
+        self.inner.query.trace_chain.push(teaql_core::TraceNode {
+            entity_type: self.inner.query.entity.clone(),
+            entity_id: None,
+            comment: self.purpose,
+        });
+        self.inner
+    }
+
     pub async fn execute_for_list<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_list(ctx).await
+        self.into_inner_with_trace()._execute_for_list(ctx).await
     }
 
     pub async fn execute_for_first<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_first(ctx).await
+        self.into_inner_with_trace()._execute_for_first(ctx).await
     }
 
     pub async fn execute_for_one<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_one(ctx).await
+        self.into_inner_with_trace()._execute_for_one(ctx).await
     }
 
     pub async fn execute_by_id<'a, C>(self, ctx: &'a C, id: impl Into<teaql_core::Value>) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_by_id(ctx, id).await
+        self.into_inner_with_trace()._execute_by_id(ctx, id).await
     }
 
     pub async fn execute_for_records<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_records(ctx).await
+        self.into_inner_with_trace()._execute_for_records(ctx).await
     }
 
     pub async fn execute_for_record<'a, C>(self, ctx: &'a C) -> Result<Option<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_record(ctx).await
+        self.into_inner_with_trace()._execute_for_record(ctx).await
     }
 
     pub async fn execute_for_count<'a, C>(self, ctx: &'a C) -> Result<u64, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_count(ctx).await
+        self.into_inner_with_trace()._execute_for_count(ctx).await
     }
 }

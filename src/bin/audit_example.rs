@@ -4,7 +4,7 @@ use chrono::Local;
 use robot_kanban::{AuditedSave, Q, Task};
 use teaql_core::{Entity, Value, TeaqlEntity};
 use teaql_runtime::{
-    EntityEvent, EntityEventKind, EntityEventSink, UserContext, RuntimeError,
+    SafeAuditEvent, RawAuditEventKind, SafeAuditEventSink, UserContext, RuntimeError,
 };
 use teaql_provider_rusqlite::{
     ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator, RusqliteMutationExecutor,
@@ -12,14 +12,14 @@ use teaql_provider_rusqlite::{
 };
 
 /// Format a TeaQL Value into a clear English string representation
-fn format_teaql_value(val: &Option<Value>) -> String {
+fn format_teaql_value(val: &Option<teaql_core::Value>) -> String {
     match val {
-        Some(Value::Null) | None => "NULL".to_owned(),
-        Some(Value::Text(s)) => format!("'{}'", s),
-        Some(Value::I64(n)) => n.to_string(),
-        Some(Value::U64(n)) => n.to_string(),
-        Some(Value::Bool(b)) => b.to_string(),
-        Some(Value::Timestamp(t)) => t.format("%Y-%m-%d %H:%M:%S").to_string(),
+        Some(teaql_core::Value::Null) | None => "NULL".to_owned(),
+        Some(teaql_core::Value::Text(s)) => format!("'{}'", s),
+        Some(teaql_core::Value::I64(n)) => n.to_string(),
+        Some(teaql_core::Value::U64(n)) => n.to_string(),
+        Some(teaql_core::Value::Bool(b)) => b.to_string(),
+        Some(teaql_core::Value::Timestamp(t)) => t.format("%Y-%m-%d %H:%M:%S").to_string(),
         Some(other) => format!("{:?}", other),
     }
 }
@@ -40,25 +40,23 @@ fn format_entity_id(val: &Value) -> String {
 /// It prints logs in English with the current local timestamp and the custom user identifier.
 pub struct AuditLogSink;
 
-impl EntityEventSink for AuditLogSink {
-    fn on_event(&self, ctx: &UserContext, event: &EntityEvent) -> Result<(), RuntimeError> {
+impl SafeAuditEventSink for AuditLogSink {
+    fn on_safe_event(&self, ctx: &UserContext, event: &SafeAuditEvent) -> Result<(), RuntimeError> {
         let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         let user = ctx.user_identifier().unwrap_or("anonymous").to_string();
 
         let action_name = match event.kind {
-            EntityEventKind::Created => "CREATED",
-            EntityEventKind::Updated => "UPDATED",
-            EntityEventKind::Deleted => "DELETED",
-            EntityEventKind::Recovered => "RECOVERED",
-            EntityEventKind::SchemaCreated | EntityEventKind::SchemaVerified | EntityEventKind::FieldAdded | EntityEventKind::DataSeeded => return Ok(()),
+            RawAuditEventKind::Created => "CREATED",
+            RawAuditEventKind::Updated => "UPDATED",
+            RawAuditEventKind::Deleted => "DELETED",
+            RawAuditEventKind::Recovered => "RECOVERED",
+            RawAuditEventKind::SchemaCreated | RawAuditEventKind::SchemaVerified | RawAuditEventKind::FieldAdded | RawAuditEventKind::DataSeeded => return Ok(()),
         };
 
         // Extract ID value from event record to represent entity as Type:ID
-        let entity_id_str = match event.values.get("id") {
-            Some(id_val) => format_entity_id(id_val),
-            None => "UNKNOWN".to_owned(),
-        };
-        let entity_identity = format!("{}:{}", event.entity, entity_id_str);
+        // In SafeAuditEvent, we only have changed fields, so id might not be there.
+        // We'll just use entity name for now.
+        let entity_identity = format!("{}", event.entity);
 
         let comment_part = if event.trace_chain.is_empty() {
             "".to_owned()
@@ -75,17 +73,19 @@ impl EntityEventSink for AuditLogSink {
         let mut lines = vec![header];
         let divider = format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp, user);
 
-        for change in &event.changes {
-            let old_str = format_teaql_value(&change.old_value);
-            let new_str = format_teaql_value(&change.new_value);
+        for field in &event.fields {
+            let new_str = field.value.clone().unwrap_or_else(|| "NULL".to_owned());
             
-            if old_str != new_str {
-                let detail = format!(
-                    "[{}] - [{}] - [AUDIT]   -> Field [{}]: {} ➔ {}",
-                    timestamp, user, change.field, old_str, new_str
-                );
-                lines.push(detail);
-            }
+            let mut meta_tags = vec![];
+            if field.masked { meta_tags.push("MASKED"); }
+            if field.truncated { meta_tags.push("TRUNCATED"); }
+            let meta_str = if meta_tags.is_empty() { String::new() } else { format!(" [{}]", meta_tags.join(",")) };
+
+            let detail = format!(
+                "[{}] - [{}] - [AUDIT]   -> Field [{}]: {}{}",
+                timestamp, user, field.name, new_str, meta_str
+            );
+            lines.push(detail);
         }
 
         // Output to console and log file
@@ -136,8 +136,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ctx = ctx.with_user_identifier(custom_user);
     println!("[SYSTEM] Context initialized with Custom User Identifier: '{}'\n", custom_user);
 
-    // 3. Register our custom AuditLogSink
-    ctx.set_event_sink(AuditLogSink);
+    ctx.set_custom_event_sink(AuditLogSink);
 
     // 4. Configure SQLite Database Connection & Executor
     let db_path = "robot_kanban.db";

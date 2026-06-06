@@ -2,6 +2,7 @@
     <platform
         name="Robot System"
         founded="createTime()"
+        user_email="string()"
         _name="Platform"
         _module="Task"
         _module_key="task"
@@ -27,6 +28,8 @@
         <_value id="1004" name="Verified" code="VERIFIED" color="#16A34A" display_order="40" progress="100"/>
     </task_status>
 
+    <_data_service name="meilisearch" />
+
     <task
         name="Task Name|[1,200]"
         status="task_status()"
@@ -41,6 +44,9 @@
         task="task()"
         action="string()"
         detail="string()"
+        _audit_mask_fields="detail"
+        _audit_value_max_len="2048"
+        _data_service="meilisearch"
         _features="custom"
         _name="Task Execution Log"
         _module="Task"

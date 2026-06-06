@@ -4,25 +4,25 @@ use teaql_core::SmartList;
 use teaql_macros::TeaqlEntity;
 
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "TaskStatus", table = "task_status_data")]
+#[teaql(entity = "TaskStatus", table = "task_status_data", data_service = "rusqlite")]
 pub struct TaskStatus {
-// @source model.xml:23
+// @source model.xml:24
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:23
+// @source model.xml:24
     name: String,
 
-// @source model.xml:23
+// @source model.xml:24
     code: String,
 
-// @source model.xml:23
+// @source model.xml:24
     color: String,
 
-// @source model.xml:23
+// @source model.xml:24
     display_order: rust_decimal::Decimal,
 
-// @source model.xml:23
+// @source model.xml:24
     progress: rust_decimal::Decimal,
 #[teaql(version)]
     version: i64,
