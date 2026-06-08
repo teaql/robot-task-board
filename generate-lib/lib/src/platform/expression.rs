@@ -51,6 +51,11 @@ impl<'a> PlatformExpression<'a> {
         let next = self.result.and_then("version", |entity| entity.eval_version());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+    pub fn get_task_status_list(self) -> crate::TaskStatusListExpression<'a> {
+        let next = self.result.and_then("task_status_list", |entity| entity.eval_task_status_list());
+        crate::TaskStatusListExpression::new(next, self.root_desc.clone())
+    }
+
     pub fn get_task_list(self) -> crate::TaskListExpression<'a> {
         let next = self.result.and_then("task_list", |entity| entity.eval_task_list());
         crate::TaskListExpression::new(next, self.root_desc.clone())

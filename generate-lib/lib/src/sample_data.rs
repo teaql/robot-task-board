@@ -133,21 +133,21 @@ where
     let mut state = SampleDataState::new(plan);
 
     load_root_platforms(ctx, &mut state).await?; //depth: 0
-    load_root_task_status(ctx, &mut state).await?; //depth: 0
 
+    load_constant_task_status(ctx, &mut state).await?;
 
     ctx.user_context().transaction_data(|| async {
-        let res = async {
-    generate_tasks(ctx, &mut state).await?;
-
-    generate_task_execution_logs(ctx, &mut state).await?;
-
-            Ok::<(), String>(())
-        }.await;
-        res.map_err(|e| {
+        Box::pin(generate_tasks(ctx, &mut state)).await.map_err(|e| {
             teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(e))
         })
     }).await.map_err(|e| e.to_string())?;
+
+    ctx.user_context().transaction_data(|| async {
+        Box::pin(generate_task_execution_logs(ctx, &mut state)).await.map_err(|e| {
+            teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(e))
+        })
+    }).await.map_err(|e| e.to_string())?;
+
 
     let report = state.into_report();
     log::info!("Sample data generation completed successfully. Generated: {} tables, Skipped: {} tables.", report.generated.len(), report.skipped.len());
@@ -168,7 +168,7 @@ where
     Ok(())
 }
 
-async fn load_root_task_status<C>(
+async fn load_constant_task_status<C>(
     ctx: &C,
     state: &mut SampleDataState,
 ) -> Result<(), String>
@@ -181,7 +181,6 @@ where
     }
     Ok(())
 }
-
 
 async fn generate_tasks<C>(
     ctx: &C,

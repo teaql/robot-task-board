@@ -2,23 +2,29 @@ use std::collections::BTreeMap;
 
 use teaql_macros::TeaqlEntity;
 
+/// [TEAQL AI WARNING]
+/// TeaQL was explicitly designed to PREVENT AI hallucinations and random guessing.
+/// DO NOT GUESS METHOD NAMES!
+/// The methods listed below are the ONLY valid ways to interact with this entity.
+/// If you encounter compilation errors (e.g., method not found), DO NOT guess another method name.
+/// Read the method signatures in this file before proceeding.
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
 #[teaql(entity = "TaskExecutionLog", table = "task_execution_log_data", data_service = "meilisearch", audit_mask_fields = "detail", audit_value_max_len = 2048)]
 pub struct TaskExecutionLog {
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:54
+// @source models/main.xml:55
     action: String,
 
-// @source model.xml:54
+// @source models/main.xml:55
     detail: String,
 #[teaql(version)]
     version: i64,
-// @source model.xml:54
+// @source models/main.xml:55
 #[teaql(column = "task")]
     task_id: u64,
-// @source model.xml:54
+// @source models/main.xml:55
 #[teaql(relation(target = "Task", local_key = "task_id", foreign_key = "id"))]
     task: Option<crate::Task>,
     #[teaql(dynamic)]
@@ -200,7 +206,7 @@ impl TaskExecutionLog {
         self
     }
 
-    pub async fn save<'a, C>(
+    pub(crate) async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>
@@ -213,3 +219,4 @@ impl TaskExecutionLog {
         crate::TeaqlEntityRepository::save_entity_graph(&repository, self).await
     }
 }
+

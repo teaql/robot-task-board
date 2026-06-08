@@ -208,6 +208,10 @@ Q::<entity_plural>()
     .with_<relation>_matching(Q::<target_plural>().select_self())
 ```
 
+## TeaQL Rust Pitfalls
+
+- **`execute_by_id` Type Inference**: `execute_by_id(&ctx, id)` returns a strongly-typed `Option<Entity>`. However, because its parameter is `id: impl Into<teaql_core::Value>`, passing an ambiguous literal (like `1` or `None`) will cause Rust to throw a `type annotations needed` error. To fix this, simply provide a concrete type for the id parameter (e.g., `1_u64`), rather than trying to turbofish the method itself.
+
 ## Low-Level Warnings
 
 Do not manually coordinate multiple repository insert/update calls unless the task explicitly requires low-level control.

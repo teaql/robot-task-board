@@ -18,6 +18,7 @@
         _features="status"
         _identifier="code"
         _constant="true"
+        platform="platform()"
         _name="Task Status"
         _module="Task"
         _module_key="task"

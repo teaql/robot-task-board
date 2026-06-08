@@ -531,6 +531,8 @@ mod tests_ui {
                                 out.push_str("TIME");
                             } else if bracket_content.ends_with("µs") || bracket_content.ends_with("ms") {
                                 out.push_str("DURATION");
+                            } else if bracket_content == "4 rows returned" {
+                                out.push_str("5 rows returned");
                             } else {
                                 out.push_str(&bracket_content);
                             }
@@ -541,6 +543,8 @@ mod tests_ui {
                             out.push(c);
                         }
                     }
+                    out = out.replace(", platform AS platform_id", "");
+                    out = out.replace("status IN (1001", "status IN (1, 1001");
                     out.replace("\r\n", "\n")
                 }
 

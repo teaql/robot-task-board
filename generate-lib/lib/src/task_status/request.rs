@@ -459,6 +459,7 @@ impl<R> TaskStatusRequest<R> {
             "display_order" => Some("display_order"),
             "progress" => Some("progress"),
             "version" => Some("version"),
+            "platform" | "platform_id" => Some("platform_id"),
             _ => None,
         }
     }
@@ -466,6 +467,12 @@ impl<R> TaskStatusRequest<R> {
     fn apply_dynamic_json_chain_filter(self, head: &str, tail: &str, value: &JsonValue) -> Self {
         let _ = (tail, value);
         match head {
+            "platform" => {
+                self.with_platform_matching(
+                    crate::Q::platforms_minimal()
+                        .apply_dynamic_json_filter(tail, value),
+                )
+            }
             "task_list" => {
                 self.with_task_list_matching(
                     crate::Q::tasks_minimal()
@@ -556,6 +563,7 @@ impl<R> TaskStatusRequest<R> {
         self.query = self.query.project("display_order");
         self.query = self.query.project("progress");
         self.query = self.query.project("version");
+        self.query = self.query.project("platform_id");
         self
     }
 
@@ -568,7 +576,9 @@ impl<R> TaskStatusRequest<R> {
     }
 
     pub fn select_all(self) -> Self {
-        self.select_self()
+        let mut request = self.select_self();
+        request = request.select_platform();
+        request
     }
 
     pub fn select_children(self) -> Self {
@@ -2662,6 +2672,142 @@ impl<R> TaskStatusRequest<R> {
 
 
 
+    pub fn filter_by_platform(mut self, value: impl EntityReference) -> Self {
+        self.query = self.query.and_filter(Expr::eq("platform_id", value.entity_id_value()));
+        self
+    }
+
+    pub fn with_platform_matching(mut self, request: impl Into<QuerySelection>) -> Self {
+        let selection = request.into();
+        self.query = self.query.and_filter(Expr::in_subquery(
+            "platform_id",
+            <crate::Platform as teaql_core::TeaqlEntity>::entity_descriptor(),
+            selection.query.clone(),
+            "id",
+        ));
+        self.relation_filters.push(RelationFilter::new("platform", selection));
+        self
+    }
+
+
+    pub fn without_platform_matching(mut self, request: impl Into<QuerySelection>) -> Self {
+        let selection = request.into();
+        self.query = self.query.and_filter(Expr::not_in_subquery(
+            "platform_id",
+            <crate::Platform as teaql_core::TeaqlEntity>::entity_descriptor(),
+            selection.query.clone(),
+            "id",
+        ));
+        self.relation_filters.push(RelationFilter::new("platform", selection));
+        self
+    }
+
+
+    pub fn have_platform(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::is_not_null("platform_id"));
+        self
+    }
+
+    pub fn have_no_platform(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::is_null("platform_id"));
+        self
+    }
+
+
+    pub fn group_by_platform(self) -> Self {
+        self.group_by("platform_id")
+    }
+
+    pub fn group_by_platform_as(self, alias: impl Into<String>) -> Self {
+        let alias = alias.into();
+        let mut request = self.group_by("platform_id");
+        request.query = request
+            .query
+            .project_expr(alias, Expr::column("platform_id"));
+        request
+    }
+
+    pub fn group_by_platform_with_function(
+        self,
+        alias: impl Into<String>,
+        function: AggregateFunction,
+    ) -> Self {
+        self.group_by("platform_id")
+            .aggregate_with_function("platform_id", alias, function)
+    }
+
+    pub fn group_by_platform_with(mut self, request: impl Into<QuerySelection>) -> Self {
+        self.query = self.query.group_by("platform_id");
+        self.query_options.object_group_bys.push(ObjectGroupBy::new(
+            "platform",
+            "platform_id",
+            request,
+        ));
+        self
+    }
+
+    pub fn group_by_platform_with_details(self) -> Self {
+        self.group_by_platform_with_details_from(crate::Q::platforms().unlimited())
+    }
+
+    pub fn group_by_platform_with_details_from(self, request: impl Into<QuerySelection>) -> Self {
+        self.group_by_platform_with(request)
+    }
+
+
+    pub fn roll_up_to_platform(self) -> Self {
+        self.roll_up_to_platform_with(crate::Q::platforms().unlimited())
+    }
+
+    pub fn roll_up_to_platform_with(self, request: impl Into<QuerySelection>) -> Self {
+        let selection = request.into();
+        self.with_platform_matching(selection.clone())
+            .group_by_platform_with(selection)
+    }
+
+    pub fn count_platform(self) -> Self {
+        self.count_platform_as("platform_count")
+    }
+
+    pub fn count_platform_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_count_field("platform_id", alias)
+    }
+
+    pub fn unselect_platform(mut self) -> Self {
+        self.query.projection.retain(|field| field != "platform_id");
+        self.query.relations.retain(|relation| relation.name != "platform");
+        self
+    }
+    pub fn select_platform(mut self) -> Self {
+        self.query = self.query.relation("platform");
+        self
+    }
+
+    pub fn select_platform_with(mut self, request: impl Into<QuerySelection>) -> Self {
+        let selection = request.into();
+        self.query = self.query.relation_query("platform", selection.clone().into_query());
+        self.relation_selections.push(RelationSelection::new("platform", selection));
+        self
+}
+
+    pub fn facet_by_platform_as(self, facet_name: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
+        self.facet_by_platform_as_with_options(facet_name, request, true)
+    }
+
+    pub fn facet_by_platform_as_with_options(
+        mut self,
+        facet_name: impl Into<String>,
+        request: impl Into<QuerySelection>,
+        include_all_facets: bool,
+    ) -> Self {
+        self.query_options.facets.push(FacetRequest::new(
+            facet_name,
+            "platform",
+            request,
+            include_all_facets,
+        ));
+        self
+    }
     pub fn have_tasks(self) -> Self {
         self.with_task_list_matching(SelectQuery::new("Task"))
     }

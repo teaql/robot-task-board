@@ -3,28 +3,34 @@ use std::collections::BTreeMap;
 use teaql_core::SmartList;
 use teaql_macros::TeaqlEntity;
 
+/// [TEAQL AI WARNING]
+/// TeaQL was explicitly designed to PREVENT AI hallucinations and random guessing.
+/// DO NOT GUESS METHOD NAMES!
+/// The methods listed below are the ONLY valid ways to interact with this entity.
+/// If you encounter compilation errors (e.g., method not found), DO NOT guess another method name.
+/// Read the method signatures in this file before proceeding.
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
 #[teaql(entity = "Task", table = "task_data", data_service = "rusqlite")]
 pub struct Task {
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:41
+// @source models/main.xml:42
     name: String,
 #[teaql(version)]
     version: i64,
-// @source model.xml:41
+// @source models/main.xml:42
 #[teaql(column = "status")]
     status_id: u64,
 
-// @source model.xml:41
+// @source models/main.xml:42
 #[teaql(column = "platform")]
     platform_id: u64,
-// @source model.xml:41
+// @source models/main.xml:42
 #[teaql(relation(target = "TaskStatus", local_key = "status_id", foreign_key = "id"))]
     status: Option<crate::TaskStatus>,
 
-// @source model.xml:41
+// @source models/main.xml:42
 #[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
     platform: Option<crate::Platform>,
 #[teaql(relation(target = "TaskExecutionLog", local_key = "id", foreign_key = "task_id", many))]
@@ -274,7 +280,7 @@ impl Task {
         self
     }
 
-    pub async fn save<'a, C>(
+    pub(crate) async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskRepository<'a>>>
@@ -287,3 +293,4 @@ impl Task {
         crate::TeaqlEntityRepository::save_entity_graph(&repository, self).await
     }
 }
+

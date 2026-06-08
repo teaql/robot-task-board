@@ -3,22 +3,30 @@ use std::collections::BTreeMap;
 use teaql_core::SmartList;
 use teaql_macros::TeaqlEntity;
 
+/// [TEAQL AI WARNING]
+/// TeaQL was explicitly designed to PREVENT AI hallucinations and random guessing.
+/// DO NOT GUESS METHOD NAMES!
+/// The methods listed below are the ONLY valid ways to interact with this entity.
+/// If you encounter compilation errors (e.g., method not found), DO NOT guess another method name.
+/// Read the method signatures in this file before proceeding.
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
 #[teaql(entity = "Platform", table = "platform_data", data_service = "rusqlite")]
 pub struct Platform {
 #[teaql(id)]
     id: u64,
 
-// @source model.xml:9
+// @source models/main.xml:9
     name: String,
 
-// @source model.xml:9
+// @source models/main.xml:9
     founded: chrono::DateTime<chrono::Utc>,
 
-// @source model.xml:9
+// @source models/main.xml:9
     user_email: String,
 #[teaql(version)]
     version: i64,
+#[teaql(relation(target = "TaskStatus", local_key = "id", foreign_key = "platform_id", many))]
+    task_status_list: SmartList<crate::TaskStatus>,
 #[teaql(relation(target = "Task", local_key = "id", foreign_key = "platform_id", many))]
     task_list: SmartList<crate::Task>,
     #[teaql(dynamic)]
@@ -41,6 +49,7 @@ impl Platform {
             founded: chrono::Utc::now(),
             user_email: String::new(),
             version: 0_i64,
+            task_status_list: Default::default(),
             task_list: Default::default(),
             dynamic: BTreeMap::new(),
             root,
@@ -54,6 +63,9 @@ impl Platform {
 
     pub fn attach_root_recursive(&mut self, root: teaql_runtime::EntityRoot) {
         self.root = root.clone();
+        for entity in &mut self.task_status_list {
+            entity.attach_root_recursive(root.clone());
+        }
         for entity in &mut self.task_list {
             entity.attach_root_recursive(root.clone());
         }
@@ -176,6 +188,22 @@ impl Platform {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
+    pub fn task_status_list(&self) -> &SmartList<crate::TaskStatus> {
+        &self.task_status_list
+    }
+
+    pub fn task_status_list_mut(&mut self) -> &mut SmartList<crate::TaskStatus> {
+        &mut self.task_status_list
+    }
+
+    pub fn eval_task_status_list(&self) -> teaql_core::eval::EvalResult<&SmartList<crate::TaskStatus>> {
+        if !self.is_loaded("task_status_list") {
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "task_status_list".to_string(), attempted_path: "task_status_list".to_string() }
+        } else {
+            teaql_core::eval::EvalResult::Value(&self.task_status_list)
+        }
+    }
+
     pub fn task_list(&self) -> &SmartList<crate::Task> {
         &self.task_list
     }
@@ -202,7 +230,7 @@ impl Platform {
         self
     }
 
-    pub async fn save<'a, C>(
+    pub(crate) async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::PlatformRepository<'a>>>
@@ -215,3 +243,4 @@ impl Platform {
         crate::TeaqlEntityRepository::save_entity_graph(&repository, self).await
     }
 }
+
