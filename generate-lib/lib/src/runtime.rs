@@ -90,6 +90,7 @@ pub struct ServiceRuntimeExecutor {
         DataServiceMutationExecutor,
         LocalSchemaProvider
     >,
+    meilisearch: Option<teaql_provider_meilisearch::MeilisearchProvider>,
 }
 
 impl ServiceRuntimeExecutor {
@@ -99,8 +100,14 @@ impl ServiceRuntimeExecutor {
                 DataServiceDialect::default(),
                 inner,
                 LocalSchemaProvider
-            )
+            ),
+            meilisearch: None,
         }
+    }
+
+    pub fn with_meilisearch(mut self, meilisearch: teaql_provider_meilisearch::MeilisearchProvider) -> Self {
+        self.meilisearch = Some(meilisearch);
+        self
     }
 }
 
@@ -113,12 +120,38 @@ impl teaql_data_service::DataServiceExecutor for ServiceRuntimeExecutor {
 
 impl teaql_data_service::QueryExecutor for ServiceRuntimeExecutor {
     async fn query(&self, request: teaql_data_service::QueryRequest) -> Result<teaql_data_service::QueryResult, Self::Error> {
+        use teaql_data_service::SchemaProvider;
+        if let Some(desc) = self.inner.schema_provider.get_entity(&request.query.entity) {
+            if desc.data_service.as_deref() == Some("meilisearch") {
+                if let Some(meili) = &self.meilisearch {
+                    return teaql_data_service::QueryExecutor::query(meili, request).await.map_err(|e| teaql_sql::SqlExecutorError::Compile(teaql_sql::SqlCompileError::UnknownEntity(e.to_string())));
+                }
+            }
+        }
         teaql_data_service::QueryExecutor::query(&self.inner, request).await
     }
 }
 
 impl teaql_data_service::MutationExecutor for ServiceRuntimeExecutor {
     async fn mutate(&self, request: teaql_data_service::MutationRequest) -> Result<teaql_data_service::MutationResult, Self::Error> {
+        use teaql_data_service::SchemaProvider;
+        let entity_name = match &request {
+            teaql_data_service::MutationRequest::Insert(cmd) => Some(&cmd.entity),
+            teaql_data_service::MutationRequest::Update(cmd) => Some(&cmd.entity),
+            teaql_data_service::MutationRequest::Delete(cmd) => Some(&cmd.entity),
+            teaql_data_service::MutationRequest::Recover(cmd) => Some(&cmd.entity),
+            teaql_data_service::MutationRequest::Batch(_) => None,
+        };
+        if let Some(entity_name) = entity_name {
+            if let Some(desc) = self.inner.schema_provider.get_entity(entity_name) {
+                if desc.data_service.as_deref() == Some("meilisearch") {
+                    if let Some(meili) = &self.meilisearch {
+                        // Always fallback to Meilisearch if it's explicitly set for the entity.
+                        return teaql_data_service::MutationExecutor::mutate(meili, request).await.map_err(|e| teaql_sql::SqlExecutorError::Compile(teaql_sql::SqlCompileError::UnknownEntity(e.to_string())));
+                    }
+                }
+            }
+        }
         teaql_data_service::MutationExecutor::mutate(&self.inner, request).await
     }
 }
@@ -244,14 +277,7 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("id", 1_u64)
             .value("name", "Robot System")
             .value("founded", chrono::Utc::now())
-            .value("version", 1_i64))
-        .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
-            .value("id", 1_u64)
-            .value("name", "Planned")
-            .value("code", "PLANNED")
-            .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("user_email", "string()")
             .value("version", 1_i64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1001_u64)
@@ -260,7 +286,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("color", "#94A3B8")
             .value("display_order", "10")
             .value("progress", "0")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1002_u64)
             .value("name", "Ready")
@@ -268,7 +295,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("color", "#3B82F6")
             .value("display_order", "20")
             .value("progress", "25")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1003_u64)
             .value("name", "Executing")
@@ -276,7 +304,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("color", "#F59E0B")
             .value("display_order", "30")
             .value("progress", "50")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1004_u64)
             .value("name", "Verified")
@@ -284,7 +313,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("color", "#16A34A")
             .value("display_order", "40")
             .value("progress", "100")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
 }
 
 pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
@@ -301,14 +331,7 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("id", 1_u64)
             .value("name", "Robot System")
             .value("founded", chrono::Utc::now())
-            .value("version", 1_i64))
-        .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
-            .value("id", 1_u64)
-            .value("name", "Planned")
-            .value("code", "PLANNED")
-            .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("user_email", "string()")
             .value("version", 1_i64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1001_u64)
@@ -317,7 +340,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#94A3B8")
             .value("display_order", "10")
             .value("progress", "0")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1002_u64)
             .value("name", "Ready")
@@ -325,7 +349,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#3B82F6")
             .value("display_order", "20")
             .value("progress", "25")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1003_u64)
             .value("name", "Executing")
@@ -333,7 +358,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#F59E0B")
             .value("display_order", "30")
             .value("progress", "50")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1004_u64)
             .value("name", "Verified")
@@ -341,7 +367,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#16A34A")
             .value("display_order", "40")
             .value("progress", "100")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
 }
 
 pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
@@ -354,14 +381,7 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("id", 1_u64)
             .value("name", "Robot System")
             .value("founded", chrono::Utc::now())
-            .value("version", 1_i64))
-        .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
-            .value("id", 1_u64)
-            .value("name", "Planned")
-            .value("code", "PLANNED")
-            .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("user_email", "string()")
             .value("version", 1_i64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1001_u64)
@@ -370,7 +390,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("color", "#94A3B8")
             .value("display_order", "10")
             .value("progress", "0")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1002_u64)
             .value("name", "Ready")
@@ -378,7 +399,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("color", "#3B82F6")
             .value("display_order", "20")
             .value("progress", "25")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1003_u64)
             .value("name", "Executing")
@@ -386,7 +408,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("color", "#F59E0B")
             .value("display_order", "30")
             .value("progress", "50")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1004_u64)
             .value("name", "Verified")
@@ -394,7 +417,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("color", "#16A34A")
             .value("display_order", "40")
             .value("progress", "100")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
 }
 
 pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
@@ -411,14 +435,7 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("id", 1_u64)
             .value("name", "Robot System")
             .value("founded", chrono::Utc::now())
-            .value("version", 1_i64))
-        .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
-            .value("id", 1_u64)
-            .value("name", "Planned")
-            .value("code", "PLANNED")
-            .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("user_email", "string()")
             .value("version", 1_i64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1001_u64)
@@ -427,7 +444,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#94A3B8")
             .value("display_order", "10")
             .value("progress", "0")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1002_u64)
             .value("name", "Ready")
@@ -435,7 +453,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#3B82F6")
             .value("display_order", "20")
             .value("progress", "25")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1003_u64)
             .value("name", "Executing")
@@ -443,7 +462,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#F59E0B")
             .value("display_order", "30")
             .value("progress", "50")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
             .value("id", 1004_u64)
             .value("name", "Verified")
@@ -451,5 +471,6 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("color", "#16A34A")
             .value("display_order", "40")
             .value("progress", "100")
-            .value("version", 1_i64))
+            .value("version", 1_i64)
+            .value("platform_id", 1_u64))
 }

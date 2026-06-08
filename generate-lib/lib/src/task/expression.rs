@@ -1,99 +1,166 @@
-use teaql_core::{SafeExpression, SmartList};
+#[derive(Clone)]
+pub struct TaskExpression<'a> {
+    result: teaql_core::eval::EvalResult<&'a crate::Task>,
+    root_desc: std::sync::Arc<String>,
+}
+
+impl<'a> TaskExpression<'a> {
+    pub fn new(result: teaql_core::eval::EvalResult<&'a crate::Task>, root_desc: std::sync::Arc<String>) -> Self {
+        Self { result, root_desc }
+    }
+
+    fn resolve(&self) -> Option<&'a crate::Task> {
+        match &self.result {
+            teaql_core::eval::EvalResult::Value(v) => Some(*v),
+            teaql_core::eval::EvalResult::Null => None,
+            teaql_core::eval::EvalResult::NotLoaded { failed_node, attempted_path } => {
+                crate::trigger_logic_bug_panic(&self.root_desc, &failed_node, &attempted_path)
+            }
+        }
+    }
+
+    pub fn eval(&self) -> Option<&'a crate::Task> {
+        self.resolve()
+    }
+
+    pub fn unwrap(&self) -> &'a crate::Task {
+        self.resolve().expect("Relation was legitimately null in database!")
+    }
+
+    pub fn get_id(self) -> crate::ValueExpression<'a, u64> {
+        let next = self.result.and_then("id", |entity| entity.eval_id());
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn get_name(self) -> crate::ValueExpression<'a, String> {
+        let next = self.result.and_then("name", |entity| entity.eval_name());
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn get_version(self) -> crate::ValueExpression<'a, i64> {
+        let next = self.result.and_then("version", |entity| entity.eval_version());
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+    pub fn get_status_id(self) -> crate::ValueExpression<'a, u64> {
+        let next = self.result.and_then("status_id", |entity| entity.eval_status_id());
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn get_platform_id(self) -> crate::ValueExpression<'a, u64> {
+        let next = self.result.and_then("platform_id", |entity| entity.eval_platform_id());
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+    pub fn get_status(self) -> crate::TaskStatusExpression<'a> {
+        let next = self.result.and_then("status", |entity| entity.eval_status());
+        crate::TaskStatusExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn get_platform(self) -> crate::PlatformExpression<'a> {
+        let next = self.result.and_then("platform", |entity| entity.eval_platform());
+        crate::PlatformExpression::new(next, self.root_desc.clone())
+    }
+    pub fn status_is_planned(self) -> crate::ValueExpression<'a, bool> {
+        let next = self.result.and_then("status_id", |entity| {
+            if !entity.is_loaded("status_id") {
+                teaql_core::eval::EvalResult::NotLoaded { failed_node: "status_id".to_string(), attempted_path: "status_id".to_string() }
+            } else {
+                teaql_core::eval::EvalResult::Value(entity.status_is_planned())
+            }
+        });
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn status_is_ready(self) -> crate::ValueExpression<'a, bool> {
+        let next = self.result.and_then("status_id", |entity| {
+            if !entity.is_loaded("status_id") {
+                teaql_core::eval::EvalResult::NotLoaded { failed_node: "status_id".to_string(), attempted_path: "status_id".to_string() }
+            } else {
+                teaql_core::eval::EvalResult::Value(entity.status_is_ready())
+            }
+        });
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn status_is_executing(self) -> crate::ValueExpression<'a, bool> {
+        let next = self.result.and_then("status_id", |entity| {
+            if !entity.is_loaded("status_id") {
+                teaql_core::eval::EvalResult::NotLoaded { failed_node: "status_id".to_string(), attempted_path: "status_id".to_string() }
+            } else {
+                teaql_core::eval::EvalResult::Value(entity.status_is_executing())
+            }
+        });
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+
+    pub fn status_is_verified(self) -> crate::ValueExpression<'a, bool> {
+        let next = self.result.and_then("status_id", |entity| {
+            if !entity.is_loaded("status_id") {
+                teaql_core::eval::EvalResult::NotLoaded { failed_node: "status_id".to_string(), attempted_path: "status_id".to_string() }
+            } else {
+                teaql_core::eval::EvalResult::Value(entity.status_is_verified())
+            }
+        });
+        crate::ValueExpression::new(next, self.root_desc.clone())
+    }
+    pub fn get_task_execution_log_list(self) -> crate::TaskExecutionLogListExpression<'a> {
+        let next = self.result.and_then("task_execution_log_list", |entity| entity.eval_task_execution_log_list());
+        crate::TaskExecutionLogListExpression::new(next, self.root_desc.clone())
+    }
+}
 
 #[derive(Clone)]
-pub struct TaskExpression<R> {
-    expression: SafeExpression<R, crate::Task>,
+pub struct TaskListExpression<'a> {
+    result: teaql_core::eval::EvalResult<&'a teaql_core::SmartList<crate::Task>>,
+    root_desc: std::sync::Arc<String>,
 }
 
-impl<R> TaskExpression<R>
-where
-    R: Send + Sync + 'static,
-{
-    pub fn new(expression: SafeExpression<R, crate::Task>) -> Self {
-        Self { expression }
+impl<'a> TaskListExpression<'a> {
+    pub fn new(result: teaql_core::eval::EvalResult<&'a teaql_core::SmartList<crate::Task>>, root_desc: std::sync::Arc<String>) -> Self {
+        Self { result, root_desc }
     }
 
-    pub fn eval(&self) -> Option<crate::Task> {
-        self.expression.eval()
+    fn resolve(&self) -> Option<&'a teaql_core::SmartList<crate::Task>> {
+        match &self.result {
+            teaql_core::eval::EvalResult::Value(v) => Some(*v),
+            teaql_core::eval::EvalResult::Null => None,
+            teaql_core::eval::EvalResult::NotLoaded { failed_node, attempted_path } => {
+                crate::trigger_logic_bug_panic(&self.root_desc, &failed_node, &attempted_path)
+            }
+        }
     }
 
-    pub fn get_id(self) -> SafeExpression<R, u64> {
-        self.expression.apply(|value| value.id())
+    pub fn eval(&self) -> Option<&'a teaql_core::SmartList<crate::Task>> {
+        self.resolve()
     }
 
-    pub fn get_name(self) -> SafeExpression<R, String> {
-        self.expression.apply(|value| value.name())
+    pub fn unwrap(&self) -> &'a teaql_core::SmartList<crate::Task> {
+        self.resolve().expect("List relation was legitimately null in database!")
     }
 
-    pub fn get_version(self) -> SafeExpression<R, i64> {
-        self.expression.apply(|value| value.version())
-    }
-    pub fn get_status_id(self) -> SafeExpression<R, u64> {
-        self.expression.apply(|value| value.status_id())
+    pub fn size(&self) -> crate::ValueExpression<'a, usize> {
+        let next = self.result.clone().and_then("size", |list| teaql_core::eval::EvalResult::Value(list.len()));
+        crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_platform_id(self) -> SafeExpression<R, u64> {
-        self.expression.apply(|value| value.platform_id())
-    }
-    pub fn get_status(self) -> crate::TaskStatusExpression<R> {
-        crate::TaskStatusExpression::new(
-            self.expression.apply_optional(|value| value.status().cloned())
-        )
-    }
-
-    pub fn get_platform(self) -> crate::PlatformExpression<R> {
-        crate::PlatformExpression::new(
-            self.expression.apply_optional(|value| value.platform().cloned())
-        )
-    }
-    pub fn status_is_planned(self) -> SafeExpression<R, bool> {
-        self.expression.apply(|value| value.status_is_planned())
+    pub fn first(&self) -> crate::TaskExpression<'a> {
+        let next = self.result.clone().and_then("first", |list| {
+            if let Some(item) = list.first() {
+                teaql_core::eval::EvalResult::Value(item)
+            } else {
+                teaql_core::eval::EvalResult::Null
+            }
+        });
+        crate::TaskExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn status_is_ready(self) -> SafeExpression<R, bool> {
-        self.expression.apply(|value| value.status_is_ready())
-    }
-
-    pub fn status_is_executing(self) -> SafeExpression<R, bool> {
-        self.expression.apply(|value| value.status_is_executing())
-    }
-
-    pub fn status_is_verified(self) -> SafeExpression<R, bool> {
-        self.expression.apply(|value| value.status_is_verified())
-    }
-    pub fn get_task_execution_log_list(self) -> crate::TaskExecutionLogListExpression<R> {
-        crate::TaskExecutionLogListExpression::new(
-            self.expression.apply(|value| value.task_execution_log_list().clone())
-        )
-    }
-}
-
-#[derive(Clone)]
-pub struct TaskListExpression<R> {
-    expression: SafeExpression<R, SmartList<crate::Task>>,
-}
-
-impl<R> TaskListExpression<R>
-where
-    R: Send + Sync + 'static,
-{
-    pub fn new(expression: SafeExpression<R, SmartList<crate::Task>>) -> Self {
-        Self { expression }
-    }
-
-    pub fn eval(&self) -> Option<SmartList<crate::Task>> {
-        self.expression.eval()
-    }
-
-    pub fn size(self) -> SafeExpression<R, usize> {
-        self.expression.size()
-    }
-
-    pub fn first(self) -> TaskExpression<R> {
-        TaskExpression::new(self.expression.first())
-    }
-
-    pub fn get(self, index: usize) -> TaskExpression<R> {
-        TaskExpression::new(self.expression.get(index))
+    pub fn get(&self, index: usize) -> crate::TaskExpression<'a> {
+        let next = self.result.clone().and_then("get", |list| {
+            if let Some(item) = list.get(index) {
+                teaql_core::eval::EvalResult::Value(item)
+            } else {
+                teaql_core::eval::EvalResult::Null
+            }
+        });
+        crate::TaskExpression::new(next, self.root_desc.clone())
     }
 }

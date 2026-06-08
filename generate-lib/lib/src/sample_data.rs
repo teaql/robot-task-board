@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use crate::TeaqlRuntime;
 use crate::Q;
 use teaql_core::Entity;
-use crate::PurposedQuery;
 use crate::request_support::TeaqlUserContextExt;
 use crate::request_support::AuditedSave;
 
@@ -134,23 +133,21 @@ where
     let mut state = SampleDataState::new(plan);
 
     load_root_platforms(ctx, &mut state).await?; //depth: 0
-    load_root_task_status(ctx, &mut state).await?; //depth: 0
 
+    load_constant_task_status(ctx, &mut state).await?;
 
-    use crate::request_support::TeaqlUserContextExt;
-use crate::request_support::AuditedSave;
     ctx.user_context().transaction_data(|| async {
-        let res = async {
-    generate_tasks(ctx, &mut state).await?;
-
-    generate_task_execution_logs(ctx, &mut state).await?;
-
-            Ok::<(), String>(())
-        }.await;
-        res.map_err(|e| {
+        Box::pin(generate_tasks(ctx, &mut state)).await.map_err(|e| {
             teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(e))
         })
     }).await.map_err(|e| e.to_string())?;
+
+    ctx.user_context().transaction_data(|| async {
+        Box::pin(generate_task_execution_logs(ctx, &mut state)).await.map_err(|e| {
+            teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(e))
+        })
+    }).await.map_err(|e| e.to_string())?;
+
 
     let report = state.into_report();
     log::info!("Sample data generation completed successfully. Generated: {} tables, Skipped: {} tables.", report.generated.len(), report.skipped.len());
@@ -171,7 +168,7 @@ where
     Ok(())
 }
 
-async fn load_root_task_status<C>(
+async fn load_constant_task_status<C>(
     ctx: &C,
     state: &mut SampleDataState,
 ) -> Result<(), String>
@@ -184,7 +181,6 @@ where
     }
     Ok(())
 }
-
 
 async fn generate_tasks<C>(
     ctx: &C,
@@ -218,7 +214,7 @@ where
     log::info!("Generating sample data for Task (expected: {})...", fanout);
 
     for i in 0..fanout {
-        let mut entity = Q::tasks().new_entity(ctx);
+        let mut entity = Q::tasks().purpose("Init Sample Data").new_entity(ctx);
         let mut used_refs = std::collections::HashSet::new();
 
                 if let Some(ref_id) = state.pick_unused_id("Task Status", i as usize, &used_refs) {
@@ -279,7 +275,7 @@ where
     log::info!("Generating sample data for Task Execution Log (expected: {})...", fanout);
 
     for i in 0..fanout {
-        let mut entity = Q::task_execution_logs().new_entity(ctx);
+        let mut entity = Q::task_execution_logs().purpose("Init Sample Data").new_entity(ctx);
         let mut used_refs = std::collections::HashSet::new();
 
                 if let Some(ref_id) = state.pick_unused_id("Task", i as usize, &used_refs) {

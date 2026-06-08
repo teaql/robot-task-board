@@ -88,13 +88,6 @@ impl<R> TaskRequest<R> {
         self.query
     }
 
-    pub fn new_entity<C>(&self, ctx: &C) -> crate::Task
-    where
-        C: TeaqlRuntime + ?Sized,
-    {
-        crate::Task::runtime_new(ctx.user_context().entity_root())
-    }
-
 
     pub fn purpose(self, purpose: impl Into<String>) -> crate::PurposedQuery<Self> {
         crate::PurposedQuery::new(self, purpose)
@@ -247,6 +240,11 @@ impl<R> TaskRequest<R> {
     {
         let records = self.limit(1)._execute_for_records(ctx).await?;
         Ok(records.into_iter().next())
+    }
+
+    pub fn search_with_text(mut self, text: impl Into<String>) -> Self {
+        self.query = self.query.search_with_text(text);
+        self
     }
 
     pub fn filter(mut self, filter: Expr) -> Self {
@@ -1723,52 +1721,68 @@ where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
 }
 
 impl<R: teaql_core::Entity> crate::PurposedQuery<TaskRequest<R>> {
+    pub fn new_entity<C>(&self, ctx: &C) -> crate::Task
+    where
+        C: crate::TeaqlRuntime + ?Sized,
+    {
+        crate::Task::runtime_new(ctx.user_context().entity_root())
+    }
+
+    fn into_inner_with_trace(mut self) -> TaskRequest<R> {
+        self.inner.query.trace_chain.push(teaql_core::TraceNode {
+            entity_type: self.inner.query.entity.clone(),
+            entity_id: None,
+            comment: self.purpose,
+        });
+        self.inner
+    }
+
     pub async fn execute_for_list<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<R>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_list(ctx).await
+        self.into_inner_with_trace()._execute_for_list(ctx).await
     }
 
     pub async fn execute_for_first<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_first(ctx).await
+        self.into_inner_with_trace()._execute_for_first(ctx).await
     }
 
     pub async fn execute_for_one<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_one(ctx).await
+        self.into_inner_with_trace()._execute_for_one(ctx).await
     }
 
     pub async fn execute_by_id<'a, C>(self, ctx: &'a C, id: impl Into<teaql_core::Value>) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_by_id(ctx, id).await
+        self.into_inner_with_trace()._execute_by_id(ctx, id).await
     }
 
     pub async fn execute_for_records<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_records(ctx).await
+        self.into_inner_with_trace()._execute_for_records(ctx).await
     }
 
     pub async fn execute_for_record<'a, C>(self, ctx: &'a C) -> Result<Option<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_record(ctx).await
+        self.into_inner_with_trace()._execute_for_record(ctx).await
     }
 
     pub async fn execute_for_count<'a, C>(self, ctx: &'a C) -> Result<u64, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
-        self.inner._execute_for_count(ctx).await
+        self.into_inner_with_trace()._execute_for_count(ctx).await
     }
 }

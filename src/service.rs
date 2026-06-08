@@ -45,7 +45,7 @@ impl TaskDomainBehavior for Task {
         }
         
         let comment = format!("Create task '{}'", cmd.name);
-        let mut task = Q::tasks().comment(&comment).new_entity(ctx);
+        let mut task = Q::tasks().comment(&comment).purpose("Create new task").new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
             .update_version(0_i64)
@@ -56,7 +56,7 @@ impl TaskDomainBehavior for Task {
 
     fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
         let comment = format!("Generate execution log for action '{}'", action);
-        let mut log = Q::task_execution_logs().comment(&comment).new_entity(ctx);
+        let mut log = Q::task_execution_logs().comment(&comment).purpose("Create execution log").new_entity(ctx);
         teaql_core::Entity::set_comment(&mut log, comment);
         log.update_action(action.to_owned())
             .update_detail(detail.to_owned())
@@ -119,7 +119,7 @@ impl TaskService {
         // Register custom TUI log buffer and audit event sink
         let log_buffer = UnifiedLogBuffer::default();
         ctx.insert_resource(log_buffer);
-        ctx.set_event_sink(AppAuditSink);
+        ctx.set_custom_event_sink(AppAuditSink);
 
         // Control SQL logging via environment variable (default enabled for backwards compatibility in tests)
         if let Ok(val) = std::env::var("TEAQL_SQL_LOG") {
@@ -166,7 +166,7 @@ impl TaskService {
         let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() else {
             return Vec::new();
         };
-        let Ok(mut entries) = buf.entries.lock() else {
+        let Ok(entries) = buf.entries.lock() else {
             return Vec::new();
         };
 

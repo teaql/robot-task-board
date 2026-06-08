@@ -1,1 +1,2 @@
-missing license file
+Model Validation Failed due to high sensitivity fields missing _audit_mask_fields:
+The field 'password' in entity 'platform' contains highly sensitive keywords. You MUST add it to _audit_mask_fields.

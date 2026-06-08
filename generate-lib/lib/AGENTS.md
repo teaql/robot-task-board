@@ -73,19 +73,20 @@ The generated crate provides:
 ## MANDATORY AUDIT RULE (Zero-cost Intent Logging)
 
 Whenever you query or persist data, you MUST chain a comment explaining your business intent. This allows the system to build an automatic audit trail.
-- For queries: chain `.comment("...")` before execution.
+- For queries: chain `.comment("...")` for audit behavior and `.purpose("...")` before execution for trace-chain intent.
 - For updates/saves: chain `.set_comment("...")` before saving.
 
 ## CRUD & Query Patterns
 
 ### 1. Querying (Read)
-Use `Q` for reads. Always include a `.comment()` to explain the business context.
+Use `Q` for reads. Always include `.comment()` to record audit behavior and `.purpose()` to record query intent in the trace chain.
 
 ```rust
 let rows = Q::platforms()
     .comment("Fetch platforms for processing")
     .select_self()
     .page(1, 20)
+    .purpose("List platforms page for processing")
     .execute_for_list(&ctx)
     .await?;
 ```
@@ -93,10 +94,10 @@ let rows = Q::platforms()
 Avoid direct `sqlx::query(...)` unless raw SQL is explicitly requested. Do NOT call generated repositories directly.
 
 ### 2. Creating (Create)
-Use `Q::platforms().new_entity(&ctx)` to create a new entity with the correct root context, then use graph save:
+Use `Q::platforms().purpose("purpose").new_entity(&ctx)` to create a new entity with the correct root context, then use graph save:
 
 ```rust
-let mut entity = Q::platforms().new_entity(&ctx);
+let mut entity = Q::platforms().purpose("Create example entity").new_entity(&ctx);
 // entity.update_name("example");
 entity.set_comment("Created new Platform for user request")
       .save(&ctx).await?;
@@ -106,7 +107,12 @@ entity.set_comment("Created new Platform for user request")
 Fetch the graph node, use generated typed setters to modify fields, and append intent before saving:
 
 ```rust
-if let Some(mut entity) = Q::platforms().with_id_is(id).execute_for_one(&ctx).await? {
+if let Some(mut entity) = Q::platforms()
+    .with_id_is(id)
+    .purpose("Load Platform for update")
+    .execute_for_one(&ctx)
+    .await?
+{
     // entity.update_status(new_status)
     entity.set_comment("Updating status due to state transition")
           .save(&ctx).await?;
@@ -117,7 +123,12 @@ if let Some(mut entity) = Q::platforms().with_id_is(id).execute_for_one(&ctx).aw
 Do NOT call `repo.delete`. Use the elegant `mark_as_delete` method chained with `set_comment`:
 
 ```rust
-if let Some(mut entity) = Q::platforms().with_id_is(id).execute_for_one(&ctx).await? {
+if let Some(mut entity) = Q::platforms()
+    .with_id_is(id)
+    .purpose("Load Platform for soft delete")
+    .execute_for_one(&ctx)
+    .await?
+{
     entity.mark_as_delete()
           .set_comment("Soft deleted Platform as requested")
           .save(&ctx).await?;
@@ -134,6 +145,7 @@ When building multi-condition UI filters, do NOT write complex `if-else` query b
 let items = Q::<platforms>()
     .comment("Search with dynamic UI filters")
     .filter_with_json(filter_json_value)
+    .purpose("Search platforms with dynamic UI filters")
     .execute_for_list(&ctx).await?;
 ```
 
@@ -144,6 +156,7 @@ For dashboard metrics and grouping, use generated facet methods to let the datab
 let aggregations = Q::<platforms>()
     .comment("Aggregate data for dashboard")
     // .facet_by_status_as("status_stats")
+    .purpose("Aggregate platforms data for dashboard")
     .execute_for_list(&ctx).await?;
 ```
 
@@ -157,6 +170,7 @@ When only a few fields are needed, avoid loading the full entity graph. Project 
 //     .count_id_as("count")
 //     .group_by_status()
 //     .return_type::<StatusStatsDTO>()
+//     .purpose("Fetch lightweight status statistics")
 //     .execute_for_list(&ctx).await?;
 ```
 
@@ -193,6 +207,10 @@ Q::<entity_plural>()
     .which_<fields>_is(...)
     .with_<relation>_matching(Q::<target_plural>().select_self())
 ```
+
+## TeaQL Rust Pitfalls
+
+- **`execute_by_id` Type Inference**: `execute_by_id(&ctx, id)` returns a strongly-typed `Option<Entity>`. However, because its parameter is `id: impl Into<teaql_core::Value>`, passing an ambiguous literal (like `1` or `None`) will cause Rust to throw a `type annotations needed` error. To fix this, simply provide a concrete type for the id parameter (e.g., `1_u64`), rather than trying to turbofish the method itself.
 
 ## Low-Level Warnings
 

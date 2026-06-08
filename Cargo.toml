@@ -23,8 +23,10 @@ teaql-provider-rusqlite = "3.0.0"
 teaql-data-service = "3.0.0"
 
 # Our generated TeaQL domain logic library
-robot-kanban = { package = "robot-kanban-service", path = "./generate-lib/lib" }
+robot_kanban = { path = "./generate-lib/lib", package = "robot-kanban-service" }
+teaql-provider-meilisearch = "3.0.0"
 whoami = "2.1.2"
+rand = "0.10.1"
 
 [profile.release]
 opt-level = "z"
@@ -40,3 +42,4 @@ teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
 teaql-sql = { path = "../teaql-rs/teaql-sql" }
 teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
 teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
+teaql-provider-meilisearch = { path = "../teaql-rs/teaql-provider-meilisearch" }
