@@ -11,11 +11,11 @@ chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-teaql-core = "3.2.4"
-teaql-macros = "3.2.4"
-teaql-runtime = "3.2.4"
-teaql-sql = "3.2.4"
-teaql-data-service = "3.2.4"
+teaql-core = "4.0.0"
+teaql-macros = "4.0.0"
+teaql-runtime = "4.0.0"
+teaql-sql = "4.0.0"
+teaql-data-service = "4.0.0"
 teaql-tool-core = "1.0.0"
 teaql-provider-mysql = { path = "../../../teaql-rs/teaql-provider-mysql" }
 mysql_async = { version = "0.34", default-features = false, features = ["default-rustls", "chrono"] }
