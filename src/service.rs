@@ -1,10 +1,7 @@
 use std::error::Error;
 use std::sync::Mutex;
 use robot_kanban::{AuditedSave, Q, Task, TaskExecutionLog};
-use teaql_provider_rusqlite::{
-    ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
-    RusqliteMutationExecutor, RusqliteProviderExt,
-};
+use teaql_provider_mysql::MysqlProviderExt;
 use teaql_runtime::{
     UserContext, UnifiedLogBuffer, LogPayload,
 };
@@ -97,7 +94,7 @@ impl TaskDomainBehavior for Task {
 pub struct TaskService {
     ctx: UserContext,
     #[allow(dead_code)]
-    inner_executor: RusqliteMutationExecutor,
+    inner_executor: teaql_provider_mysql::MysqlMutationExecutor,
     last_log_index: Mutex<usize>,
     pub status_cache: std::collections::HashMap<u64, String>,
 }
@@ -110,8 +107,8 @@ impl TaskService {
     /// - `SchemaCreated` events are fired for each table created
     /// - `DataSeeded` events are fired for each entity type seeded
     pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
-        let conn = rusqlite::Connection::open(db_path)?;
-        let inner_executor = RusqliteMutationExecutor::new(conn);
+        let pool = mysql_async::Pool::new("mysql://root:0254891276@localhost:3306/testdb");
+        let inner_executor = teaql_provider_mysql::MysqlMutationExecutor::new(pool.clone());
 
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
@@ -129,17 +126,14 @@ impl TaskService {
         }
 
         // Register synchronous executors
-        ctx.use_rusqlite_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
+        ctx.use_mysql_provider(inner_executor.clone());
+        ctx.set_internal_id_generator(teaql_provider_mysql::MysqlIdSpaceGenerator::new(pool.clone()));
 
         // Also register ServiceRuntimeExecutor for the generated repository lookups
-        let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
-        ctx.insert_resource(service_runtime_executor);
+        let service_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
+        ctx.insert_resource(service_executor);
 
-        // Build Schema & seed initial values if missing.
-        // This now fires SchemaCreated and DataSeeded events through the EntityEventSink,
-        // which are captured in the UnifiedLogBuffer for the startup screen to observe.
-        ensure_rusqlite_schema_for(&ctx)?;
+        teaql_provider_mysql::ensure_mysql_schema_for(&ctx).await?;
 
         let mut status_cache = std::collections::HashMap::new();
         let statuses = robot_kanban::Q::task_status()

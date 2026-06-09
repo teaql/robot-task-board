@@ -7,7 +7,7 @@ default-run = "robot-task-board"
 [dependencies]
 crossterm = { version = "0.27", features = ["event-stream"] }
 ratatui = "0.30"
-rusqlite = { version = "0.32", features = ["bundled", "column_decltype"] }
+
 chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
@@ -16,10 +16,11 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 # TeaQL runtime packages
 teaql-core = "3.2.4"
+mysql_async = { version = "0.34", default-features = false, features = ["default-rustls", "chrono"] }
 teaql-runtime = "3.2.4"
 teaql-macros = "3.2.4"
 teaql-sql = "3.2.4"
-teaql-provider-rusqlite = "3.2.4"
+teaql-provider-mysql = { path = "../teaql-rs/teaql-provider-mysql" }
 teaql-data-service = "3.2.4"
 
 # Our generated TeaQL domain logic library
@@ -41,5 +42,5 @@ teaql-macros = { path = "../teaql-rs/teaql-macros" }
 teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
 teaql-sql = { path = "../teaql-rs/teaql-sql" }
 teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
-teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
+
 teaql-provider-meilisearch = { path = "../teaql-rs/teaql-provider-meilisearch" }
