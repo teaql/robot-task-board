@@ -1,6 +1,6 @@
 use robot_kanban::{ServiceRuntimeExecutor, AuditedSave};
 use teaql_provider_meilisearch::MeilisearchProvider;
-use teaql_runtime::UserContext;
+use teaql_core::Entity;
 use teaql_provider_rusqlite::{RusqliteMutationExecutor, RusqliteIdSpaceGenerator, ensure_rusqlite_schema_for, RusqliteProviderExt};
 use std::error::Error;
 use rand::prelude::IndexedRandom;
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .update_detail(detail.to_string())
             .update_version(0);
             
-        log.save(&ctx).await?;
+        log.audit_as("generate log").save(&ctx).await?;
         println!("[{}] Generated log -> Action: {:<8} | Detail: {}", iteration, action, detail);
 
         // 2. Periodically query from Meilisearch

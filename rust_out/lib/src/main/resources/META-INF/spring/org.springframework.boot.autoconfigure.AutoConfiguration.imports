@@ -1,0 +1,6 @@
+com.doublechaintech.robotkanbanservice.EntityMetaRegistry
+com.doublechaintech.robotkanbanservice.Repositories
+com.doublechaintech.robotkanbanservice.Checkers
+com.doublechaintech.robotkanbanservice.GraphqlQueryRegistry
+com.doublechaintech.robotkanbanservice.BaseServiceConfiguration
+com.doublechaintech.robotkanbanservice.ServiceRequestConfiguration

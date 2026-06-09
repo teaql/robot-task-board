@@ -1,0 +1,52 @@
+
+scalar LocalTime
+scalar Long
+scalar Time
+scalar JSON
+scalar BigDecimal
+scalar Date
+
+type Platform{
+    id:Long,
+    name:String,
+    founded:LocalTime,
+    version:Long,
+    taskList(q:JSON):[Task],
+    additionalInfo:JSON
+}
+type TaskStatus{
+    id:Long,
+    name:String,
+    code:String,
+    color:String,
+    displayOrder:BigDecimal,
+    progress:BigDecimal,
+    version:Long,
+    taskList(q:JSON):[Task],
+    additionalInfo:JSON
+}
+type Task{
+    id:Long,
+    name:String,
+    status:TaskStatus,
+    platform:Platform,
+    version:Long,
+    taskExecutionLogList(q:JSON):[TaskExecutionLog],
+    additionalInfo:JSON
+}
+type TaskExecutionLog{
+    id:Long,
+    task:Task,
+    action:String,
+    detail:String,
+    version:Long
+,
+    additionalInfo:JSON
+}
+
+type Query{
+   platforms(q:JSON):[Platform],
+   taskStatuses(q:JSON):[TaskStatus],
+   tasks(q:JSON):[Task],
+   taskExecutionLogs(q:JSON):[TaskExecutionLog]
+}

@@ -1,6 +1,6 @@
 use robot_kanban::{ServiceRuntimeExecutor, AuditedSave};
 use teaql_provider_meilisearch::MeilisearchProvider;
-use teaql_runtime::UserContext;
+use teaql_core::Entity;
 use teaql_provider_rusqlite::{RusqliteMutationExecutor, RusqliteIdSpaceGenerator, ensure_rusqlite_schema_for, RusqliteProviderExt};
 use std::error::Error;
 
@@ -34,19 +34,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     log1.update_action("start".to_string())
         .update_detail("Robot started moving towards sector 7G".to_string())
         .update_version(0);
-    log1.save(&ctx).await?;
+    log1.audit_as("create log").save(&ctx).await?;
 
     let mut log2 = robot_kanban::Q::task_execution_logs().purpose("create").new_entity(&ctx);
     log2.update_action("warning".to_string())
         .update_detail("Encountered an obstacle at sector 7G, calculating alternate route".to_string())
         .update_version(0);
-    log2.save(&ctx).await?;
+    log2.audit_as("create log").save(&ctx).await?;
 
     let mut log3 = robot_kanban::Q::task_execution_logs().purpose("create").new_entity(&ctx);
     log3.update_action("error".to_string())
         .update_detail("Task failed due to low battery".to_string())
         .update_version(0);
-    log3.save(&ctx).await?;
+    log3.audit_as("create log").save(&ctx).await?;
 
     println!("Waiting for Meilisearch indexing (1000ms)...");
     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;

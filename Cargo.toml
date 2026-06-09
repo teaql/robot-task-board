@@ -15,16 +15,16 @@ serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 # TeaQL runtime packages
-teaql-core = "3.0.0"
-teaql-runtime = "3.0.0"
-teaql-macros = "3.0.0"
-teaql-sql = "3.0.0"
-teaql-provider-rusqlite = "3.0.0"
-teaql-data-service = "3.0.0"
+teaql-core = "3.2.4"
+teaql-runtime = "3.2.4"
+teaql-macros = "3.2.4"
+teaql-sql = "3.2.4"
+teaql-provider-rusqlite = "3.2.4"
+teaql-data-service = "3.2.4"
 
 # Our generated TeaQL domain logic library
 robot_kanban = { path = "./generate-lib/lib", package = "robot-kanban-service" }
-teaql-provider-meilisearch = "3.0.0"
+teaql-provider-meilisearch = "3.2.4"
 whoami = "2.1.2"
 rand = "0.10.1"
 

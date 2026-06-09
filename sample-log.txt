@@ -18,23 +18,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Review Mission Timeline'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Review Mission Timeline'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Mission Timeline'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 1)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Mission Timeline'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (1, 'Review Mission Timeline', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Review Mission Timeline'] {id: U64(1),  name: Text("Review Mission Timeline"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Review Mission Timeline'] {id: U64(1),  name: Text("Review Mission Timeline"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Mission Timeline' -> Create task 'Review Mission Timeline'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (1, 'CREATED', 'Task ''Review Mission Timeline'' created.', 1, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Review Mission Timeline' -> Create task 'Review Mission Timeline'] {action: Text("CREATED"),  detail: Te*******************************************") [MASKED],  id: U64(1),  task: Null,  task_id: U64(1),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Review Mission Timeline' -> Create task 'Review Mission Timeline'] {action: Text("CREATED"),  detail: Te*******************************************") [MASKED],  id: U64(1),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [Create task 'Review Mission Timeline' -> Create task 'Review Mission Timeline']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Review Mission Timeline'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -45,23 +45,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Validate Payload Configuration'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Validate Payload Configuration'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Validate Payload Configuration'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 2)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Validate Payload Configuration'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (2, 'Validate Payload Configuration', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Validate Payload Configuration'] {id: U64(2),  name: Text("Validate Payload Configuration"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Validate Payload Configuration'] {id: U64(2),  name: Text("Validate Payload Configuration"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Validate Payload Configuration' -> Create task 'Validate Payload Configuration'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (2, 'CREATED', 'Task ''Validate Payload Configuration'' created.', 1, 2)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Validate Payload Configuration' -> Create task 'Validate Payload Configuration'] {action: Text("CREATED"),  detail: Te**************************************************") [MASKED],  id: U64(2),  task: Null,  task_id: U64(2),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Validate Payload Configuration' -> Create task 'Validate Payload Configuration'] {action: Text("CREATED"),  detail: Te**************************************************") [MASKED],  id: U64(2),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**************************************************") [MASKED] [Create task 'Validate Payload Configuration' -> Create task 'Validate Payload Configuration']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Validate Payload Configuration'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [2 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -72,23 +72,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Verify Flight Software Build'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Verify Flight Software Build'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Verify Flight Software Build'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 3)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Verify Flight Software Build'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (3, 'Verify Flight Software Build', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Verify Flight Software Build'] {id: U64(3),  name: Text("Verify Flight Software Build"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Verify Flight Software Build'] {id: U64(3),  name: Text("Verify Flight Software Build"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Verify Flight Software Build' -> Create task 'Verify Flight Software Build'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (3, 'CREATED', 'Task ''Verify Flight Software Build'' created.', 1, 3)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Verify Flight Software Build' -> Create task 'Verify Flight Software Build'] {action: Text("CREATED"),  detail: Te************************************************") [MASKED],  id: U64(3),  task: Null,  task_id: U64(3),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Verify Flight Software Build' -> Create task 'Verify Flight Software Build'] {action: Text("CREATED"),  detail: Te************************************************") [MASKED],  id: U64(3),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te************************************************") [MASKED] [Create task 'Verify Flight Software Build' -> Create task 'Verify Flight Software Build']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Verify Flight Software Build'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [3 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -99,23 +99,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Calibrate Guidance System'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Calibrate Guidance System'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Calibrate Guidance System'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 4)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Calibrate Guidance System'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (4, 'Calibrate Guidance System', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Calibrate Guidance System'] {id: U64(4),  name: Text("Calibrate Guidance System"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Calibrate Guidance System'] {id: U64(4),  name: Text("Calibrate Guidance System"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Calibrate Guidance System' -> Create task 'Calibrate Guidance System'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (4, 'CREATED', 'Task ''Calibrate Guidance System'' created.', 1, 4)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Calibrate Guidance System' -> Create task 'Calibrate Guidance System'] {action: Text("CREATED"),  detail: Te*********************************************") [MASKED],  id: U64(4),  task: Null,  task_id: U64(4),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Calibrate Guidance System' -> Create task 'Calibrate Guidance System'] {action: Text("CREATED"),  detail: Te*********************************************") [MASKED],  id: U64(4),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*********************************************") [MASKED] [Create task 'Calibrate Guidance System' -> Create task 'Calibrate Guidance System']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Calibrate Guidance System'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [4 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [5 rows returned]
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -126,23 +126,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Load Flight Parameters'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Load Flight Parameters'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Load Flight Parameters'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 5)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 5)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Load Flight Parameters'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (5, 'Load Flight Parameters', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Load Flight Parameters'] {id: U64(5),  name: Text("Load Flight Parameters"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Load Flight Parameters'] {id: U64(5),  name: Text("Load Flight Parameters"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Load Flight Parameters' -> Create task 'Load Flight Parameters'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (5, 'CREATED', 'Task ''Load Flight Parameters'' created.', 1, 5)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Load Flight Parameters' -> Create task 'Load Flight Parameters'] {action: Text("CREATED"),  detail: Te******************************************") [MASKED],  id: U64(5),  task: Null,  task_id: U64(5),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Load Flight Parameters' -> Create task 'Load Flight Parameters'] {action: Text("CREATED"),  detail: Te******************************************") [MASKED],  id: U64(5),  task_id: U64(5),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te******************************************") [MASKED] [Create task 'Load Flight Parameters' -> Create task 'Load Flight Parameters']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Load Flight Parameters'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [5 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -153,23 +153,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Initialize Ground Telemetry'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Initialize Ground Telemetry'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Initialize Ground Telemetry'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 6)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 6)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Initialize Ground Telemetry'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (6, 'Initialize Ground Telemetry', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Initialize Ground Telemetry'] {id: U64(6),  name: Text("Initialize Ground Telemetry"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Initialize Ground Telemetry'] {id: U64(6),  name: Text("Initialize Ground Telemetry"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Initialize Ground Telemetry' -> Create task 'Initialize Ground Telemetry'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (6, 'CREATED', 'Task ''Initialize Ground Telemetry'' created.', 1, 6)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Initialize Ground Telemetry' -> Create task 'Initialize Ground Telemetry'] {action: Text("CREATED"),  detail: Te***********************************************") [MASKED],  id: U64(6),  task: Null,  task_id: U64(6),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Initialize Ground Telemetry' -> Create task 'Initialize Ground Telemetry'] {action: Text("CREATED"),  detail: Te***********************************************") [MASKED],  id: U64(6),  task_id: U64(6),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te***********************************************") [MASKED] [Create task 'Initialize Ground Telemetry' -> Create task 'Initialize Ground Telemetry']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Initialize Ground Telemetry'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [6 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -180,23 +180,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Review Telemetry Anomaly'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Review Telemetry Anomaly'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Telemetry Anomaly'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 7)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 7)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Telemetry Anomaly'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (7, 'Review Telemetry Anomaly', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Review Telemetry Anomaly'] {id: U64(7),  name: Text("Review Telemetry Anomaly"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Review Telemetry Anomaly'] {id: U64(7),  name: Text("Review Telemetry Anomaly"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Telemetry Anomaly' -> Create task 'Review Telemetry Anomaly'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (7, 'CREATED', 'Task ''Review Telemetry Anomaly'' created.', 1, 7)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Review Telemetry Anomaly' -> Create task 'Review Telemetry Anomaly'] {action: Text("CREATED"),  detail: Te********************************************") [MASKED],  id: U64(7),  task: Null,  task_id: U64(7),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Review Telemetry Anomaly' -> Create task 'Review Telemetry Anomaly'] {action: Text("CREATED"),  detail: Te********************************************") [MASKED],  id: U64(7),  task_id: U64(7),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te********************************************") [MASKED] [Create task 'Review Telemetry Anomaly' -> Create task 'Review Telemetry Anomaly']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Review Telemetry Anomaly'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [7 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -207,23 +207,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Review Launch Criteria'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Review Launch Criteria'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Launch Criteria'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 8)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 8)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Launch Criteria'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (8, 'Review Launch Criteria', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Review Launch Criteria'] {id: U64(8),  name: Text("Review Launch Criteria"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Review Launch Criteria'] {id: U64(8),  name: Text("Review Launch Criteria"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Review Launch Criteria' -> Create task 'Review Launch Criteria'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (8, 'CREATED', 'Task ''Review Launch Criteria'' created.', 1, 8)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Review Launch Criteria' -> Create task 'Review Launch Criteria'] {action: Text("CREATED"),  detail: Te******************************************") [MASKED],  id: U64(8),  task: Null,  task_id: U64(8),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Review Launch Criteria' -> Create task 'Review Launch Criteria'] {action: Text("CREATED"),  detail: Te******************************************") [MASKED],  id: U64(8),  task_id: U64(8),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te******************************************") [MASKED] [Create task 'Review Launch Criteria' -> Create task 'Review Launch Criteria']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Review Launch Criteria'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [8 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -234,23 +234,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Range Safety Check'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Range Safety Check'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Range Safety Check'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 9)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 9)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Range Safety Check'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (9, 'Range Safety Check', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Range Safety Check'] {id: U64(9),  name: Text("Range Safety Check"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Range Safety Check'] {id: U64(9),  name: Text("Range Safety Check"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Range Safety Check' -> Create task 'Range Safety Check'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (9, 'CREATED', 'Task ''Range Safety Check'' created.', 1, 9)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Range Safety Check' -> Create task 'Range Safety Check'] {action: Text("CREATED"),  detail: Te**************************************") [MASKED],  id: U64(9),  task: Null,  task_id: U64(9),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Range Safety Check' -> Create task 'Range Safety Check'] {action: Text("CREATED"),  detail: Te**************************************") [MASKED],  id: U64(9),  task_id: U64(9),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**************************************") [MASKED] [Create task 'Range Safety Check' -> Create task 'Range Safety Check']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Range Safety Check'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [9 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -261,23 +261,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Begin Propellant Loading'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Begin Propellant Loading'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Begin Propellant Loading'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 10)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 10)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Begin Propellant Loading'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (10, 'Begin Propellant Loading', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Begin Propellant Loading'] {id: U64(10),  name: Text("Begin Propellant Loading"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Begin Propellant Loading'] {id: U64(10),  name: Text("Begin Propellant Loading"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Begin Propellant Loading' -> Create task 'Begin Propellant Loading'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (10, 'CREATED', 'Task ''Begin Propellant Loading'' created.', 1, 10)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Begin Propellant Loading' -> Create task 'Begin Propellant Loading'] {action: Text("CREATED"),  detail: Te********************************************") [MASKED],  id: U64(10),  task: Null,  task_id: U64(10),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Begin Propellant Loading' -> Create task 'Begin Propellant Loading'] {action: Text("CREATED"),  detail: Te********************************************") [MASKED],  id: U64(10),  task_id: U64(10),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te********************************************") [MASKED] [Create task 'Begin Propellant Loading' -> Create task 'Begin Propellant Loading']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Begin Propellant Loading'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [10 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -288,23 +288,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Complete Cryogenic Fueling'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Complete Cryogenic Fueling'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Complete Cryogenic Fueling'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 11)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 11)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Complete Cryogenic Fueling'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (11, 'Complete Cryogenic Fueling', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Complete Cryogenic Fueling'] {id: U64(11),  name: Text("Complete Cryogenic Fueling"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Complete Cryogenic Fueling'] {id: U64(11),  name: Text("Complete Cryogenic Fueling"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Complete Cryogenic Fueling' -> Create task 'Complete Cryogenic Fueling'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (11, 'CREATED', 'Task ''Complete Cryogenic Fueling'' created.', 1, 11)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Complete Cryogenic Fueling' -> Create task 'Complete Cryogenic Fueling'] {action: Text("CREATED"),  detail: Te**********************************************") [MASKED],  id: U64(11),  task: Null,  task_id: U64(11),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Complete Cryogenic Fueling' -> Create task 'Complete Cryogenic Fueling'] {action: Text("CREATED"),  detail: Te**********************************************") [MASKED],  id: U64(11),  task_id: U64(11),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [Create task 'Complete Cryogenic Fueling' -> Create task 'Complete Cryogenic Fueling']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Complete Cryogenic Fueling'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [11 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -315,23 +315,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Arm Flight Termination System'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Arm Flight Termination System'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Arm Flight Termination System'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 12)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 12)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Arm Flight Termination System'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (12, 'Arm Flight Termination System', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Arm Flight Termination System'] {id: U64(12),  name: Text("Arm Flight Termination System"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Arm Flight Termination System'] {id: U64(12),  name: Text("Arm Flight Termination System"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Arm Flight Termination System' -> Create task 'Arm Flight Termination System'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (12, 'CREATED', 'Task ''Arm Flight Termination System'' created.', 1, 12)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Arm Flight Termination System' -> Create task 'Arm Flight Termination System'] {action: Text("CREATED"),  detail: Te*************************************************") [MASKED],  id: U64(12),  task: Null,  task_id: U64(12),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Arm Flight Termination System' -> Create task 'Arm Flight Termination System'] {action: Text("CREATED"),  detail: Te*************************************************") [MASKED],  id: U64(12),  task_id: U64(12),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*************************************************") [MASKED] [Create task 'Arm Flight Termination System' -> Create task 'Arm Flight Termination System']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Arm Flight Termination System'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [12 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -342,23 +342,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Conduct GO/NO-GO Poll'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Conduct GO/NO-GO Poll'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Conduct GO/NO-GO Poll'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 13)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 13)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Conduct GO/NO-GO Poll'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (13, 'Conduct GO/NO-GO Poll', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Conduct GO/NO-GO Poll'] {id: U64(13),  name: Text("Conduct GO/NO-GO Poll"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Conduct GO/NO-GO Poll'] {id: U64(13),  name: Text("Conduct GO/NO-GO Poll"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Conduct GO/NO-GO Poll' -> Create task 'Conduct GO/NO-GO Poll'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (13, 'CREATED', 'Task ''Conduct GO/NO-GO Poll'' created.', 1, 13)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Conduct GO/NO-GO Poll' -> Create task 'Conduct GO/NO-GO Poll'] {action: Text("CREATED"),  detail: Te*****************************************") [MASKED],  id: U64(13),  task: Null,  task_id: U64(13),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Conduct GO/NO-GO Poll' -> Create task 'Conduct GO/NO-GO Poll'] {action: Text("CREATED"),  detail: Te*****************************************") [MASKED],  id: U64(13),  task_id: U64(13),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [Create task 'Conduct GO/NO-GO Poll' -> Create task 'Conduct GO/NO-GO Poll']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Conduct GO/NO-GO Poll'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [13 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -369,23 +369,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Start Terminal Countdown'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Start Terminal Countdown'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Start Terminal Countdown'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 14)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 14)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Start Terminal Countdown'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (14, 'Start Terminal Countdown', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Start Terminal Countdown'] {id: U64(14),  name: Text("Start Terminal Countdown"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Start Terminal Countdown'] {id: U64(14),  name: Text("Start Terminal Countdown"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Start Terminal Countdown' -> Create task 'Start Terminal Countdown'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (14, 'CREATED', 'Task ''Start Terminal Countdown'' created.', 1, 14)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Start Terminal Countdown' -> Create task 'Start Terminal Countdown'] {action: Text("CREATED"),  detail: Te********************************************") [MASKED],  id: U64(14),  task: Null,  task_id: U64(14),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Start Terminal Countdown' -> Create task 'Start Terminal Countdown'] {action: Text("CREATED"),  detail: Te********************************************") [MASKED],  id: U64(14),  task_id: U64(14),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te********************************************") [MASKED] [Create task 'Start Terminal Countdown' -> Create task 'Start Terminal Countdown']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Start Terminal Countdown'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [14 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -396,23 +396,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Execute Hold-Down Release'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Execute Hold-Down Release'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Execute Hold-Down Release'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 15)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 15)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Execute Hold-Down Release'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (15, 'Execute Hold-Down Release', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Execute Hold-Down Release'] {id: U64(15),  name: Text("Execute Hold-Down Release"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Execute Hold-Down Release'] {id: U64(15),  name: Text("Execute Hold-Down Release"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Execute Hold-Down Release' -> Create task 'Execute Hold-Down Release'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (15, 'CREATED', 'Task ''Execute Hold-Down Release'' created.', 1, 15)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Execute Hold-Down Release' -> Create task 'Execute Hold-Down Release'] {action: Text("CREATED"),  detail: Te*********************************************") [MASKED],  id: U64(15),  task: Null,  task_id: U64(15),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Execute Hold-Down Release' -> Create task 'Execute Hold-Down Release'] {action: Text("CREATED"),  detail: Te*********************************************") [MASKED],  id: U64(15),  task_id: U64(15),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*********************************************") [MASKED] [Create task 'Execute Hold-Down Release' -> Create task 'Execute Hold-Down Release']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Execute Hold-Down Release'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [15 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -423,23 +423,23 @@
     [TIME]-[philip]-[INFO]-Starting business action: Create task 'Confirm Orbital Insertion'
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Create task 'Confirm Orbital Insertion'").new_entity(ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Confirm Orbital Insertion'] - [0 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 16)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 16)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Confirm Orbital Insertion'] - [1 rows affected]
               INSERT INTO task_data (id, name, version, status, platform) VALUES (16, 'Confirm Orbital Insertion', 1, 1001, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Confirm Orbital Insertion'] {id: U64(16),  name: Text("Confirm Orbital Insertion"),  platform: Null,  platform_id: U64(1),  status: Null,  status: U64(1001),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [Task] CREATED. [Create task 'Confirm Orbital Insertion'] {id: U64(16),  name: Text("Confirm Orbital Insertion"),  platform_id: U64(1),  status: U64(1001),  version: I64(1)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Create task 'Confirm Orbital Insertion' -> Create task 'Confirm Orbital Insertion'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (16, 'CREATED', 'Task ''Confirm Orbital Insertion'' created.', 1, 16)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Confirm Orbital Insertion' -> Create task 'Confirm Orbital Insertion'] {action: Text("CREATED"),  detail: Te*********************************************") [MASKED],  id: U64(16),  task: Null,  task_id: U64(16),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [Create task 'Confirm Orbital Insertion' -> Create task 'Confirm Orbital Insertion'] {action: Text("CREATED"),  detail: Te*********************************************") [MASKED],  id: U64(16),  task_id: U64(16),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*********************************************") [MASKED] [Create task 'Confirm Orbital Insertion' -> Create task 'Confirm Orbital Insertion']
     [TIME]-[philip]-[INFO]-Finished business action: Create task 'Confirm Orbital Insertion'
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [1 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -449,26 +449,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 1 for status transition -> Load task 1 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 1)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 1   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (17, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(17),  task: Null,  task_id: U64(1),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(17),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 1 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [2 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -478,26 +478,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 1 for status transition -> Load task 1 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 1)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 1   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (18, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(18),  task: Null,  task_id: U64(1),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(18),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 1 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [2 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -507,26 +507,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(1).comment("Load task 1 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 1 for status transition -> Load task 1 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 1)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 1)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] - [1 rows affected]
               UPDATE task_data SET status = 1004, version = 4 WHERE id = 1   AND version = 3
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (19, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 1)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(19),  task: Null,  task_id: U64(1),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(19),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 1 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [2 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -536,26 +536,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 2 for status transition -> Load task 2 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 2)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 2   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (20, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 2)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(20),  task: Null,  task_id: U64(2),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(20),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 2 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -565,26 +565,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 2 for status transition -> Load task 2 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 2)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 2   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (21, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 2)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(21),  task: Null,  task_id: U64(2),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(21),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 2 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -594,26 +594,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(2).comment("Load task 2 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 2 for status transition -> Load task 2 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 2)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 2)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] - [1 rows affected]
               UPDATE task_data SET status = 1004, version = 4 WHERE id = 2   AND version = 3
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (22, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 2)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(22),  task: Null,  task_id: U64(2),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(22),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 2 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [2 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -623,26 +623,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 3 for status transition -> Load task 3 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 3)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 3   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (23, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 3)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(23),  task: Null,  task_id: U64(3),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(23),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 3 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -652,26 +652,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 3 for status transition -> Load task 3 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 3)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 3   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (24, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 3)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(24),  task: Null,  task_id: U64(3),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(24),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 3 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -681,26 +681,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(3).comment("Load task 3 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 3 for status transition -> Load task 3 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 3)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 3)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] - [1 rows affected]
               UPDATE task_data SET status = 1004, version = 4 WHERE id = 3   AND version = 3
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (25, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 3)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(25),  task: Null,  task_id: U64(3),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(25),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 3 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [2 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -710,26 +710,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 4 for status transition -> Load task 4 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 4)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 4   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (26, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 4)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(26),  task: Null,  task_id: U64(4),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(26),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 4 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -739,26 +739,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 4 for status transition -> Load task 4 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 4)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 4   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (27, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 4)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(27),  task: Null,  task_id: U64(4),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(27),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 4 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -768,26 +768,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(4).comment("Load task 4 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 4 for status transition -> Load task 4 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 4)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 4)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] - [1 rows affected]
               UPDATE task_data SET status = 1004, version = 4 WHERE id = 4   AND version = 3
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (28, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 4)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(28),  task: Null,  task_id: U64(4),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(28),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 4 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [2 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -797,26 +797,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(5).comment("Load task 5 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 5 for status transition -> Load task 5 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 5)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 5)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Load Flight Parameters' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 5)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 5)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 5   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (29, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 5)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(29),  task: Null,  task_id: U64(5),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(29),  task_id: U64(5),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 5 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -826,26 +826,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(5).comment("Load task 5 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 5 for status transition -> Load task 5 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 5)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 5)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Load Flight Parameters' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 5)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 5)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 5   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (30, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 5)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(30),  task: Null,  task_id: U64(5),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(30),  task_id: U64(5),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 5 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -855,26 +855,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(6).comment("Load task 6 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 6 for status transition -> Load task 6 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 6)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 6)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Initialize Ground Telemetry' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 6)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 6)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 6   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (31, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 6)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(31),  task: Null,  task_id: U64(6),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(31),  task_id: U64(6),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 6 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -884,26 +884,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(6).comment("Load task 6 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 6 for status transition -> Load task 6 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 6)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 6)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Initialize Ground Telemetry' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 6)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 6)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 6   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (32, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 6)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(32),  task: Null,  task_id: U64(6),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(32),  task_id: U64(6),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 6 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -913,26 +913,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(7).comment("Load task 7 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 7 for status transition -> Load task 7 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 7)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 7)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Telemetry Anomaly' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 7)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 7)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 7   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (33, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 7)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(33),  task: Null,  task_id: U64(7),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(33),  task_id: U64(7),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 7 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -942,26 +942,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(7).comment("Load task 7 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 7 for status transition -> Load task 7 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 7)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 7)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Telemetry Anomaly' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 7)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 7)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 7   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (34, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 7)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(34),  task: Null,  task_id: U64(7),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(34),  task_id: U64(7),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 7 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -971,26 +971,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(8).comment("Load task 8 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 8 for status transition -> Load task 8 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 8)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 8)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Launch Criteria' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 8)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 8)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 8   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (35, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 8)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(35),  task: Null,  task_id: U64(8),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(35),  task_id: U64(8),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 8 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -1000,26 +1000,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(8).comment("Load task 8 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 8 for status transition -> Load task 8 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 8)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 8)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Launch Criteria' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 8)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 8)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] - [1 rows affected]
               UPDATE task_data SET status = 1003, version = 3 WHERE id = 8   AND version = 2
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (36, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 8)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(36),  task: Null,  task_id: U64(8),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(36),  task_id: U64(8),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 8 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [3 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -1029,26 +1029,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(9).comment("Load task 9 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 9 for status transition -> Load task 9 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 9)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 9)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Range Safety Check' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 9)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 9)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 9   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Range Safety Check' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (37, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 9)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(37),  task: Null,  task_id: U64(9),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(37),  task_id: U64(9),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 9 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -1058,26 +1058,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(10).comment("Load task 10 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 10 for status transition -> Load task 10 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 10)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 10)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Begin Propellant Loading' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 10)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 10)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 10   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (38, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 10)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(38),  task: Null,  task_id: U64(10),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(38),  task_id: U64(10),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 10 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -1087,26 +1087,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(11).comment("Load task 11 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 11 for status transition -> Load task 11 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 11)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 11)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Complete Cryogenic Fueling' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 11)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 11)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 11   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (39, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 11)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(39),  task: Null,  task_id: U64(11),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(39),  task_id: U64(11),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 11 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
@@ -1116,26 +1116,26 @@
 
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().with_id_is(12).comment("Load task 12 for status transition").execute_for_one(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [Load task 12 for status transition -> Load task 12 for status transition] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE ((version > 0)   AND (id = 12)) LIMIT 1
+              SELECT id, name, version, status AS status_id FROM task_data WHERE ((version > 0)   AND (id = 12)) LIMIT 1
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Arm Flight Termination System' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] - [1 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (id = 12)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 12)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] - [1 rows affected]
               UPDATE task_data SET status = 1002, version = 2 WHERE id = 12   AND version = 1
     [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (40, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 12)
-    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(40),  task: Null,  task_id: U64(12),  version: I64(1)}
+    [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(40),  task_id: U64(12),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 12 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, name, version, status AS status_id, platform AS platform_id FROM task_data WHERE (version > 0)
+              SELECT id, name, version, status AS status_id FROM task_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status] - [5 rows returned]
               SELECT id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [4 rows returned]
-              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> count_tasks] - [5 rows returned]
+              SELECT status, COUNT(*) AS count_tasks FROM task_data WHERE ((version > 0)   AND (status IN (1, 1001, 1002, 1003, 1004))) GROUP BY status
     [TIME]-[philip]-[INFO]-Finished query: Get active tasks
     --------------------------------------------------------------------------------
 
