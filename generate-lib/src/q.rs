@@ -206,23 +206,23 @@ pub trait TeaqlRepositoryProvider: TeaqlRuntime {
 
     #[allow(async_fn_in_trait)]
     pub trait TeaqlUserContextExt {
-        async fn commit_data(&self) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>>>;
+        async fn commit_data(&self) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>>>;
 
-        async fn transaction_data<F, Fut>(&self, f: F) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>>>
+        async fn transaction_data<F, Fut>(&self, f: F) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>>>
         where
             F: FnOnce() -> Fut,
-            Fut: Future<Output = Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>>>>;
+            Fut: Future<Output = Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>>>>;
     }
 
     impl TeaqlUserContextExt for teaql_runtime::UserContext {
-        async fn commit_data(&self) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>>> {
+        async fn commit_data(&self) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>>> {
             self.commit_changes::<crate::ServiceRuntimeExecutor>().await
         }
 
-        async fn transaction_data<F, Fut>(&self, f: F) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>>>
+        async fn transaction_data<F, Fut>(&self, f: F) -> Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>>>
         where
             F: FnOnce() -> Fut,
-            Fut: Future<Output = Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>>>>,
+            Fut: Future<Output = Result<(), RepositoryError<teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>>>>,
         {
             let executor = self.require_resource::<crate::ServiceRuntimeExecutor>().map_err(|err| {
                 RepositoryError::Runtime(RuntimeError::Graph(format!(

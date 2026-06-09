@@ -41,7 +41,7 @@ impl<R> Clone for TaskRequest<R> {
     }
 }
 
-impl<R> TaskRequest<R> {
+impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     pub(crate) fn new() -> Self {
         Self {
             query: SelectQuery::new("Task"),
@@ -99,7 +99,7 @@ impl<R> TaskRequest<R> {
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity,
+        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         let repository = ctx
             .task_repository()
@@ -124,7 +124,7 @@ impl<R> TaskRequest<R> {
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity,
+        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         let rows = self.limit(1)._execute_for_list(ctx).await?;
         Ok(rows.into_iter().next())
@@ -136,7 +136,7 @@ impl<R> TaskRequest<R> {
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity,
+        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         self._execute_for_first(ctx).await
     }
@@ -148,7 +148,7 @@ impl<R> TaskRequest<R> {
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity,
+        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         self.and_filter(Expr::eq("id", id))._execute_for_first(ctx).await
     }
@@ -161,7 +161,7 @@ impl<R> TaskRequest<R> {
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity,
+        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         let total_count = self.clone()._execute_for_count(ctx).await?;
         let mut rows = self.page_offset(offset, limit)._execute_for_list(ctx).await?;
@@ -1686,7 +1686,7 @@ impl<R> TaskRequest<R> {
 
 }
 
-impl<R> Default for TaskRequest<R> {
+impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> Default for TaskRequest<R> {
     fn default() -> Self {
         Self::new()
     }
@@ -1720,7 +1720,7 @@ where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
     }
 }
 
-impl<R: teaql_core::Entity> crate::PurposedQuery<TaskRequest<R>> {
+impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> crate::PurposedQuery<TaskRequest<R>> {
     pub fn new_entity<C>(&self, ctx: &C) -> crate::Task
     where
         C: crate::TeaqlRuntime + ?Sized,

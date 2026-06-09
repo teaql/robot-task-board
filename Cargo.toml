@@ -19,7 +19,7 @@ teaql-core = "3.2.4"
 teaql-runtime = "3.2.4"
 teaql-macros = "3.2.4"
 teaql-sql = "3.2.4"
-teaql-provider-rusqlite = "3.2.4"
+teaql-provider-sqlite = "3.2.4"
 teaql-data-service = "3.2.4"
 
 # Our generated TeaQL domain logic library
@@ -27,6 +27,11 @@ robot_kanban = { path = "./generate-lib/lib", package = "robot-kanban-service" }
 teaql-provider-meilisearch = "3.2.4"
 whoami = "2.1.2"
 rand = "0.10.1"
+teaql-provider-postgres = { version = "3.2.4", path = "../teaql-rs/teaql-provider-postgres" }
+teaql-provider-mysql = { version = "3.2.4", path = "../teaql-rs/teaql-provider-mysql" }
+tokio-postgres = "0.7.17"
+deadpool-postgres = "0.14.1"
+mysql_async = "0.37.0"
 
 [profile.release]
 opt-level = "z"
@@ -41,5 +46,5 @@ teaql-macros = { path = "../teaql-rs/teaql-macros" }
 teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
 teaql-sql = { path = "../teaql-rs/teaql-sql" }
 teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
-teaql-provider-rusqlite = { path = "../teaql-rs/teaql-provider-rusqlite" }
+teaql-provider-sqlite = { path = "../teaql-rs/teaql-provider-sqlite" }
 teaql-provider-meilisearch = { path = "../teaql-rs/teaql-provider-meilisearch" }

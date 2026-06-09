@@ -1313,14 +1313,14 @@ pub mod request_support {
 }
 pub mod runtime {
     use crate::*;
-    use teaql_provider_rusqlite::RusqliteProviderExt as _;
-    pub type DataServiceDialect = teaql_provider_rusqlite::RusqliteDialect;
+    use teaql_provider_sqlite::SqliteProviderExt as _;
+    pub type DataServiceDialect = teaql_provider_sqlite::SqliteDialect;
     pub type DataServiceMutationExecutor =
-        teaql_provider_rusqlite::RusqliteMutationExecutor;
+        teaql_provider_sqlite::SqliteMutationExecutor;
     pub type DataServiceMutationError =
-        teaql_provider_rusqlite::MutationExecutorError;
+        teaql_provider_sqlite::MutationExecutorError;
     pub type DataServiceIdGenerator =
-        teaql_provider_rusqlite::RusqliteIdSpaceGenerator;
+        teaql_provider_sqlite::SqliteIdSpaceGenerator;
     pub type DataServicePool = rusqlite::Connection;
     pub type DataServiceExecutor = ServiceRuntimeExecutor;
     pub type ServiceRuntime = teaql_runtime::UserContext;
@@ -1389,7 +1389,7 @@ pub mod runtime {
             source: std::env::VarError,
         },
         Runtime(teaql_runtime::RuntimeError),
-        Rusqlite(rusqlite::Error),
+        Sqlite(rusqlite::Error),
     }
     #[automatically_derived]
     impl ::core::fmt::Debug for ServiceRuntimeError {
@@ -1403,9 +1403,9 @@ pub mod runtime {
                 ServiceRuntimeError::Runtime(__self_0) =>
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f,
                         "Runtime", &__self_0),
-                ServiceRuntimeError::Rusqlite(__self_0) =>
+                ServiceRuntimeError::Sqlite(__self_0) =>
                     ::core::fmt::Formatter::debug_tuple_field1_finish(f,
-                        "Rusqlite", &__self_0),
+                        "Sqlite", &__self_0),
             }
         }
     }
@@ -1418,7 +1418,7 @@ pub mod runtime {
                 }
                 ServiceRuntimeError::Runtime(err) =>
                     f.write_fmt(format_args!("runtime error: {0}", err)),
-                ServiceRuntimeError::Rusqlite(err) =>
+                ServiceRuntimeError::Sqlite(err) =>
                     f.write_fmt(format_args!("rusqlite error: {0}", err)),
             }
         }
@@ -1429,13 +1429,13 @@ pub mod runtime {
                 ServiceRuntimeError::MissingEnv { source, .. } =>
                     Some(source),
                 ServiceRuntimeError::Runtime(err) => Some(err),
-                ServiceRuntimeError::Rusqlite(err) => Some(err),
+                ServiceRuntimeError::Sqlite(err) => Some(err),
             }
         }
     }
     impl From<rusqlite::Error> for ServiceRuntimeError {
         fn from(err: rusqlite::Error) -> Self {
-            ServiceRuntimeError::Rusqlite(err)
+            ServiceRuntimeError::Sqlite(err)
         }
     }
     impl From<teaql_runtime::RuntimeError> for ServiceRuntimeError {
@@ -1507,7 +1507,7 @@ pub mod runtime {
             ServiceRuntimeExecutor::new(mutation_executor.clone());
         let mut context = module_with_behaviors_and_checkers().into_context();
         context.set_internal_id_generator(id_generator);
-        context.use_rusqlite_provider(mutation_executor);
+        context.use_sqlite_provider(mutation_executor);
         context.insert_resource(runtime_executor);
         context.ensure_schema().await?;
         Ok(context)

@@ -10,38 +10,38 @@ pub use e::*;
 
 pub struct ServiceRuntimeExecutor {
     pub inner: teaql_sql::SqlDataServiceExecutor<
-        teaql_provider_rusqlite::RusqliteDialect,
-        teaql_provider_rusqlite::RusqliteMutationExecutor,
+        teaql_provider_sqlite::SqliteDialect,
+        teaql_provider_sqlite::SqliteMutationExecutor,
         teaql_runtime::InMemoryMetadataStore,
     >,
 }
 impl ServiceRuntimeExecutor {
-    pub fn new(inner: teaql_provider_rusqlite::RusqliteMutationExecutor) -> Self {
+    pub fn new(inner: teaql_provider_sqlite::SqliteMutationExecutor) -> Self {
         Self {
             inner: teaql_sql::SqlDataServiceExecutor::new(
-                teaql_provider_rusqlite::RusqliteDialect,
+                teaql_provider_sqlite::SqliteDialect,
                 inner,
                 module_with_behaviors_and_checkers().metadata.clone(),
             ),
         }
     }
 
-    pub fn begin_transaction(&self) -> Result<teaql_runtime::GraphTransactionBoundary, teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>> {
+    pub fn begin_transaction(&self) -> Result<teaql_runtime::GraphTransactionBoundary, teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>> {
         self.inner.transport.begin_transaction().map_err(teaql_sql::SqlExecutorError::Transport)?;
         Ok(teaql_runtime::GraphTransactionBoundary::Started)
     }
 
-    pub fn commit_transaction(&self) -> Result<(), teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>> {
+    pub fn commit_transaction(&self) -> Result<(), teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>> {
         self.inner.transport.commit_transaction().map_err(teaql_sql::SqlExecutorError::Transport)
     }
 
-    pub fn rollback_transaction(&self) -> Result<(), teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>> {
+    pub fn rollback_transaction(&self) -> Result<(), teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>> {
         self.inner.transport.rollback_transaction().map_err(teaql_sql::SqlExecutorError::Transport)
     }
 }
 
 impl teaql_data_service::DataServiceExecutor for ServiceRuntimeExecutor {
-    type Error = teaql_sql::SqlExecutorError<teaql_provider_rusqlite::MutationExecutorError>;
+    type Error = teaql_sql::SqlExecutorError<teaql_provider_sqlite::MutationExecutorError>;
 
     fn capabilities(&self) -> teaql_data_service::DataServiceCapabilities {
         teaql_data_service::DataServiceExecutor::capabilities(&self.inner)

@@ -1,9 +1,9 @@
 use std::error::Error;
 use std::sync::Mutex;
 use robot_kanban::{AuditedSave, Q, Task, TaskExecutionLog};
-use teaql_provider_rusqlite::{
-    ensure_rusqlite_schema_for, RusqliteIdSpaceGenerator,
-    RusqliteMutationExecutor, RusqliteProviderExt,
+use teaql_provider_postgres::{
+    ensure_postgres_schema_for, PgIdSpaceGenerator,
+    PgMutationExecutor, PostgresProviderExt,
 };
 use teaql_runtime::{
     UserContext, UnifiedLogBuffer, LogPayload,
@@ -97,7 +97,7 @@ impl TaskDomainBehavior for Task {
 pub struct TaskService {
     ctx: UserContext,
     #[allow(dead_code)]
-    inner_executor: RusqliteMutationExecutor,
+    inner_executor: PgMutationExecutor,
     last_log_index: Mutex<usize>,
     pub status_cache: std::collections::HashMap<u64, String>,
 }
@@ -110,8 +110,13 @@ impl TaskService {
     /// - `SchemaCreated` events are fired for each table created
     /// - `DataSeeded` events are fired for each entity type seeded
     pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
-        let conn = rusqlite::Connection::open(db_path)?;
-        let inner_executor = RusqliteMutationExecutor::new(conn);
+        let mut cfg = deadpool_postgres::Config::new();
+        cfg.host = Some("localhost".to_string());
+        cfg.user = Some("postgres".to_string());
+        cfg.password = Some("postgres".to_string());
+        cfg.dbname = Some("postgres".to_string());
+        let pool = cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), tokio_postgres::NoTls)?;
+        let inner_executor = PgMutationExecutor::new(pool);
 
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
@@ -129,8 +134,8 @@ impl TaskService {
         }
 
         // Register synchronous executors
-        ctx.use_rusqlite_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(RusqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
+        ctx.use_postgres_provider(inner_executor.clone());
+        ctx.set_internal_id_generator(PgIdSpaceGenerator::from_executor(inner_executor.clone()));
 
         // Also register ServiceRuntimeExecutor for the generated repository lookups
         let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
@@ -139,7 +144,7 @@ impl TaskService {
         // Build Schema & seed initial values if missing.
         // This now fires SchemaCreated and DataSeeded events through the EntityEventSink,
         // which are captured in the UnifiedLogBuffer for the startup screen to observe.
-        ensure_rusqlite_schema_for(&ctx)?;
+        ensure_postgres_schema_for(&ctx).await?;
 
         let mut status_cache = std::collections::HashMap::new();
         let statuses = robot_kanban::Q::task_status()

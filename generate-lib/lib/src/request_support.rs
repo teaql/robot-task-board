@@ -68,7 +68,7 @@ pub trait TeaqlRecordRepository {
 pub trait TeaqlEntityRepository: TeaqlRecordRepository {
     async fn fetch_enhanced_entities<T>(&self, query: &SelectQuery) -> Result<SmartList<T>, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity;
+        T: teaql_core::Entity + teaql_runtime::LedgerEntity;
 
     async fn fetch_enhanced_entities_with_relation_aggregates<T>(
         &self,
@@ -76,11 +76,11 @@ pub trait TeaqlEntityRepository: TeaqlRecordRepository {
         relation_aggregates: &[RuntimeRelationAggregate],
     ) -> Result<SmartList<T>, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity;
+        T: teaql_core::Entity + teaql_runtime::LedgerEntity;
 
     async fn save_entity_graph<T>(&self, entity: T) -> Result<GraphNode, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity;
+        T: teaql_core::Entity + teaql_runtime::LedgerEntity;
 }
 
 impl<'a, E> TeaqlRecordRepository for teaql_runtime::ResolvedRepository<'a, E>
@@ -116,7 +116,7 @@ where
 {
     async fn fetch_enhanced_entities<T>(&self, query: &SelectQuery) -> Result<SmartList<T>, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity,
+        T: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         teaql_runtime::ResolvedRepository::fetch_enhanced_entities(self, query).await
     }
@@ -127,7 +127,7 @@ where
         relation_aggregates: &[RuntimeRelationAggregate],
     ) -> Result<SmartList<T>, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity,
+        T: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         teaql_runtime::ResolvedRepository::fetch_enhanced_entities_with_relation_aggregates(
             self,
@@ -138,7 +138,7 @@ where
 
     async fn save_entity_graph<T>(&self, entity: T) -> Result<GraphNode, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity,
+        T: teaql_core::Entity + teaql_runtime::LedgerEntity,
     {
         teaql_runtime::ResolvedRepository::save_entity_graph(self, entity).await
     }

@@ -17,7 +17,8 @@ teaql-runtime = "3.2.4"
 teaql-sql = "3.2.4"
 teaql-data-service = "3.2.4"
 teaql-tool-core = "1.0.0"
-teaql-provider-rusqlite = "3.2.4"
-rusqlite = { version = "0.32", features = ["bundled", "chrono", "column_decltype"] }
+teaql-provider-postgres = { path = "../../../teaql-rs/teaql-provider-postgres" }
+tokio-postgres = "0.7"
+deadpool-postgres = "0.14"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 teaql-provider-meilisearch = "3.2.4"

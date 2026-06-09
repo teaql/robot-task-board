@@ -1,12 +1,12 @@
 
 use crate::*;
 use teaql_core::TeaqlEntity;
-use teaql_provider_rusqlite::RusqliteProviderExt as _;
+use teaql_provider_sqlite::SqliteProviderExt as _;
 
-pub type DataServiceDialect = teaql_provider_rusqlite::RusqliteDialect;
-pub type DataServiceMutationExecutor = teaql_provider_rusqlite::RusqliteMutationExecutor;
-pub type DataServiceMutationError = teaql_provider_rusqlite::MutationExecutorError;
-pub type DataServiceIdGenerator = teaql_provider_rusqlite::RusqliteIdSpaceGenerator;
+pub type DataServiceDialect = teaql_provider_sqlite::SqliteDialect;
+pub type DataServiceMutationExecutor = teaql_provider_sqlite::SqliteMutationExecutor;
+pub type DataServiceMutationError = teaql_provider_sqlite::MutationExecutorError;
+pub type DataServiceIdGenerator = teaql_provider_sqlite::SqliteIdSpaceGenerator;
 pub type DataServicePool = rusqlite::Connection;
 pub type DataServiceExecutor = ServiceRuntimeExecutor;
 pub type ServiceRuntime = teaql_runtime::UserContext;
@@ -32,7 +32,7 @@ pub enum ServiceRuntimeError {
         name: &'static str,
         source: std::env::VarError,
     },
-    Rusqlite(rusqlite::Error),
+    Sqlite(rusqlite::Error),
     Runtime(teaql_runtime::RuntimeError),
 }
 
@@ -40,7 +40,7 @@ impl std::fmt::Display for ServiceRuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ServiceRuntimeError::MissingEnv { name, source } => write!(f, "missing environment variable {name}: {source}"),
-            ServiceRuntimeError::Rusqlite(err) => write!(f, "rusqlite error: {err}"),
+            ServiceRuntimeError::Sqlite(err) => write!(f, "rusqlite error: {err}"),
             ServiceRuntimeError::Runtime(err) => write!(f, "runtime error: {err}"),
         }
     }
@@ -50,7 +50,7 @@ impl std::error::Error for ServiceRuntimeError {}
 
 impl From<rusqlite::Error> for ServiceRuntimeError {
     fn from(err: rusqlite::Error) -> Self {
-        ServiceRuntimeError::Rusqlite(err)
+        ServiceRuntimeError::Sqlite(err)
     }
 }
 
@@ -74,7 +74,7 @@ pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceR
     let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());
     let mut context = module_with_behaviors_and_checkers().into_context();
     context.set_internal_id_generator(id_generator);
-    context.use_rusqlite_provider(mutation_executor.clone());
+    context.use_sqlite_provider(mutation_executor.clone());
     context.insert_resource(ServiceRuntimeExecutor::new(mutation_executor));
     
     // 自动加载 Zero-Code 审计配置与 Schema 模式

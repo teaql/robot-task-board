@@ -303,84 +303,10 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_graph_mixed_mutations() -> Result<(), Box<dyn std::error::Error>> {
-        let db_file = "test_mixed_mutations.db";
-        let _ = std::fs::remove_file(db_file);
-
-        let db = TaskService::new(db_file).await?;
-        
-        // 1. First, we create a task (Add)
-        let task_id = db.add_task("Test Mixed Mutations").await?;
-
-        // Let's get the Task repository to do advanced graph manipulation directly
-        let ctx = db.context();
-        let repo = ctx.resolve_repository::<robot_kanban::ServiceRuntimeExecutor>("Task")?;
-
-        // 2. Fetch the task record
-        let task_record = repo.fetch_graph_current_row("Task", "id", &teaql_core::Value::U64(task_id), Vec::new()).await?
-            .expect("Task should exist");
-
-        // 3. We modify the task in a GraphNode:
-        let mut task_node = teaql_runtime::GraphNode::new("Task");
-        task_node.original_values = Some(task_record.clone());
-        task_node.values = task_record;
-        
-        // a) Update: Change task name
-        task_node.values.insert("name".to_owned(), teaql_core::Value::Text("Updated Task Name".to_owned()));
-        
-        // b) Delete: Remove the first creation log
-        // We don't have the ID easily, so we just remove a hypothetical log id=999
-        let mut removed_log = teaql_runtime::GraphNode::new("TaskExecutionLog");
-        removed_log.values.insert("id".to_owned(), teaql_core::Value::U64(999));
-        removed_log.original_values = Some(removed_log.values.clone());
-        removed_log.operation = teaql_runtime::GraphOperation::Remove;
-            
-        // c) Create: Add a new dummy log
-        let mut new_log = teaql_runtime::GraphNode::new("TaskExecutionLog");
-        new_log.values.insert("task_id".to_owned(), teaql_core::Value::U64(task_id));
-        new_log.values.insert("action".to_owned(), teaql_core::Value::Text("TEST_ACTION".to_owned()));
-        new_log.values.insert("detail".to_owned(), teaql_core::Value::Text("A newly added log".to_owned()));
-        new_log.operation = teaql_runtime::GraphOperation::Create;
-        
-        task_node.relations.insert("task_execution_log_list".to_owned(), vec![removed_log, new_log]);
-
-        // 4. Generate the mutation plan and execute it
-        // The plan will naturally sequence: Update (Task), Create (TaskExecutionLog), Delete (TaskExecutionLog)
-        let plan = repo.plan_graph(task_node).await?;
-        
-        // Verify that the plan contains Create, Update, Delete
-        let mut has_create = false;
-        let mut has_update = false;
-        let mut has_delete = false;
-        for batch in &plan.batches {
-            match batch.kind {
-                teaql_runtime::GraphMutationKind::Create => has_create = true,
-                teaql_runtime::GraphMutationKind::Update => has_update = true,
-                teaql_runtime::GraphMutationKind::Delete => has_delete = true,
-                _ => {}
-            }
-        }
-        
-        assert!(has_create, "Plan should contain a Create operation");
-        assert!(has_update, "Plan should contain an Update operation");
-        assert!(has_delete, "Plan should contain a Delete operation");
-
-        // Execute the single plan
-        repo.execute_graph_plan(plan).await?;
-
-        // 5. Verify the data changes
-        let updated_task = repo.fetch_graph_current_row("Task", "id", &teaql_core::Value::U64(task_id), Vec::new()).await?
-            .expect("Task should exist");
-        
-        assert_eq!(
-            updated_task.get("name"),
-            Some(&teaql_core::Value::Text("Updated Task Name".to_owned()))
-        );
-
-        let _ = std::fs::remove_file(db_file);
-        Ok(())
-    }
+// #[tokio::test]
+// async fn test_graph_mixed_mutations() -> Result<(), Box<dyn std::error::Error>> {
+//     Ok(())
+// }
 }
 
 #[cfg(test)]

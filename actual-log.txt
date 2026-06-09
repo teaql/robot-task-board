@@ -453,13 +453,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Mission Timeline', status = 1002, platform = 1, version = 2 WHERE id = 1   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (17, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 1)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(17),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 1
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 1 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -482,13 +482,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Mission Timeline', status = 1003, platform = 1, version = 3 WHERE id = 1   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (18, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 1)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(18),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 1
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 1 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -511,13 +511,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Mission Timeline' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 1)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Mission Timeline', status = 1004, platform = 1, version = 4 WHERE id = 1   AND version = 3
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (19, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 1)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(19),  task_id: U64(1),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] - [1 rows affected]
+              UPDATE task_data SET status = 1004 WHERE id = 1
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Mission Timeline' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 1 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -540,13 +540,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Validate Payload Configuration', status = 1002, platform = 1, version = 2 WHERE id = 2   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (20, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 2)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(20),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 2
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 2 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -569,13 +569,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Validate Payload Configuration', status = 1003, platform = 1, version = 3 WHERE id = 2   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (21, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 2)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(21),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 2
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 2 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -598,13 +598,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Validate Payload Configuration' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 2)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] - [1 rows affected]
-              UPDATE task_data SET name = 'Validate Payload Configuration', status = 1004, platform = 1, version = 4 WHERE id = 2   AND version = 3
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (22, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 2)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(22),  task_id: U64(2),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] - [1 rows affected]
+              UPDATE task_data SET status = 1004 WHERE id = 2
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Validate Payload Configuration' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 2 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -627,13 +627,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Verify Flight Software Build', status = 1002, platform = 1, version = 2 WHERE id = 3   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (23, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 3)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(23),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 3
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 3 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -656,13 +656,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Verify Flight Software Build', status = 1003, platform = 1, version = 3 WHERE id = 3   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (24, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 3)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(24),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 3
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 3 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -685,13 +685,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Verify Flight Software Build' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 3)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] - [1 rows affected]
-              UPDATE task_data SET name = 'Verify Flight Software Build', status = 1004, platform = 1, version = 4 WHERE id = 3   AND version = 3
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (25, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 3)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(25),  task_id: U64(3),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] - [1 rows affected]
+              UPDATE task_data SET status = 1004 WHERE id = 3
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Verify Flight Software Build' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 3 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -714,13 +714,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Calibrate Guidance System', status = 1002, platform = 1, version = 2 WHERE id = 4   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (26, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 4)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(26),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 4
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 4 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -743,13 +743,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Calibrate Guidance System', status = 1003, platform = 1, version = 3 WHERE id = 4   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (27, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 4)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(27),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 4
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 4 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -772,13 +772,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Calibrate Guidance System' EXECUTING => VERIFIED
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 4)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] - [1 rows affected]
-              UPDATE task_data SET name = 'Calibrate Guidance System', status = 1004, platform = 1, version = 4 WHERE id = 4   AND version = 3
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (28, 'STATUS_CHANGED', 'Status changed from EXECUTING to VERIFIED.', 1, 4)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te**********************************************") [MASKED],  id: U64(28),  task_id: U64(4),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te**********************************************") [MASKED] [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] - [1 rows affected]
+              UPDATE task_data SET status = 1004 WHERE id = 4
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Calibrate Guidance System' EXECUTING => VERIFIED] {status: U64(1004)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 4 to 'VERIFIED' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -801,13 +801,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Load Flight Parameters' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 5)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Load Flight Parameters', status = 1002, platform = 1, version = 2 WHERE id = 5   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (29, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 5)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(29),  task_id: U64(5),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 5
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Load Flight Parameters' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 5 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -830,13 +830,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Load Flight Parameters' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 5)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Load Flight Parameters', status = 1003, platform = 1, version = 3 WHERE id = 5   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (30, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 5)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(30),  task_id: U64(5),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 5
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Load Flight Parameters' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 5 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -859,13 +859,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Initialize Ground Telemetry' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 6)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Initialize Ground Telemetry', status = 1002, platform = 1, version = 2 WHERE id = 6   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (31, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 6)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(31),  task_id: U64(6),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 6
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Initialize Ground Telemetry' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 6 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -888,13 +888,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Initialize Ground Telemetry' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 6)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Initialize Ground Telemetry', status = 1003, platform = 1, version = 3 WHERE id = 6   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (32, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 6)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(32),  task_id: U64(6),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 6
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Initialize Ground Telemetry' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 6 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -917,13 +917,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Telemetry Anomaly' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 7)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Telemetry Anomaly', status = 1002, platform = 1, version = 2 WHERE id = 7   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (33, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 7)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(33),  task_id: U64(7),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 7
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Telemetry Anomaly' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 7 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -946,13 +946,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Telemetry Anomaly' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 7)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Telemetry Anomaly', status = 1003, platform = 1, version = 3 WHERE id = 7   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (34, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 7)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(34),  task_id: U64(7),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 7
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Telemetry Anomaly' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 7 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -975,13 +975,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Launch Criteria' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 8)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Launch Criteria', status = 1002, platform = 1, version = 2 WHERE id = 8   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (35, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 8)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(35),  task_id: U64(8),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 8
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Launch Criteria' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 8 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -1004,13 +1004,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Review Launch Criteria' READY => EXECUTING
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 8)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] - [1 rows affected]
-              UPDATE task_data SET name = 'Review Launch Criteria', status = 1003, platform = 1, version = 3 WHERE id = 8   AND version = 2
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (36, 'STATUS_CHANGED', 'Status changed from READY to EXECUTING.', 1, 8)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*******************************************") [MASKED],  id: U64(36),  task_id: U64(8),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*******************************************") [MASKED] [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] - [1 rows affected]
+              UPDATE task_data SET status = 1003 WHERE id = 8
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Review Launch Criteria' READY => EXECUTING] {status: U64(1003)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 8 to 'EXECUTING' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -1033,13 +1033,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Range Safety Check' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 9)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Range Safety Check', status = 1002, platform = 1, version = 2 WHERE id = 9   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Range Safety Check' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (37, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 9)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(37),  task_id: U64(9),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Range Safety Check' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Range Safety Check' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 9
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Range Safety Check' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 9 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -1062,13 +1062,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Begin Propellant Loading' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 10)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Begin Propellant Loading', status = 1002, platform = 1, version = 2 WHERE id = 10   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (38, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 10)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(38),  task_id: U64(10),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 10
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Begin Propellant Loading' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 10 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -1091,13 +1091,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Complete Cryogenic Fueling' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 11)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Complete Cryogenic Fueling', status = 1002, platform = 1, version = 2 WHERE id = 11   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (39, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 11)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(39),  task_id: U64(11),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 11
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Complete Cryogenic Fueling' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 11 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
@@ -1120,13 +1120,13 @@
     [TIME]-[philip]-[INFO]-Starting business action: Move 'Arm Flight Termination System' PLANNED => READY
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] - [1 rows returned]
               SELECT id, name, version, status AS status_id FROM task_data WHERE (id = 12)
-    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] - [1 rows affected]
-              UPDATE task_data SET name = 'Arm Flight Termination System', status = 1002, platform = 1, version = 2 WHERE id = 12   AND version = 1
-    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] - [1 rows affected]
               INSERT INTO task_execution_log_data (id, action, detail, version, task) VALUES (40, 'STATUS_CHANGED', 'Status changed from PLANNED to READY.', 1, 12)
     [TIME]-[philip]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Te*****************************************") [MASKED],  id: U64(40),  task_id: U64(12),  version: I64(1)}
     [TIME]-[philip]-[INFO]-Business Log: Te*****************************************") [MASKED] [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY -> Generate execution log for action 'STATUS_CHANGED']
+    [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] - [1 rows affected]
+              UPDATE task_data SET status = 1002 WHERE id = 12
+    [TIME]-[philip]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move 'Arm Flight Termination System' PLANNED => READY] {status: U64(1002)}
     [TIME]-[philip]-[INFO]-Finished business action: Moved task 12 to 'READY' (DDD transition)
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
