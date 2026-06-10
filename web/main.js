@@ -59,44 +59,114 @@ function renderTasks() {
 }
 
 function handleCommand(cmdStr) {
-  const args = cmdStr.trim().split(" ");
-  const cmd = args[0].toLowerCase();
-  
+  const trimmed = cmdStr.trim();
+  if (trimmed === "") return;
+
+  // Setup command and args similar to Rust
+  let cmd = "add";
+  let args = trimmed;
+
+  if (trimmed.startsWith("/")) {
+    const withoutSlash = trimmed.substring(1);
+    const parts = withoutSlash.split(" ");
+    cmd = parts[0].toLowerCase();
+    args = parts.slice(1).join(" ");
+  }
+
+  const username = "philip";
+
+  function getU64Id(status) {
+    if(status === "PLANNED") return 1001;
+    if(status === "READY") return 1002;
+    if(status === "EXECUTING") return 1003;
+    if(status === "VERIFIED") return 1004;
+    return 1001;
+  }
+
   if (cmd === "add") {
-    const name = args.slice(1).join(" ");
-    if (name) {
-      tasks.push({ id: nextId++, name, status: "PLANNED" });
-      addLog("INFO", `Created task: ${name}`);
+    if (args.trim() === "") {
+      addLog("INFO", "Error: Task name cannot be empty. Usage: /add <task name>");
+    } else {
+      const name = args;
+      const id = nextId++;
+      tasks.push({ id, name, status: "PLANNED" });
+      
+      const trace1 = `[${username}]-[AUDIT]-Entity [Task(${id})] CREATED. [DOMAIN: User Requested -> Task Created] {id: U64(${id}),  name: Text("${name}"),  platform_id: NULL,  status_id: U64(1001),  version: I64(1)}`;
+      addLog("INFO", trace1);
+      
+      addLog("INFO", "SqlLogEntry\nDOMAIN: User Requested -> Task Created\n✔ INSERT INTO `task` (`name`, `status_id`, `version`) VALUES ('" + name + "', 1001, 1);");
     }
-  } else if (cmd === "move") {
-    const id = parseInt(args[1], 10);
+  } else if (cmd === "move" || cmd === "mv") {
+    const moveParts = args.split(" ");
+    if (args.trim() === "" || moveParts.length === 0) {
+      addLog("INFO", "Error: Missing arguments. Usage: /mv <id> [planned|ready|executing|verified|next]");
+      return;
+    }
+    const id = parseInt(moveParts[0], 10);
+    const target = moveParts.length > 1 ? moveParts[1].toLowerCase() : "";
     const task = tasks.find(t => t.id === id);
-    if (task) {
-      const idx = statuses.indexOf(task.status);
-      if (idx < statuses.length - 1) {
-        task.status = statuses[idx + 1];
-        addLog("INFO", `Moved task ${id} to ${task.status}`);
-      } else {
-        addLog("WARN", `Task ${id} is already in final state.`);
+    if (!task) {
+      addLog("INFO", `WARNING: Task ${id} not found.`);
+    } else {
+      const currentIdx = statuses.indexOf(task.status);
+      let nextStatus = task.status;
+      
+      if (target === "planned") nextStatus = "PLANNED";
+      else if (target === "ready") nextStatus = "READY";
+      else if (target === "executing") nextStatus = "EXECUTING";
+      else if (target === "verified") nextStatus = "VERIFIED";
+      else if (target === "next" || target === "") {
+         if (currentIdx < statuses.length - 1) nextStatus = statuses[currentIdx + 1];
       }
-    } else {
-      addLog("WARN", `Task ${id} not found.`);
+
+      if (nextStatus === task.status) {
+        addLog("INFO", `WARNING: Task ${id} is already in its final status and cannot be moved further.`);
+      } else {
+        const oldStatus = task.status;
+        task.status = nextStatus;
+        
+        const trace1 = `[${username}]-[AUDIT]-Entity [Task] UPDATED. [DOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus}] {status: U64(${getU64Id(nextStatus)})}`;
+        addLog("INFO", trace1);
+        
+        const trace2 = `[${username}]-[AUDIT]-Entity [TaskExecutionLog] CREATED. [DOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus} -> Generate execution log for action 'STATUS_CHANGED'] {action: Text("STATUS_CHANGED"),  detail: Text("Task ${id} moved from ${oldStatus} to ${nextStatus}"),  id: U64(999),  task_id: U64(${id}),  version: I64(1)}`;
+        addLog("INFO", trace2);
+        
+        const trace3 = `[${username}]-[INFO]-Business Log: Task ${id} moved from ${oldStatus} to ${nextStatus} [DOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus} -> Generate execution log for action 'STATUS_CHANGED']`;
+        addLog("INFO", trace3);
+        
+        addLog("INFO", `SqlLogEntry\nDOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus}\n✔ UPDATE \`task\` SET \`status_id\` = ${getU64Id(nextStatus)} WHERE \`id\` = ${id};`);
+      }
     }
-  } else if (cmd === "rm") {
-    const id = parseInt(args[1], 10);
-    const initialLen = tasks.length;
-    tasks = tasks.filter(t => t.id !== id);
-    if (tasks.length < initialLen) {
-      addLog("INFO", `Deleted task ${id}`);
+  } else if (cmd === "delete" || cmd === "del") {
+    if (args.trim() === "") {
+      addLog("INFO", "Error: Missing task ID. Usage: /del <id>");
     } else {
-      addLog("WARN", `Task ${id} not found.`);
+      const id = parseInt(args, 10);
+      const initialLen = tasks.length;
+      const task = tasks.find(t => t.id === id);
+      tasks = tasks.filter(t => t.id !== id);
+      if (tasks.length < initialLen) {
+        addLog("INFO", `[${username}]-[AUDIT]-Entity [Task] DELETED. [DOMAIN: User Requested -> Delete Task ${id}] {id: U64(${id})}`);
+        addLog("INFO", `SqlLogEntry\nDOMAIN: User Requested -> Delete Task ${id}\n✔ DELETE FROM \`task\` WHERE \`id\` = ${id};`);
+      } else {
+        addLog("INFO", `Error: Invalid task ID '${args}'`);
+      }
     }
-  } else if (cmd === "q") {
-    addLog("INFO", "Quit command received. (Browser mode: ignoring)");
-  } else if (cmdStr.trim() !== "") {
-    addLog("WARN", `Unknown command: ${cmd}`);
+  } else if (cmd === "search" || cmd === "s") {
+    if (args.trim() === "") {
+      addLog("INFO", "Cleared active search query.");
+    } else {
+      addLog("INFO", `Searching for tasks by keyword: '${args}'`);
+    }
+  } else if (cmd === "reload" || cmd === "r") {
+    addLog("INFO", "Reloading task data from database...");
+  } else if (cmd === "exit" || cmd === "quit" || cmd === "q") {
+    addLog("INFO", "Exiting application...");
+  } else {
+    addLog("INFO", `Unknown command: '/${cmd}'. Type a task name directly or use /r, /mv, /del, /s, /q`);
   }
   
+  addLog("INFO", "--------------------------------------------------------------------------------");
   renderTasks();
 }
 
