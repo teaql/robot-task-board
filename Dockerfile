@@ -8,7 +8,6 @@ WORKDIR /app
 # Copy the TTYD binary and the Rust TUI release binary
 COPY ttyd /app/ttyd
 COPY robot-task-board-release /app/robot-task-board-release
-COPY robot_kanban.db /app/robot_kanban.db
 
 RUN chmod +x /app/ttyd /app/robot-task-board-release
 
