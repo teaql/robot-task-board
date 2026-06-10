@@ -1,4 +1,6 @@
 *
 !robot-task-board
 !robot-task-board-release
+!ttyd
+!robot_kanban.db
 !Dockerfile
