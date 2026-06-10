@@ -7,8 +7,8 @@
 **Fully open source:** demo app + generated libraries + TeaQL Rust runtime.
 
 ```bash
-docker rmi -f teaql/robot-task-board:latest
-docker run --rm -it teaql/robot-task-board:latest
+docker rmi -f teaql/robot-task-board:minimal
+docker run --rm -it teaql/robot-task-board:minimal
 ```
 
 ### Highlights
