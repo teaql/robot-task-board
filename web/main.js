@@ -178,14 +178,13 @@ cmdInput.addEventListener("keydown", (e) => {
   }
 });
 
-// Focus command line on any click
-document.body.addEventListener("click", () => {
-  cmdInput.focus();
-});
-
-// Keep focus
-cmdInput.addEventListener("blur", () => {
-  setTimeout(() => cmdInput.focus(), 10);
+// Focus command line if user types any character (unless they are selecting text and pressing ctrl/cmd)
+window.addEventListener("keydown", (e) => {
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && document.activeElement !== cmdInput) {
+    // If user is just typing normal characters and input isn't focused, focus it
+    // But allow copying (Ctrl+C) when text is selected!
+    cmdInput.focus();
+  }
 });
 
 // Init
