@@ -94,7 +94,7 @@ function handleCommand(cmdStr) {
       const trace1 = `[${username}]-[AUDIT]-Entity [Task(${id})] CREATED. [DOMAIN: User Requested -> Task Created] {id: U64(${id}),  name: Text("${name}"),  platform_id: NULL,  status_id: U64(1001),  version: I64(1)}`;
       addLog("INFO", trace1);
       
-      addLog("INFO", "SqlLogEntry\nDOMAIN: User Requested -> Task Created\n✔ INSERT INTO `task` (`name`, `status_id`, `version`) VALUES ('" + name + "', 1001, 1);");
+      addLog("INFO", "SqlLogEntry\nDOMAIN: User Requested -> Task Created\n✔ INSERT INTO task_data (id, name, version, status, platform) VALUES (" + id + ", '" + name + "', 1, 1001, 1)");
     }
   } else if (cmd === "move" || cmd === "mv") {
     const moveParts = args.split(" ");
@@ -134,7 +134,7 @@ function handleCommand(cmdStr) {
         const trace3 = `[${username}]-[INFO]-Business Log: Task ${id} moved from ${oldStatus} to ${nextStatus} [DOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus} -> Generate execution log for action 'STATUS_CHANGED']`;
         addLog("INFO", trace3);
         
-        addLog("INFO", `SqlLogEntry\nDOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus}\n✔ UPDATE \`task\` SET \`status_id\` = ${getU64Id(nextStatus)} WHERE \`id\` = ${id};`);
+        addLog("INFO", `SqlLogEntry\nDOMAIN: Move '${task.name}' ${oldStatus} => ${nextStatus}\n✔ UPDATE task_data SET status = ${getU64Id(nextStatus)} WHERE id = ${id}`);
       }
     }
   } else if (cmd === "delete" || cmd === "del") {
@@ -147,7 +147,7 @@ function handleCommand(cmdStr) {
       tasks = tasks.filter(t => t.id !== id);
       if (tasks.length < initialLen) {
         addLog("INFO", `[${username}]-[AUDIT]-Entity [Task] DELETED. [DOMAIN: User Requested -> Delete Task ${id}] {id: U64(${id})}`);
-        addLog("INFO", `SqlLogEntry\nDOMAIN: User Requested -> Delete Task ${id}\n✔ DELETE FROM \`task\` WHERE \`id\` = ${id};`);
+        addLog("INFO", `SqlLogEntry\nDOMAIN: User Requested -> Delete Task ${id}\n✔ DELETE FROM task_data WHERE id = ${id}`);
       } else {
         addLog("INFO", `Error: Invalid task ID '${args}'`);
       }
