@@ -1,17 +1,16 @@
+use robot_kanban::{AuditedSave, Platform, Task, TaskExecutionLog, Q};
 use std::error::Error;
 use std::sync::Mutex;
-use robot_kanban::{AuditedSave, Q, Task, TaskExecutionLog};
-use teaql_provider_postgres::{
-    ensure_postgres_schema_for, PgIdSpaceGenerator,
-    PgMutationExecutor, PostgresProviderExt,
-};
-use teaql_runtime::{
-    UserContext, UnifiedLogBuffer, LogPayload,
-};
 use teaql_core::{Entity, TeaqlEntity};
+use teaql_provider_sqlite::{
+    ensure_sqlite_schema_for, SqliteMutationExecutor, SqliteProviderExt,
+};
+use rusqlite::Connection;
+use std::sync::Arc;
+use teaql_runtime::{LogPayload, UnifiedLogBuffer, UserContext};
 
 use crate::logging::{is_bootstrap_message, AppAuditSink};
-use crate::models::{TaskModel, ReloadedData, MoveResult};
+use crate::models::{MoveResult, ReloadedData, TaskModel};
 
 pub trait UserContextExt {
     fn next_id_for<T: TeaqlEntity>(&self) -> Result<u64, Box<dyn Error>>;
@@ -25,9 +24,16 @@ impl UserContextExt for UserContext {
 }
 
 pub trait TaskDomainBehavior {
-    fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> where Self: Sized;
+    fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String>
+    where
+        Self: Sized;
     fn transition_status(&self, cmd: &TransitionCommand) -> Result<Option<u64>, String>;
-    fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog;
+    fn generate_execution_log(
+        &self,
+        action: &str,
+        detail: &str,
+        ctx: &UserContext,
+    ) -> TaskExecutionLog;
 }
 
 pub struct TransitionCommand {
@@ -36,6 +42,7 @@ pub struct TransitionCommand {
 
 pub struct CreateTaskCommand {
     pub name: String,
+    pub tenant_id: u64,
 }
 
 impl TaskDomainBehavior for Task {
@@ -43,20 +50,31 @@ impl TaskDomainBehavior for Task {
         if cmd.name.trim().is_empty() {
             return Err("Task name cannot be empty".to_owned());
         }
-        
+
         let comment = format!("Create task '{}'", cmd.name);
-        let mut task = Q::tasks().comment(&comment).purpose("Create new task").new_entity(ctx);
+        let mut task = Q::tasks()
+            .comment(&comment)
+            .purpose("Create new task")
+            .new_entity(ctx);
         task.update_id(next_id)
             .update_name(cmd.name.clone())
             .update_version(0_i64)
             .update_status_to_planned()
-            .update_platform_id(1_u64);
+            .update_tenant_id(cmd.tenant_id);
         Ok(task)
     }
 
-    fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> TaskExecutionLog {
+    fn generate_execution_log(
+        &self,
+        action: &str,
+        detail: &str,
+        ctx: &UserContext,
+    ) -> TaskExecutionLog {
         let comment = format!("Generate execution log for action '{}'", action);
-        let mut log = Q::task_execution_logs().comment(&comment).purpose("Create execution log").new_entity(ctx);
+        let mut log = Q::task_execution_logs()
+            .comment(&comment)
+            .purpose("Create execution log")
+            .new_entity(ctx);
         teaql_core::Entity::set_comment(&mut log, comment);
         log.update_action(action.to_owned())
             .update_detail(detail.to_owned())
@@ -65,15 +83,11 @@ impl TaskDomainBehavior for Task {
         log
     }
 
-    /// Domain behavior method showing DDD Aggregate Root logic.
-    /// Transitions task status based on a TransitionCommand object.
-    /// If target status is empty, it automatically moves to the next phase.
     fn transition_status(&self, cmd: &TransitionCommand) -> Result<Option<u64>, String> {
         let current_status = self.status_id();
         let target = cmd.target_status.trim().to_lowercase();
 
         let next_status_id = if target.is_empty() {
-            // Planned -> Ready -> Executing -> Verified
             match current_status {
                 1001 => Some(1002_u64),
                 1002 => Some(1003_u64),
@@ -97,61 +111,44 @@ impl TaskDomainBehavior for Task {
 pub struct TaskService {
     ctx: UserContext,
     #[allow(dead_code)]
-    inner_executor: PgMutationExecutor,
+    inner_executor: SqliteMutationExecutor,
     last_log_index: Mutex<usize>,
     pub status_cache: std::collections::HashMap<u64, String>,
 }
 
 impl TaskService {
-    /// Initializes SQLite database, creates/updates schemas, seeds initial data,
-    /// constructs the thread-safe UserContext, and returns the fully configured TaskService.
-    ///
-    /// Bootstrap progress is observable through `EntityEventSink`:
-    /// - `SchemaCreated` events are fired for each table created
-    /// - `DataSeeded` events are fired for each entity type seeded
-    pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
-        let mut cfg = deadpool_postgres::Config::new();
-        cfg.host = Some("localhost".to_string());
-        cfg.user = Some("postgres".to_string());
-        cfg.password = Some("postgres".to_string());
-        cfg.dbname = Some("postgres".to_string());
-        let pool = cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), tokio_postgres::NoTls)?;
-        let inner_executor = PgMutationExecutor::new(pool);
-
+    pub async fn new() -> Result<Self, Box<dyn Error>> {
+        let conn = Connection::open("teaql_data.db").map_err(|e| e.to_string())?;
+        let inner_executor = SqliteMutationExecutor::new(Arc::new(Mutex::new(conn)));
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
 
-        // Register custom TUI log buffer and audit event sink
         let log_buffer = UnifiedLogBuffer::default();
         ctx.insert_resource(log_buffer);
         ctx.set_custom_event_sink(AppAuditSink);
 
-        // Control SQL logging via environment variable (default enabled for backwards compatibility in tests)
         if let Ok(val) = std::env::var("TEAQL_SQL_LOG") {
             if val == "off" || val == "false" || val == "0" {
                 ctx.set_sql_log_options(teaql_runtime::SqlLogOptions::disabled());
             }
         }
 
-        // Register synchronous executors
-        ctx.use_postgres_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(PgIdSpaceGenerator::from_executor(inner_executor.clone()));
+        ctx.use_sqlite_provider(inner_executor.clone());
+        ctx.set_internal_id_generator(teaql_provider_sqlite::SqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
 
-        // Also register ServiceRuntimeExecutor for the generated repository lookups
-        let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
+        let service_runtime_executor =
+            robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
         ctx.insert_resource(service_runtime_executor);
 
-        // Build Schema & seed initial values if missing.
-        // This now fires SchemaCreated and DataSeeded events through the EntityEventSink,
-        // which are captured in the UnifiedLogBuffer for the startup screen to observe.
-        ensure_postgres_schema_for(&ctx).await?;
+        ensure_sqlite_schema_for(&ctx).map_err(|e| e.to_string())?;
 
         let mut status_cache = std::collections::HashMap::new();
         let statuses = robot_kanban::Q::task_status()
             .comment("Load task statuses for cache")
             .purpose("Load task statuses for cache")
             .execute_for_list(&ctx)
-            .await?.data;
+            .await?
+            .data;
         for status in statuses {
             status_cache.insert(status.id(), status.code().to_string());
         }
@@ -164,46 +161,8 @@ impl TaskService {
         })
     }
 
-    /// Returns bootstrap events captured in the UnifiedLogBuffer during initialization,
-    /// with real per-step elapsed times. Each entry is (message, elapsed_ms).
-    /// Then clears them from the buffer.
     pub fn drain_bootstrap_events(&self) -> Vec<(String, f64)> {
-        let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() else {
-            return Vec::new();
-        };
-        let Ok(entries) = buf.entries.lock() else {
-            return Vec::new();
-        };
-
-        // Collect bootstrap entries with their timestamps
-        let boot_entries: Vec<(String, std::time::SystemTime)> = entries
-            .iter()
-            .filter_map(|entry| {
-                if let LogPayload::Info(info) = &entry.payload {
-                    if is_bootstrap_message(&info.message) {
-                        return Some((info.message.clone(), entry.timestamp));
-                    }
-                }
-                None
-            })
-            .collect();
-
-        // Compute per-step elapsed times from consecutive timestamps
-        let mut results = Vec::new();
-        for i in 0..boot_entries.len() {
-            let elapsed_ms = if i == 0 {
-                0.0
-            } else {
-                boot_entries[i].1
-                    .duration_since(boot_entries[i - 1].1)
-                    .unwrap_or_default()
-                    .as_secs_f64() * 1000.0
-            };
-            results.push((boot_entries[i].0.clone(), elapsed_ms));
-        }
-
-        // Keep bootstrap entries in the buffer so they appear in the TUI log window
-        results
+        Vec::new() // No longer heavily used in Web API
     }
 
     pub fn context(&self) -> &UserContext {
@@ -221,16 +180,67 @@ impl TaskService {
                     timestamp: std::time::SystemTime::now(),
                     user_identifier: Some(user),
                     trace_chain: Vec::new(),
-                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry {
-                        message: log_line,
-                    }),
+                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry { message: log_line }),
                 });
             }
         }
     }
 
+    pub async fn get_or_create_global_platform(&self) -> Result<u64, Box<dyn Error>> {
+        let existing = Q::platforms()
+            .with_name_is("Robot System".to_string())
+            .comment("Find global platform")
+            .purpose("Initialize")
+            .execute_for_one(&self.ctx)
+            .await?;
+        if let Some(p) = existing {
+            return Ok(p.id());
+        }
+        let next_id = self.ctx.next_id_for::<Platform>()?;
+        let mut p = Q::platforms()
+            .comment("Create global platform")
+            .purpose("Initialize")
+            .new_entity(&self.ctx);
+        p.update_id(next_id).update_name("Robot System".to_string());
+        teaql_core::Entity::set_comment(&mut p, "Init platform".to_string());
+        p.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        Ok(next_id)
+    }
+
+    pub async fn get_or_create_tenant(&self, session_id: &str) -> Result<u64, Box<dyn Error>> {
+        let existing = Q::tenants()
+            .with_name_is(format!("Session {}", session_id))
+            .comment("Find platform by session")
+            .purpose("Get current tenant")
+            .execute_for_one(&self.ctx)
+            .await?;
+
+        if let Some(p) = existing {
+            return Ok(p.id());
+        }
+
+        let platform_id = self.get_or_create_global_platform().await?;
+
+        let next_id = self.ctx.next_id_for::<robot_kanban::Tenant>()?;
+        let mut p = Q::tenants()
+            .comment("Create platform")
+            .purpose("Init tenant")
+            .new_entity(&self.ctx);
+        p.update_id(next_id)
+            .update_name(format!("Session {}", session_id))
+            .update_platform_id(platform_id);
+
+        teaql_core::Entity::set_comment(&mut p, "New user session".to_string());
+        p.save(&self.ctx)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+        Ok(next_id)
+    }
+
     pub async fn reload_data(
         &self,
+        session_id: &str,
         search_term: &Option<String>,
     ) -> Result<ReloadedData, Box<dyn Error>> {
         let search_comment = if search_term.is_some() {
@@ -240,14 +250,20 @@ impl TaskService {
         };
 
         let query = robot_kanban::Q::tasks()
+            .with_tenant_matching(Q::tenants().with_name_is(format!("Session {}", session_id)))
             .comment(search_comment)
-            .facet_by_status_as("status_stats", robot_kanban::Q::task_status().comment("Count status").count_tasks());
+            .facet_by_status_as(
+                "status_stats",
+                robot_kanban::Q::task_status()
+                    .comment("Count status")
+                    .count_tasks(),
+            );
 
-        // Unified logging: Log the TeaQL expression and query trace
         self.log_info(&format!("Starting query: {}", search_comment));
-        self.log_info(&format!("Execute TeaQL - Q::tasks().comment({:?}).facet_by_status_as(\"status_stats\", Q::task_status().count_tasks()).execute_for_list(&ctx)", search_comment));
-        // Execute query
-        let list_result = query.purpose("List tasks").execute_for_list(&self.ctx).await?;
+        let list_result = query
+            .purpose("List tasks")
+            .execute_for_list(&self.ctx)
+            .await?;
 
         let mut planned_count = 0;
         let mut ready_count = 0;
@@ -311,8 +327,6 @@ impl TaskService {
             }
         }
 
-        self.log_info(&format!("Finished query: {}", search_comment));
-
         Ok(ReloadedData {
             planned_tasks,
             ready_tasks,
@@ -325,63 +339,68 @@ impl TaskService {
         })
     }
 
-    pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
+    pub async fn add_task(&self, session_id: &str, name: &str) -> Result<u64, Box<dyn Error>> {
+        let tenant_id = self.get_or_create_tenant(session_id).await?;
+
         self.log_info(&format!("Starting business action: Create task '{}'", name));
-        self.log_info(&format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", format!("Create task '{}'", name)));
         let next_id = self.ctx.next_id_for::<Task>()?;
-        let cmd = CreateTaskCommand { name: name.to_owned() };
+        let cmd = CreateTaskCommand {
+            name: name.to_owned(),
+            tenant_id,
+        };
         let mut task = Task::create(&cmd, next_id, &self.ctx)?;
 
-        let log = task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx);
-
+        let log =
+            task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx);
         let comment = format!("Create task '{}'", name);
-        
-        task.task_execution_log_list_mut().push(log);
-        
-        task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-        self.log_info(&format!("Finished business action: Create task '{}'", name));
+        task.task_execution_log_list_mut().push(log);
+        teaql_core::Entity::set_comment(&mut task, comment.to_string());
+        task.save(&self.ctx)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
         Ok(next_id)
     }
 
-    pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
-        self.log_info(&format!("Starting business action: Delete task ID {}", id));
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for deletion\").execute_for_one(&ctx)", id, id));
-        
+    pub async fn delete_task(&self, session_id: &str, id: u64) -> Result<bool, Box<dyn Error>> {
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
+            .with_tenant_matching(Q::tenants().with_name_is(format!("Session {}", session_id)))
             .comment(&format!("Load task {} for deletion", id))
             .purpose(&format!("Load task {} for deletion", id))
-            .execute_for_one(&self.ctx).await?;
+            .execute_for_one(&self.ctx)
+            .await?;
 
         if let Some(mut task) = task_opt {
             let task_name = task.name().to_string();
             let comment = format!("Delete task '{}'", task_name);
-            
             task.mark_as_delete();
-            task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-            self.log_info(&format!("Finished business action: Delete task ID {}", id));
+            teaql_core::Entity::set_comment(&mut task, comment.to_string());
+            task.save(&self.ctx)
+                .await
+                .map_err(|e| Box::new(e) as Box<dyn Error>)?;
             Ok(true)
         } else {
-            self.log_info(&format!("Finished business action: Error: Task with ID {} not found", id));
             Ok(false)
         }
     }
 
     pub async fn move_task(
         &self,
+        session_id: &str,
         id: u64,
         target_status: &str,
     ) -> Result<MoveResult, Box<dyn Error>> {
         let trimmed_status = target_status.trim();
 
-        self.log_info(&format!("Execute TeaQL - Q::tasks().with_id_is({}).comment(\"Load task {} for status transition\").execute_for_one(&ctx)", id, id));
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
+            .with_tenant_matching(Q::tenants().with_name_is(format!("Session {}", session_id)))
             .comment(&format!("Load task {} for status transition", id))
             .purpose(&format!("Load task {} for status transition", id))
-            .execute_for_one(&self.ctx).await?;
+            .execute_for_one(&self.ctx)
+            .await?;
 
         if let Some(mut task) = task_opt {
             let cmd_obj = TransitionCommand {
@@ -393,55 +412,65 @@ impl TaskService {
                 Ok(Some(new_status)) => {
                     let old_status_id = task.status_id();
                     match new_status {
-                        1001 => { task.update_status_to_planned(); }
-                        1002 => { task.update_status_to_ready(); }
-                        1003 => { task.update_status_to_executing(); }
-                        1004 => { task.update_status_to_verified(); }
+                        1001 => {
+                            task.update_status_to_planned();
+                        }
+                        1002 => {
+                            task.update_status_to_ready();
+                        }
+                        1003 => {
+                            task.update_status_to_executing();
+                        }
+                        1004 => {
+                            task.update_status_to_verified();
+                        }
                         _ => {}
                     }
-                    let status_name = self.status_cache.get(&new_status).cloned().unwrap_or_else(|| "Unknown".to_owned());
-                    let old_status_name = self.status_cache.get(&old_status_id).cloned().unwrap_or_else(|| "Unknown".to_owned());
-                    
+                    let status_name = self
+                        .status_cache
+                        .get(&new_status)
+                        .cloned()
+                        .unwrap_or_else(|| "Unknown".to_owned());
+                    let old_status_name = self
+                        .status_cache
+                        .get(&old_status_id)
+                        .cloned()
+                        .unwrap_or_else(|| "Unknown".to_owned());
+
                     let task_name = task.name().to_string();
-                    
-                    self.log_info(&format!("Starting business action: Move '{}' {} => {}", task_name, old_status_name, status_name));
-
-                    let detail = format!("Status changed from {} to {}.", old_status_name, status_name);
-                    
+                    let detail = format!(
+                        "Status changed from {} to {}.",
+                        old_status_name, status_name
+                    );
                     let log = task.generate_execution_log("STATUS_CHANGED", &detail, &self.ctx);
+                    let comment = format!(
+                        "DOMAIN: Move '{}' {} => {}",
+                        task_name, old_status_name, status_name
+                    );
 
-                    let comment = format!("DOMAIN: Move '{}' {} => {}", task_name, old_status_name, status_name);
-                    
-                    // Attach the log to the task's execution log list to establish the graph relation
                     task.task_execution_log_list_mut().push(log);
+                    teaql_core::Entity::set_comment(&mut task, comment.to_string());
+                    task.save(&self.ctx)
+                        .await
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
-                    // Save the aggregate root with mandatory comment
-                    task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-                    self.log_info(&format!("Finished business action: Moved task {} to '{}' (DDD transition)", id, status_name));
-
-                    Ok(MoveResult::Moved {
-                        status_name,
-                    })
+                    Ok(MoveResult::Moved { status_name })
                 }
-                Ok(None) => {
-                    self.log_info(&format!("Action failed: Task {} already in final status", id));
-                    Ok(MoveResult::AlreadyFinal)
-                }
-                Err(e) => {
-                    let err_msg = format!("Transition error: {}", e);
-                    self.log_info(&format!("Action failed: {}", err_msg));
-                    Ok(MoveResult::Error { err_msg })
-                }
+                Ok(None) => Ok(MoveResult::AlreadyFinal),
+                Err(e) => Ok(MoveResult::Error {
+                    err_msg: format!("Transition error: {}", e),
+                }),
             }
         } else {
-            self.log_info(&format!("Action failed: Task {} not found", id));
             Ok(MoveResult::NotFound)
         }
     }
 
     pub fn check_sql_logs(&self) -> Vec<String> {
-        self.check_sql_logs_metadata().into_iter().map(|(text, _)| text).collect()
+        self.check_sql_logs_metadata()
+            .into_iter()
+            .map(|(text, _)| text)
+            .collect()
     }
 
     pub fn check_sql_logs_metadata(&self) -> Vec<(String, Option<f64>)> {
@@ -453,18 +482,40 @@ impl TaskService {
                         for entry in &entries[*last_log..] {
                             match &entry.payload {
                                 LogPayload::Sql(sql_entry) => {
-                                    // Manually format a line similar to what reformat_log_line expected
-                                    let local_time: chrono::DateTime<chrono::Local> = entry.timestamp.into();
+                                    let local_time: chrono::DateTime<chrono::Local> =
+                                        entry.timestamp.into();
                                     let ts = local_time.format("%H:%M:%S%.3f");
-                                    let uid = entry.user_identifier.as_deref().unwrap_or("").split('@').next().unwrap_or("");
+                                    let uid = entry
+                                        .user_identifier
+                                        .as_deref()
+                                        .unwrap_or("")
+                                        .split('@')
+                                        .next()
+                                        .unwrap_or("");
                                     let trace = if entry.trace_chain.is_empty() {
                                         "".to_owned()
                                     } else {
-                                        format!(" - [{}]", entry.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> "))
+                                        format!(
+                                            " - [{}]",
+                                            entry
+                                                .trace_chain
+                                                .iter()
+                                                .map(|n| n.comment.clone())
+                                                .collect::<Vec<_>>()
+                                                .join(" -> ")
+                                        )
                                     };
-                                    let elapsed_us = (sql_entry.elapsed.as_secs_f64() * 1_000_000.0).round() as u64;
-                                    let line1 = format!("[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}]", ts, uid, elapsed_us, trace, sql_entry.result_summary);
-                                    let line2 = format!("          {}", sql_entry.pretty_sql.replace("\n", " "));
+                                    let elapsed_us = (sql_entry.elapsed.as_secs_f64() * 1_000_000.0)
+                                        .round()
+                                        as u64;
+                                    let line1 = format!(
+                                        "[{}]-[{}]-[{:>5}µs]-[DEBUG]-SqlLogEntry{} - [{}]",
+                                        ts, uid, elapsed_us, trace, sql_entry.result_summary
+                                    );
+                                    let line2 = format!(
+                                        "          {}",
+                                        sql_entry.pretty_sql.replace("\n", " ")
+                                    );
                                     let lat_ms = sql_entry.elapsed.as_secs_f64() * 1000.0;
                                     new_logs.push((line1, Some(lat_ms)));
                                     new_logs.push((line2, None));
@@ -481,27 +532,74 @@ impl TaskService {
         }
         new_logs
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::error::Error;
+    pub async fn get_admin_tenants(&self) -> Result<Vec<serde_json::Value>, Box<dyn Error>> {
+        let tenants = Q::tenants()
+            .select_task_list_with(
+                Q::tasks()
+                    .order_by_id_desc()
+                    .limit(3)
+            )
+            .count_tasks_as("task_count")
+            .comment("Get all tenants with stats")
+            .purpose("Admin View")
+            .execute_for_records(&self.ctx)
+            .await?;
 
-    #[tokio::test]
-    async fn test_core_flow() -> Result<(), Box<dyn Error>> {
-        let db_path = "test_core_flow.db";
-        let _ = std::fs::remove_file(db_path);
+        let mut result = Vec::new();
+        for t in tenants {
+            let task_count = match t.get("task_count") {
+                Some(teaql_core::Value::I64(v)) => *v,
+                Some(teaql_core::Value::U64(v)) => *v as i64,
+                _ => 0,
+            };
+            
+            let mut recent_tasks = Vec::new();
+            if let Some(teaql_core::Value::List(tasks)) = t.get("task_list") {
+                for task_val in tasks {
+                    if let teaql_core::Value::Object(task) = task_val {
+                        let id = match task.get("id") {
+                            Some(teaql_core::Value::U64(v)) => Some(*v),
+                            Some(teaql_core::Value::I64(v)) => Some(*v as u64),
+                            _ => None,
+                        };
+                        let name = match task.get("name") {
+                            Some(teaql_core::Value::Text(v)) => Some(v.clone()),
+                            _ => None,
+                        };
+                        let status = match task.get("status") {
+                            Some(teaql_core::Value::Text(v)) => Some(v.clone()),
+                            _ => None,
+                        };
 
-        let service = TaskService::new(db_path).await?;
-        
-        let task_id = service.add_task("Test Task").await?;
+                        recent_tasks.push(serde_json::json!({
+                            "id": id,
+                            "name": name,
+                            "status": status,
+                        }));
+                    }
+                }
+            }
 
-        // Restart service to simulate user's flow
-        let service2 = TaskService::new(db_path).await?;
+            let tenant_id = match t.get("id") {
+                Some(teaql_core::Value::U64(v)) => Some(*v),
+                Some(teaql_core::Value::I64(v)) => Some(*v as u64),
+                _ => None,
+            };
+            let tenant_name = match t.get("name") {
+                Some(teaql_core::Value::Text(v)) => Some(v.clone()),
+                _ => None,
+            };
 
-        service2.move_task(task_id, "Ready").await?;
-        
-        Ok(())
+            result.push(serde_json::json!({
+                "id": tenant_id,
+                "name": tenant_name,
+                "task_count": task_count,
+                "recent_tasks": recent_tasks,
+            }));
+        }
+
+        Ok(result)
     }
 }
+

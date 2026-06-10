@@ -4,72 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Robot Task Board - Web TUI</title>
-    <link rel="stylesheet" href="./style.css" />
+    <!-- We'll import CSS directly from main.jsx -->
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="app">
-      <!-- 1. Log Area -->
-      <div id="log-area" class="panel log-panel">
-        <div class="panel-title"> System Log </div>
-        <div class="panel-content" id="log-content">
-          <div class="log-line"><span class="log-time">[2026-06-10T12:00:00Z]</span> - <span class="log-level-info">[INFO]</span> - System initialized.</div>
-          <div class="log-line"><span class="log-time">[2026-06-10T12:00:01Z]</span> - <span class="log-level-info">[INFO]</span> - Connected to TeaQL Runtime...</div>
-        </div>
-      </div>
-
-      <!-- 2. SQL Latency Timeline -->
-      <div id="timeline-area" class="panel timeline-panel">
-        <div class="panel-title"> SQL Latency Timeline  0 queries  (max -) </div>
-        <div class="panel-content">
-          <canvas id="timeline-canvas" width="800" height="40"></canvas>
-        </div>
-      </div>
-
-      <!-- 3. Columns -->
-      <div id="columns-area" class="columns-container">
-        
-        <div class="panel kanban-col">
-          <div class="panel-title" id="title-planned"> PLANNED [ 0 ] </div>
-          <div class="panel-content kanban-content" id="col-planned"></div>
-        </div>
-
-        <div class="panel kanban-col">
-          <div class="panel-title" id="title-ready"> READY [ 0 ] </div>
-          <div class="panel-content kanban-content" id="col-ready"></div>
-        </div>
-
-        <div class="panel kanban-col">
-          <div class="panel-title" id="title-executing"> EXECUTING [ 0 ] </div>
-          <div class="panel-content kanban-content" id="col-executing"></div>
-        </div>
-
-        <div class="panel kanban-col">
-          <div class="panel-title" id="title-verified"> VERIFIED [ 0 ] </div>
-          <div class="panel-content kanban-content" id="col-verified"></div>
-        </div>
-
-      </div>
-
-      <!-- 4. Command Line Area -->
-      <div id="cmd-line-area" class="panel cmd-line-panel">
-        <div class="panel-title"> Command Line </div>
-        <div class="panel-content flex-row">
-          <span class="cmd-prompt">&gt;</span>
-          <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" />
-        </div>
-      </div>
-
-      <!-- 5. Command Help Area -->
-      <div id="cmd-help-area" class="panel cmd-help-panel">
-        <div class="panel-title"> Commands </div>
-        <div class="panel-content help-content">
-          <div><span class="key">add &lt;name&gt;</span> : Create task</div>
-          <div><span class="key">move &lt;id&gt;</span> : Move to next state</div>
-          <div><span class="key">rm &lt;id&gt;</span> : Delete task</div>
-          <div><span class="key">q</span> : Quit</div>
-        </div>
-      </div>
-    </div>
-    <script type="module" src="./main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -15,23 +15,25 @@ serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 # TeaQL runtime packages
-teaql-core = "3.2.4"
-teaql-runtime = "3.2.4"
-teaql-macros = "3.2.4"
-teaql-sql = "3.2.4"
-teaql-provider-sqlite = "3.2.4"
-teaql-data-service = "3.2.4"
+teaql-core = "4.0.1"
+teaql-runtime = "4.0.1"
+teaql-macros = "4.0.1"
+teaql-sql = "4.0.1"
+teaql-provider-sqlite = "4.0.1"
+teaql-data-service = "4.0.1"
 
 # Our generated TeaQL domain logic library
 robot_kanban = { path = "./generate-lib/lib", package = "robot-kanban-service" }
-teaql-provider-meilisearch = "3.2.4"
+teaql-provider-meilisearch = "4.0.1"
 whoami = "2.1.2"
 rand = "0.10.1"
-teaql-provider-postgres = { version = "3.2.4", path = "../teaql-rs/teaql-provider-postgres" }
-teaql-provider-mysql = { version = "3.2.4", path = "../teaql-rs/teaql-provider-mysql" }
+teaql-provider-postgres = { version = "4.0.1", path = "../teaql-rs/teaql-provider-postgres" }
+teaql-provider-mysql = { version = "4.0.1", path = "../teaql-rs/teaql-provider-mysql" }
 tokio-postgres = "0.7.17"
 deadpool-postgres = "0.14.1"
 mysql_async = "0.37.0"
+axum = { version = "0.8.9", features = ["macros"] }
+tower-http = { version = "0.6.11", features = ["cors", "fs"] }
 
 [profile.release]
 opt-level = "z"
@@ -48,3 +50,5 @@ teaql-sql = { path = "../teaql-rs/teaql-sql" }
 teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
 teaql-provider-sqlite = { path = "../teaql-rs/teaql-provider-sqlite" }
 teaql-provider-meilisearch = { path = "../teaql-rs/teaql-provider-meilisearch" }
+teaql-provider-postgres = { path = "../teaql-rs/teaql-provider-postgres" }
+teaql-provider-mysql = { path = "../teaql-rs/teaql-provider-mysql" }

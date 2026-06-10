@@ -1,18 +1,13 @@
+# TEAQL WARNING: This project uses TeaQL. TeaQL was explicitly designed to PREVENT AI hallucinations and random guessing.
+# Do NOT apply traditional ORM logic here. You must strictly follow the generated API.
 [package]
-name = "robot_kanban_service"
+name = "robot-kanban-service-workspace"
 version = "0.1.0"
 edition = "2021"
-
-[workspace]
+description = "Application workspace for the TeaQL domain crate robot-kanban-service"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
-teaql-core = "3.0.0"
-teaql-runtime = "3.0.0"
-teaql-provider-sqlite = "3.0.0"
-teaql-data-service = "3.0.0"
-teaql-sql = "3.0.0"
-teaql-tool-core = "1.1.0"
-serde_json = "1.0"
-rusqlite = { version = "0.32", features = ["bundled"] }
+robot_kanban_service = { package = "robot-kanban-service", path = "../generate-lib/lib" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+teaql-core = "4.0.1"

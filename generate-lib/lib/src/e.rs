@@ -13,6 +13,11 @@ impl E {
         crate::TaskStatusExpression::new(teaql_core::eval::EvalResult::Value(value), root_desc)
     }
 
+    pub fn tenant<'a>(value: &'a crate::Tenant) -> crate::TenantExpression<'a> {
+        let root_desc = std::sync::Arc::new(format!("Tenant(id={})", value.id()));
+        crate::TenantExpression::new(teaql_core::eval::EvalResult::Value(value), root_desc)
+    }
+
     pub fn task<'a>(value: &'a crate::Task) -> crate::TaskExpression<'a> {
         let root_desc = std::sync::Arc::new(format!("Task(id={})", value.id()));
         crate::TaskExpression::new(teaql_core::eval::EvalResult::Value(value), root_desc)

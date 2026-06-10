@@ -137,6 +137,12 @@ where
     load_constant_task_status(ctx, &mut state).await?;
 
     ctx.user_context().transaction_data(|| async {
+        Box::pin(generate_tenants(ctx, &mut state)).await.map_err(|e| {
+            teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(e))
+        })
+    }).await.map_err(|e| e.to_string())?;
+
+    ctx.user_context().transaction_data(|| async {
         Box::pin(generate_tasks(ctx, &mut state)).await.map_err(|e| {
             teaql_runtime::RepositoryError::Runtime(teaql_runtime::RuntimeError::Graph(e))
         })
@@ -182,6 +188,61 @@ where
     Ok(())
 }
 
+async fn generate_tenants<C>(
+    ctx: &C,
+    state: &mut SampleDataState,
+) -> Result<(), String>
+where
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+{
+        if state.ids("Platform").is_empty() {
+            state.record_skipped("Tenant", "Required dependency Platform is missing in reference pool".to_string());
+            log::info!("Skipped generating Tenant: Required dependency Platform is missing in reference pool.");
+            return Ok(());
+        }
+
+
+    let object_fields_count = 0 + 1;
+    let base_fanout = std::cmp::max(1, object_fields_count) * 20;
+
+    let fanout = match state.plan.scale {
+        SampleDataScale::Tiny => base_fanout,
+        SampleDataScale::Small => base_fanout * 5,
+        SampleDataScale::Medium => base_fanout * 50,
+    };
+
+    log::info!("Generating sample data for Tenant (expected: {})...", fanout);
+
+    for i in 0..fanout {
+        let mut entity = Q::tenants().purpose("Init Sample Data").new_entity(ctx);
+        let mut used_refs = std::collections::HashSet::new();
+
+                if let Some(ref_id) = state.pick_unused_id("Platform", i as usize, &used_refs) {
+                    entity.update_platform_id(ref_id);
+                    used_refs.insert(ref_id);
+                } else {
+                    // Optional relation was missing in reference pool
+                }
+                entity.update_name(format!("{} {}", "string()", i + 1));
+
+
+
+        let entity = entity.audit_as("Init Sample Data").save(ctx).await.map_err(|e| e.to_string())?;
+
+        state.record_generated("Tenant");
+
+        if i % 20 == 0 {
+            log::info!("Generating Tenant: {}/{}", i, fanout);
+        }
+
+        state.add_reference("Tenant", entity.id().into_u64());
+    }
+
+    log::info!("Successfully generated sample records for Tenant.");
+    Ok(())
+}
+
+
 async fn generate_tasks<C>(
     ctx: &C,
     state: &mut SampleDataState,
@@ -195,9 +256,9 @@ where
             return Ok(());
         }
 
-        if state.ids("Platform").is_empty() {
-            state.record_skipped("Task", "Required dependency Platform is missing in reference pool".to_string());
-            log::info!("Skipped generating Task: Required dependency Platform is missing in reference pool.");
+        if state.ids("Tenant").is_empty() {
+            state.record_skipped("Task", "Required dependency Tenant is missing in reference pool".to_string());
+            log::info!("Skipped generating Task: Required dependency Tenant is missing in reference pool.");
             return Ok(());
         }
 
@@ -223,8 +284,8 @@ where
                 } else {
                     // Optional relation was missing in reference pool
                 }
-                if let Some(ref_id) = state.pick_unused_id("Platform", i as usize, &used_refs) {
-                    entity.update_platform_id(ref_id);
+                if let Some(ref_id) = state.pick_unused_id("Tenant", i as usize, &used_refs) {
+                    entity.update_tenant_id(ref_id);
                     used_refs.insert(ref_id);
                 } else {
                     // Optional relation was missing in reference pool

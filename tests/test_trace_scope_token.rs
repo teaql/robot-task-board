@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use teaql_core::{Record, TraceNode, Value};
-use teaql_runtime::{
-    GraphMutationKind, GraphMutationPlan, TraceScopeToken,
-};
+use teaql_runtime::{GraphMutationKind, GraphMutationPlan, TraceScopeToken};
 
 // ---------------------------------------------------------------------------
 // 1. 单节点：一个 Token 没有父节点，recover 出来只有自己

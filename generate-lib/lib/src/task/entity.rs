@@ -10,29 +10,29 @@ use teaql_macros::TeaqlEntity;
 /// If you encounter compilation errors (e.g., method not found), DO NOT guess another method name.
 /// Read the method signatures in this file before proceeding.
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "Task", table = "task_data", data_service = "rusqlite")]
+#[teaql(entity = "Task", table = "task_data", data_service = "postgres")]
 pub struct Task {
 #[teaql(id)]
     id: u64,
 
-// @source models/main.xml:42
+// @source main.xml:50
     name: String,
 #[teaql(version)]
     version: i64,
-// @source models/main.xml:42
+// @source main.xml:50
 #[teaql(column = "status")]
     status_id: u64,
 
-// @source models/main.xml:42
-#[teaql(column = "platform")]
-    platform_id: u64,
-// @source models/main.xml:42
+// @source main.xml:50
+#[teaql(column = "tenant")]
+    tenant_id: u64,
+// @source main.xml:50
 #[teaql(relation(target = "TaskStatus", local_key = "status_id", foreign_key = "id"))]
     status: Option<crate::TaskStatus>,
 
-// @source models/main.xml:42
-#[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
-    platform: Option<crate::Platform>,
+// @source main.xml:50
+#[teaql(relation(target = "Tenant", local_key = "tenant_id", foreign_key = "id"))]
+    tenant: Option<crate::Tenant>,
 #[teaql(relation(target = "TaskExecutionLog", local_key = "id", foreign_key = "task_id", many))]
     task_execution_log_list: SmartList<crate::TaskExecutionLog>,
     #[teaql(dynamic)]
@@ -54,9 +54,9 @@ impl Task {
             name: String::new(),
             version: 0_i64,
             status_id: 0_u64,
-            platform_id: 0_u64,
+            tenant_id: 0_u64,
             status: None,
-            platform: None,
+            tenant: None,
             task_execution_log_list: Default::default(),
             dynamic: BTreeMap::new(),
             root,
@@ -73,7 +73,7 @@ impl Task {
         if let Some(entity) = &mut self.status {
             entity.attach_root_recursive(root.clone());
         }
-        if let Some(entity) = &mut self.platform {
+        if let Some(entity) = &mut self.tenant {
             entity.attach_root_recursive(root.clone());
         }
         for entity in &mut self.task_execution_log_list {
@@ -117,7 +117,7 @@ impl Task {
 
     pub fn update_name(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.name = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.name.clone());
+        self.name = value.try_text().map(|value| value.trim().to_owned()).unwrap_or_else(|| self.name.clone());
         self.root.set(self.entity_key(), "name", value);
         self
     }
@@ -176,26 +176,26 @@ impl Task {
                     teaql_core::eval::EvalResult::Value(self.status_id())
                 }}
 
-    pub fn platform_id(&self) -> u64 {
-        self.changed_platform_id().and_then(|value| value.try_u64()).unwrap_or(self.platform_id)
+    pub fn tenant_id(&self) -> u64 {
+        self.changed_tenant_id().and_then(|value| value.try_u64()).unwrap_or(self.tenant_id)
     }
 
-    pub fn update_platform_id(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
+    pub fn update_tenant_id(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.platform_id = value.try_u64().unwrap_or(self.platform_id.clone());
-        self.root.set(self.entity_key(), "platform_id", value);
+        self.tenant_id = value.try_u64().unwrap_or(self.tenant_id.clone());
+        self.root.set(self.entity_key(), "tenant_id", value);
         self
     }
 
-    pub fn changed_platform_id(&self) -> Option<teaql_core::Value> {
-        self.root.get(&self.entity_key(), "platform_id")
+    pub fn changed_tenant_id(&self) -> Option<teaql_core::Value> {
+        self.root.get(&self.entity_key(), "tenant_id")
     }
 
-    pub fn eval_platform_id(&self) -> teaql_core::eval::EvalResult<u64> {
-        if !self.is_loaded("platform_id") {
-                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "platform_id".to_string(), attempted_path: "platform_id".to_string() }
+    pub fn eval_tenant_id(&self) -> teaql_core::eval::EvalResult<u64> {
+        if !self.is_loaded("tenant_id") {
+                    teaql_core::eval::EvalResult::NotLoaded { failed_node: "tenant_id".to_string(), attempted_path: "tenant_id".to_string() }
                 } else {
-                    teaql_core::eval::EvalResult::Value(self.platform_id())
+                    teaql_core::eval::EvalResult::Value(self.tenant_id())
                 }}
     pub fn update_status_to_planned(&mut self) -> &mut Self {
         self.update_status_id(1001_u64)
@@ -240,15 +240,15 @@ impl Task {
         }
     }
 
-    pub fn platform(&self) -> Option<&crate::Platform> {
-        self.platform.as_ref()
+    pub fn tenant(&self) -> Option<&crate::Tenant> {
+        self.tenant.as_ref()
     }
 
-    pub fn eval_platform(&self) -> teaql_core::eval::EvalResult<&crate::Platform> {
-        if !self.is_loaded("platform") {
-            teaql_core::eval::EvalResult::NotLoaded { failed_node: "platform".to_string(), attempted_path: "platform".to_string() }
+    pub fn eval_tenant(&self) -> teaql_core::eval::EvalResult<&crate::Tenant> {
+        if !self.is_loaded("tenant") {
+            teaql_core::eval::EvalResult::NotLoaded { failed_node: "tenant".to_string(), attempted_path: "tenant".to_string() }
         } else {
-            match &self.platform {
+            match &self.tenant {
                 Some(v) => teaql_core::eval::EvalResult::Value(v),
                 None => teaql_core::eval::EvalResult::Null,
             }
@@ -280,7 +280,7 @@ impl Task {
         self
     }
 
-    pub(crate) async fn save<'a, C>(
+    pub async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskRepository<'a>>>

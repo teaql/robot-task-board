@@ -16,9 +16,11 @@ pub mod runtime;
 pub mod sample_data;
 pub mod platform;
 pub mod task_status;
+pub mod tenant;
 pub mod task;
 pub mod task_execution_log;
 
+pub use teaql_core;
 pub use e::*;
 pub use q::*;
 pub use request_support::*;
@@ -26,5 +28,6 @@ pub use runtime::*;
 pub use sample_data::*;
 pub use platform::*;
 pub use task_status::*;
+pub use tenant::*;
 pub use task::*;
 pub use task_execution_log::*;

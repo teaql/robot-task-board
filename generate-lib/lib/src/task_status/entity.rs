@@ -10,32 +10,32 @@ use teaql_macros::TeaqlEntity;
 /// If you encounter compilation errors (e.g., method not found), DO NOT guess another method name.
 /// Read the method signatures in this file before proceeding.
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "TaskStatus", table = "task_status_data", data_service = "rusqlite")]
+#[teaql(entity = "TaskStatus", table = "task_status_data", data_service = "postgres")]
 pub struct TaskStatus {
-// @source models/main.xml:25
+// @source main.xml:25
 #[teaql(id)]
     id: u64,
 
-// @source models/main.xml:25
+// @source main.xml:25
     name: String,
 
-// @source models/main.xml:25
+// @source main.xml:25
     code: String,
 
-// @source models/main.xml:25
+// @source main.xml:25
     color: String,
 
-// @source models/main.xml:25
+// @source main.xml:25
     display_order: rust_decimal::Decimal,
 
-// @source models/main.xml:25
+// @source main.xml:25
     progress: rust_decimal::Decimal,
 #[teaql(version)]
     version: i64,
-// @source models/main.xml:25
+// @source main.xml:25
 #[teaql(column = "platform")]
     platform_id: u64,
-// @source models/main.xml:25
+// @source main.xml:25
 #[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
     platform: Option<crate::Platform>,
 #[teaql(relation(target = "Task", local_key = "id", foreign_key = "status_id", many))]
@@ -121,7 +121,7 @@ impl TaskStatus {
 
     pub fn update_name(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.name = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.name.clone());
+        self.name = value.try_text().map(|value| value.trim().to_owned()).unwrap_or_else(|| self.name.clone());
         self.root.set(self.entity_key(), "name", value);
         self
     }
@@ -143,7 +143,7 @@ impl TaskStatus {
 
     pub fn update_code(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.code = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.code.clone());
+        self.code = value.try_text().map(|value| value.trim().to_owned()).unwrap_or_else(|| self.code.clone());
         self.root.set(self.entity_key(), "code", value);
         self
     }
@@ -165,7 +165,7 @@ impl TaskStatus {
 
     pub fn update_color(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.color = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.color.clone());
+        self.color = value.try_text().map(|value| value.trim().to_owned()).unwrap_or_else(|| self.color.clone());
         self.root.set(self.entity_key(), "color", value);
         self
     }
@@ -307,7 +307,7 @@ impl TaskStatus {
         self
     }
 
-    pub(crate) async fn save<'a, C>(
+    pub async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskStatusRepository<'a>>>

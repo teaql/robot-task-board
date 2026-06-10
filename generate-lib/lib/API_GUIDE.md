@@ -5,6 +5,21 @@
 
 ---
 
+## AI Agent Notice: Runtime Logging & Trace
+
+TeaQL Runtime provides rich, automated trace logs for all SQL executions and state mutations. AI Agents are **STRONGLY ENCOURAGED** to evaluate and observe the system through these logs instead of inspecting the raw database directly.
+
+You can configure the logging output via environment variables when running the target binary or tests:
+- `TEAQL_LOG_ENDPOINT`: Set to a file path (e.g., `eval.log`) to redirect logs to a specific file. If unset, it prints to standard output.
+- `TEAQL_LOG_FORMAT`: Set to `json` (or `debug`) for structured machine-readable log entries, or `human` (default) for beautifully formatted trace chains.
+
+Example for automated evaluation:
+\`\`\`bash
+TEAQL_LOG_ENDPOINT=eval.log TEAQL_LOG_FORMAT=json cargo run --bin my_app
+\`\`\`
+
+---
+
 ## Part 1 — API Rules
 
 ### 1. Query Chain
@@ -30,11 +45,15 @@ let results = Q::<entity_plural>()            // 1. entry point
 | `.execute_for_list(&ctx).await?` | `SmartList<Entity>` — paginated list |
 | `.execute_for_first(&ctx).await?` | `Option<Entity>` — first match |
 | `.execute_for_one(&ctx).await?` | `Option<Entity>` — single match |
-| `.execute_by_id(&ctx, id).await?` | `Option<Entity>` — by primary key |
 | `.execute_for_count(&ctx).await?` | `u64` — total count |
-| `.execute_for_exists(&ctx).await?` | `bool` — existence check |
 | `.execute_for_page(&ctx, offset, limit).await?` | `SmartList<Entity>` with `total_count` |
 | `.execute_for_records(&ctx).await?` | `SmartList<Record>` — raw records |
+
+**Check methods** (available on base Request, without `purpose`):
+
+| Method | Returns |
+|--------|---------|
+| `.execute_for_exists(&ctx).await?` | `bool` — existence check |
 
 **Pagination helpers:**
 
@@ -159,9 +178,10 @@ let saved = entity.audit_as("Create new item").save(&ctx).await?;
 
 ```rust
 let mut entity = Q::<entities>()
+    .filter_by_id(id)
     .comment("Load for update")
     .purpose("Update item name")
-    .execute_by_id(&ctx, id).await?
+    .execute_for_one(&ctx).await?
     .expect("entity not found");
 
 entity.update_name("New Name");
@@ -194,10 +214,11 @@ parent.audit_as("Create parent with child").save(&ctx).await?;
 
 ```rust
 let entity = Q::<entities>()
+    .filter_by_id(id)
     .select_<relation>()
     .comment("Load with relation")
     .purpose("Extract relation field")
-    .execute_by_id(&ctx, id).await?
+    .execute_for_one(&ctx).await?
     .expect("not found");
 
 let value = E::<entity_module>(entity)
@@ -215,6 +236,25 @@ let records = Q::<entities>()
     .comment("Aggregate report")
     .purpose("Dashboard stats")
     .execute_for_records(&ctx).await?;
+```
+
+You can also group by a field and attach subqueries for advanced aggregation:
+
+```rust
+let records = Q::<entities>()
+    .group_by_<field>_with(Q::<entities>().aggregate_count("count"))
+    .execute_for_records(&ctx).await?;
+```
+
+For multifaceted metrics where you need multiple distinct groupings or conditions in a single query:
+
+```rust
+let records = Q::<entities>()
+    .facet_by_<field>_as("stats", Q::<entities>().aggregate_count("total"))
+    .execute_for_records(&ctx).await?;
+
+// Extract the faceted results
+let stats = records.facet("stats");
 ```
 
 ---
@@ -245,7 +285,7 @@ let records = Q::<entities>()
 **Children (one-to-many):**
 
 - `task_status_list` → `TaskStatus` — load: `.select_task_status_list()`, filter: `.with_task_status_list_matching(Q::...)`
-- `task_list` → `Task` — load: `.select_task_list()`, filter: `.with_task_list_matching(Q::...)`
+- `tenant_list` → `Tenant` — load: `.select_tenant_list()`, filter: `.with_tenant_list_matching(Q::...)`
 
 
 
@@ -282,6 +322,35 @@ let records = Q::<entities>()
 
 
 
+### `Tenant`
+
+| Attribute | Value |
+|-----------|-------|
+| Module | `tenant` |
+| Query entry | `Q::tenants()` |
+| Minimal query | `Q::tenants_minimal()` |
+| With-children query | `Q::tenants_with_children()` |
+| Expression | `E::tenant(value)` |
+| Graph save | `tenant.audit_as("comment").save(&ctx).await` |
+| New entity | `Q::tenants().purpose("purpose").new_entity(&ctx)` |
+| Filter prefix | `with_` (thing) |
+
+**Properties:**
+
+- `id`: `u64` — read: `.id()`, update: `.update_id(value)`, changed: `.changed_id()`
+- `name`: `String` — read: `.name()`, update: `.update_name(value)`, changed: `.changed_name()`
+- `version`: `i64` — read: `.version()`, update: `.update_version(value)`, changed: `.changed_version()`
+
+**Relations (outgoing):**
+
+- `platform` → `Platform` — load: `.select_platform()`, filter: `.with_platform_matching(Q::...)`
+
+**Children (one-to-many):**
+
+- `task_list` → `Task` — load: `.select_task_list()`, filter: `.with_task_list_matching(Q::...)`
+
+
+
 ### `Task`
 
 | Attribute | Value |
@@ -304,7 +373,7 @@ let records = Q::<entities>()
 **Relations (outgoing):**
 
 - `status` → `TaskStatus` — load: `.select_status()`, filter: `.with_status_matching(Q::...)`
-- `platform` → `Platform` — load: `.select_platform()`, filter: `.with_platform_matching(Q::...)`
+- `tenant` → `Tenant` — load: `.select_tenant()`, filter: `.with_tenant_matching(Q::...)`
 
 **Children (one-to-many):**
 

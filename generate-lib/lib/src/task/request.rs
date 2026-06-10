@@ -41,7 +41,7 @@ impl<R> Clone for TaskRequest<R> {
     }
 }
 
-impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
+impl<R> TaskRequest<R> {
     pub(crate) fn new() -> Self {
         Self {
             query: SelectQuery::new("Task"),
@@ -99,7 +99,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
+        R: teaql_core::Entity,
     {
         let repository = ctx
             .task_repository()
@@ -124,7 +124,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
+        R: teaql_core::Entity,
     {
         let rows = self.limit(1)._execute_for_list(ctx).await?;
         Ok(rows.into_iter().next())
@@ -136,22 +136,11 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
+        R: teaql_core::Entity,
     {
         self._execute_for_first(ctx).await
     }
 
-    pub(crate) async fn _execute_by_id<'a, C>(
-        self,
-        ctx: &'a C,
-        id: impl Into<teaql_core::Value>,
-    ) -> Result<Option<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
-    where
-        C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
-    {
-        self.and_filter(Expr::eq("id", id))._execute_for_first(ctx).await
-    }
 
     pub async fn execute_for_page<'a, C>(
         self,
@@ -161,7 +150,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     ) -> Result<SmartList<R>, TeaqlRepositoryError<C::TaskRepository<'a>>>
     where
         C: TeaqlRepositoryProvider + ?Sized,
-        R: teaql_core::Entity + teaql_runtime::LedgerEntity,
+        R: teaql_core::Entity,
     {
         let total_count = self.clone()._execute_for_count(ctx).await?;
         let mut rows = self.page_offset(offset, limit)._execute_for_list(ctx).await?;
@@ -456,7 +445,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
             "name" => Some("name"),
             "version" => Some("version"),
             "status" | "status_id" => Some("status_id"),
-            "platform" | "platform_id" => Some("platform_id"),
+            "tenant" | "tenant_id" => Some("tenant_id"),
             _ => None,
         }
     }
@@ -470,9 +459,9 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
-            "platform" => {
-                self.with_platform_matching(
-                    crate::Q::platforms_minimal()
+            "tenant" => {
+                self.with_tenant_matching(
+                    crate::Q::tenants_minimal()
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
@@ -563,7 +552,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
         self.query = self.query.project("name");
         self.query = self.query.project("version");
         self.query = self.query.project("status_id");
-        self.query = self.query.project("platform_id");
+        self.query = self.query.project("tenant_id");
         self
     }
 
@@ -578,7 +567,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     pub fn select_all(self) -> Self {
         let mut request = self.select_self();
         request = request.select_status();
-        request = request.select_platform();
+        request = request.select_tenant();
         request
     }
 
@@ -1368,110 +1357,110 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     }
 
 
-    pub fn filter_by_platform(mut self, value: impl EntityReference) -> Self {
-        self.query = self.query.and_filter(Expr::eq("platform_id", value.entity_id_value()));
+    pub fn filter_by_tenant(mut self, value: impl EntityReference) -> Self {
+        self.query = self.query.and_filter(Expr::eq("tenant_id", value.entity_id_value()));
         self
     }
 
-    pub fn with_platform_matching(mut self, request: impl Into<QuerySelection>) -> Self {
+    pub fn with_tenant_matching(mut self, request: impl Into<QuerySelection>) -> Self {
         let selection = request.into();
         self.query = self.query.and_filter(Expr::in_subquery(
-            "platform_id",
-            <crate::Platform as teaql_core::TeaqlEntity>::entity_descriptor(),
+            "tenant_id",
+            <crate::Tenant as teaql_core::TeaqlEntity>::entity_descriptor(),
             selection.query.clone(),
             "id",
         ));
-        self.relation_filters.push(RelationFilter::new("platform", selection));
+        self.relation_filters.push(RelationFilter::new("tenant", selection));
         self
     }
 
 
-    pub fn without_platform_matching(mut self, request: impl Into<QuerySelection>) -> Self {
+    pub fn without_tenant_matching(mut self, request: impl Into<QuerySelection>) -> Self {
         let selection = request.into();
         self.query = self.query.and_filter(Expr::not_in_subquery(
-            "platform_id",
-            <crate::Platform as teaql_core::TeaqlEntity>::entity_descriptor(),
+            "tenant_id",
+            <crate::Tenant as teaql_core::TeaqlEntity>::entity_descriptor(),
             selection.query.clone(),
             "id",
         ));
-        self.relation_filters.push(RelationFilter::new("platform", selection));
+        self.relation_filters.push(RelationFilter::new("tenant", selection));
         self
     }
 
 
-    pub fn have_platform(mut self) -> Self {
-        self.query = self.query.and_filter(Expr::is_not_null("platform_id"));
+    pub fn have_tenant(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::is_not_null("tenant_id"));
         self
     }
 
-    pub fn have_no_platform(mut self) -> Self {
-        self.query = self.query.and_filter(Expr::is_null("platform_id"));
+    pub fn have_no_tenant(mut self) -> Self {
+        self.query = self.query.and_filter(Expr::is_null("tenant_id"));
         self
     }
 
 
-    pub fn group_by_platform(self) -> Self {
-        self.group_by("platform_id")
+    pub fn group_by_tenant(self) -> Self {
+        self.group_by("tenant_id")
     }
 
-    pub fn group_by_platform_as(self, alias: impl Into<String>) -> Self {
+    pub fn group_by_tenant_as(self, alias: impl Into<String>) -> Self {
         let alias = alias.into();
-        let mut request = self.group_by("platform_id");
+        let mut request = self.group_by("tenant_id");
         request.query = request
             .query
-            .project_expr(alias, Expr::column("platform_id"));
+            .project_expr(alias, Expr::column("tenant_id"));
         request
     }
 
-    pub fn group_by_platform_with_function(
+    pub fn group_by_tenant_with_function(
         self,
         alias: impl Into<String>,
         function: AggregateFunction,
     ) -> Self {
-        self.group_by("platform_id")
-            .aggregate_with_function("platform_id", alias, function)
+        self.group_by("tenant_id")
+            .aggregate_with_function("tenant_id", alias, function)
     }
 
-    pub fn group_by_platform_with(mut self, request: impl Into<QuerySelection>) -> Self {
-        self.query = self.query.group_by("platform_id");
+    pub fn group_by_tenant_with(mut self, request: impl Into<QuerySelection>) -> Self {
+        self.query = self.query.group_by("tenant_id");
         self.query_options.object_group_bys.push(ObjectGroupBy::new(
-            "platform",
-            "platform_id",
+            "tenant",
+            "tenant_id",
             request,
         ));
         self
     }
 
-    pub fn group_by_platform_with_details(self) -> Self {
-        self.group_by_platform_with_details_from(crate::Q::platforms().unlimited())
+    pub fn group_by_tenant_with_details(self) -> Self {
+        self.group_by_tenant_with_details_from(crate::Q::tenants().unlimited())
     }
 
-    pub fn group_by_platform_with_details_from(self, request: impl Into<QuerySelection>) -> Self {
-        self.group_by_platform_with(request)
+    pub fn group_by_tenant_with_details_from(self, request: impl Into<QuerySelection>) -> Self {
+        self.group_by_tenant_with(request)
     }
 
 
-    pub fn roll_up_to_platform(self) -> Self {
-        self.roll_up_to_platform_with(crate::Q::platforms().unlimited())
+    pub fn roll_up_to_tenant(self) -> Self {
+        self.roll_up_to_tenant_with(crate::Q::tenants().unlimited())
     }
 
-    pub fn roll_up_to_platform_with(self, request: impl Into<QuerySelection>) -> Self {
+    pub fn roll_up_to_tenant_with(self, request: impl Into<QuerySelection>) -> Self {
         let selection = request.into();
-        self.with_platform_matching(selection.clone())
-            .group_by_platform_with(selection)
+        self.with_tenant_matching(selection.clone())
+            .group_by_tenant_with(selection)
     }
 
-    pub fn count_platform(self) -> Self {
-        self.count_platform_as("platform_count")
+    pub fn count_tenant(self) -> Self {
+        self.count_tenant_as("tenant_count")
     }
 
-    pub fn count_platform_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_count_field("platform_id", alias)
+    pub fn count_tenant_as(self, alias: impl Into<String>) -> Self {
+        self.aggregate_count_field("tenant_id", alias)
     }
 
-    pub fn unselect_platform(mut self) -> Self {
-        self.query.projection.retain(|field| field != "platform_id");
-        self.query.relations.retain(|relation| relation.name != "platform");
+    pub fn unselect_tenant(mut self) -> Self {
+        self.query.projection.retain(|field| field != "tenant_id");
+        self.query.relations.retain(|relation| relation.name != "tenant");
         self
     }
     pub fn status_is_planned(self) -> Self {
@@ -1571,23 +1560,23 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
         self
     }
 
-    pub fn select_platform(mut self) -> Self {
-        self.query = self.query.relation("platform");
+    pub fn select_tenant(mut self) -> Self {
+        self.query = self.query.relation("tenant");
         self
     }
 
-    pub fn select_platform_with(mut self, request: impl Into<QuerySelection>) -> Self {
+    pub fn select_tenant_with(mut self, request: impl Into<QuerySelection>) -> Self {
         let selection = request.into();
-        self.query = self.query.relation_query("platform", selection.clone().into_query());
-        self.relation_selections.push(RelationSelection::new("platform", selection));
+        self.query = self.query.relation_query("tenant", selection.clone().into_query());
+        self.relation_selections.push(RelationSelection::new("tenant", selection));
         self
 }
 
-    pub fn facet_by_platform_as(self, facet_name: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
-        self.facet_by_platform_as_with_options(facet_name, request, true)
+    pub fn facet_by_tenant_as(self, facet_name: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
+        self.facet_by_tenant_as_with_options(facet_name, request, true)
     }
 
-    pub fn facet_by_platform_as_with_options(
+    pub fn facet_by_tenant_as_with_options(
         mut self,
         facet_name: impl Into<String>,
         request: impl Into<QuerySelection>,
@@ -1595,7 +1584,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
     ) -> Self {
         self.query_options.facets.push(FacetRequest::new(
             facet_name,
-            "platform",
+            "tenant",
             request,
             include_all_facets,
         ));
@@ -1686,7 +1675,7 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> TaskRequest<R> {
 
 }
 
-impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> Default for TaskRequest<R> {
+impl<R> Default for TaskRequest<R> {
     fn default() -> Self {
         Self::new()
     }
@@ -1720,7 +1709,7 @@ where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
     }
 }
 
-impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> crate::PurposedQuery<TaskRequest<R>> {
+impl<R: teaql_core::Entity> crate::PurposedQuery<TaskRequest<R>> {
     pub fn new_entity<C>(&self, ctx: &C) -> crate::Task
     where
         C: crate::TeaqlRuntime + ?Sized,
@@ -1758,12 +1747,6 @@ impl<R: teaql_core::Entity + teaql_runtime::LedgerEntity> crate::PurposedQuery<T
         self.into_inner_with_trace()._execute_for_one(ctx).await
     }
 
-    pub async fn execute_by_id<'a, C>(self, ctx: &'a C, id: impl Into<teaql_core::Value>) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
-    where
-        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
-    {
-        self.into_inner_with_trace()._execute_by_id(ctx, id).await
-    }
 
     pub async fn execute_for_records<'a, C>(self, ctx: &'a C) -> Result<teaql_core::SmartList<teaql_core::Record>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
     where

@@ -52,6 +52,24 @@ impl Q {
             .enhance_children_if_needed()
     }
 
+    pub fn tenants() -> TenantRequest {
+        TenantRequest::new()
+            .select_self()
+            .and_filter(Expr::gt("version", 0_i64))
+    }
+
+    pub fn tenants_minimal() -> TenantRequest {
+        TenantRequest::new()
+            .and_filter(Expr::gt("version", 0_i64))
+    }
+
+    pub fn tenants_with_children() -> TenantRequest {
+        TenantRequest::new()
+            .unlimited()
+            .select_self_fields()
+            .enhance_children_if_needed()
+    }
+
     pub fn tasks() -> TaskRequest {
         TaskRequest::new()
             .select_self()

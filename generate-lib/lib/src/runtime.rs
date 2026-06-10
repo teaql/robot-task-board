@@ -1,26 +1,32 @@
 use crate::*;
 use teaql_core::TeaqlEntity;
 
-use teaql_provider_postgres::PostgresProviderExt as _;
+use teaql_provider_sqlite::SqliteProviderExt as _;
 
-pub type DataServiceDialect = teaql_provider_postgres::PostgresDialect;
-pub type DataServiceMutationExecutor = teaql_provider_postgres::PgMutationExecutor;
-pub type DataServiceMutationError = teaql_provider_postgres::MutationExecutorError;
-pub type DataServiceIdGenerator = teaql_provider_postgres::PgIdSpaceGenerator;
-pub type DataServicePool = deadpool_postgres::Pool;
+pub type DataServiceDialect = teaql_provider_sqlite::SqliteDialect;
+pub type DataServiceMutationExecutor = teaql_provider_sqlite::SqliteMutationExecutor;
+pub type DataServiceMutationError = teaql_provider_sqlite::MutationExecutorError;
+pub type DataServiceIdGenerator = teaql_provider_sqlite::SqliteIdSpaceGenerator;
+pub type DataServicePool = std::sync::Arc<std::sync::Mutex<rusqlite::Connection>>;
 pub type DataServiceExecutor = ServiceRuntimeExecutor;
 pub type ServiceRuntime = teaql_runtime::UserContext;
 
 pub const DATABASE_URL_ENV: &str = "ROBOT_KANBAN_SERVICE_DATABASE_URL";
+pub const DATABASE_USER_ENV: &str = "ROBOT_KANBAN_SERVICE_DATABASE_USER";
+pub const DATABASE_PASSWORD_ENV: &str = "ROBOT_KANBAN_SERVICE_DATABASE_PASSWORD";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ServiceRuntimeConfig {
     pub database_url: String,
+    pub database_user: String,
+    pub database_password: String,
 }
 
 impl ServiceRuntimeConfig {
     pub fn from_env() -> Result<Self, ServiceRuntimeError> {
         Ok(Self {
             database_url: env_value(DATABASE_URL_ENV)?,
+            database_user: env_value(DATABASE_USER_ENV)?,
+            database_password: env_value(DATABASE_PASSWORD_ENV)?,
         })
     }
 }
@@ -31,7 +37,7 @@ pub enum ServiceRuntimeError {
         name: &'static str,
         source: std::env::VarError,
     },
-    Postgres(teaql_provider_postgres::MutationExecutorError),
+    ConnectionError(String),
     Runtime(teaql_runtime::RuntimeError),
 }
 
@@ -41,7 +47,7 @@ impl std::fmt::Display for ServiceRuntimeError {
             ServiceRuntimeError::MissingEnv { name, source } => {
                 write!(f, "missing environment variable {name}: {source}")
             }
-            ServiceRuntimeError::Postgres(err) => write!(f, "postgres error: {err}"),
+            ServiceRuntimeError::ConnectionError(err) => write!(f, "connection error: {err}"),
             ServiceRuntimeError::Runtime(err) => write!(f, "runtime error: {err}"),
         }
     }
@@ -51,17 +57,12 @@ impl std::error::Error for ServiceRuntimeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             ServiceRuntimeError::MissingEnv { source, .. } => Some(source),
-            ServiceRuntimeError::Postgres(err) => Some(err),
+            ServiceRuntimeError::ConnectionError(_) => None,
             ServiceRuntimeError::Runtime(err) => Some(err),
         }
     }
 }
 
-impl From<teaql_provider_postgres::MutationExecutorError> for ServiceRuntimeError {
-    fn from(err: teaql_provider_postgres::MutationExecutorError) -> Self {
-        ServiceRuntimeError::Postgres(err)
-    }
-}
 impl From<teaql_runtime::RuntimeError> for ServiceRuntimeError {
     fn from(err: teaql_runtime::RuntimeError) -> Self {
         ServiceRuntimeError::Runtime(err)
@@ -76,6 +77,7 @@ impl teaql_data_service::SchemaProvider for LocalSchemaProvider {
         match name {
             "Platform" => Some(std::sync::Arc::new(crate::Platform::entity_descriptor())),
             "TaskStatus" => Some(std::sync::Arc::new(crate::TaskStatus::entity_descriptor())),
+            "Tenant" => Some(std::sync::Arc::new(crate::Tenant::entity_descriptor())),
             "Task" => Some(std::sync::Arc::new(crate::Task::entity_descriptor())),
             "TaskExecutionLog" => Some(std::sync::Arc::new(crate::TaskExecutionLog::entity_descriptor())),
             _ => None,
@@ -164,25 +166,28 @@ impl teaql_data_service::TransactionExecutor for ServiceRuntimeExecutor {
     }
 }
 
+/*
 pub async fn service_runtime_from_env() -> Result<ServiceRuntime, ServiceRuntimeError> {
     service_runtime(ServiceRuntimeConfig::from_env()?).await
 }
+*/
 
+/*
 pub async fn service_runtime(config: ServiceRuntimeConfig) -> Result<ServiceRuntime, ServiceRuntimeError> {
     let pool = connect_data_service_pool(&config).await?;
     service_runtime_from_pool(pool).await
 }
 
 pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceRuntime, ServiceRuntimeError> {
-    let mutation_executor = DataServiceMutationExecutor::new(pool);
-    let id_generator = DataServiceIdGenerator::from_executor(mutation_executor.clone());let mut context = module_with_behaviors_and_checkers().into_context();
+    let id_generator = DataServiceIdGenerator::new(pool.clone());
+    let mutation_executor = DataServiceMutationExecutor::new(pool);let mut context = module_with_behaviors_and_checkers().into_context();
     context.set_internal_id_generator(id_generator);
-    context.use_postgres_provider(mutation_executor.clone());
+    context.use_sqlite_provider(mutation_executor.clone());
     context.insert_resource(ServiceRuntimeExecutor::new(mutation_executor));
 
     // 自动加载 Zero-Code 审计配置与 Schema 模式
     let env_config = teaql_tool_core::audit_config_from_env(&[
-        "platform_data", "task_status_data", "task_data", "task_execution_log_data"
+        "platform_data", "task_status_data", "tenant_data", "task_data", "task_execution_log_data"
     ]);
     let schema_mode = env_config.schema_mode;
     context.insert_resource(env_config.config.clone());
@@ -203,6 +208,7 @@ pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceR
 
     Ok(context)
 }
+*/
 
 
 
@@ -211,23 +217,14 @@ fn env_value(name: &'static str) -> Result<String, ServiceRuntimeError> {
 }
 
 async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
-    pub async fn create_service_pool(url: &String) -> Result<DataServicePool, ServiceRuntimeError> {
-        let mut cfg = deadpool_postgres::Config::new();
-        cfg.host = Some("localhost".to_string());
-        cfg.user = Some("postgres".to_string());
-        cfg.password = Some("postgres".to_string());
-        cfg.dbname = Some("postgres".to_string());
-        let pool = cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), tokio_postgres::NoTls)
-            .map_err(|e| ServiceRuntimeError::Postgres(teaql_provider_postgres::MutationExecutorError::Pool(e.to_string())))?;
-        Ok(pool)
-    }
-    create_service_pool(&config.database_url).await
+    let conn = rusqlite::Connection::open(&config.database_url).map_err(|e| ServiceRuntimeError::ConnectionError(e.to_string()))?;
+    Ok(std::sync::Arc::new(std::sync::Mutex::new(conn)))
 }
-
 pub fn repository_registry() -> teaql_runtime::InMemoryRepositoryRegistry {
     teaql_runtime::InMemoryRepositoryRegistry::new()
         .with_entity("Platform")
         .with_entity("TaskStatus")
+        .with_entity("Tenant")
         .with_entity("Task")
         .with_entity("TaskExecutionLog")
 }
@@ -236,6 +233,7 @@ pub fn behavior_registry() -> teaql_runtime::InMemoryRepositoryBehaviorRegistry 
     teaql_runtime::InMemoryRepositoryBehaviorRegistry::new()
         .with_behavior("Platform", PlatformBehavior::default())
         .with_behavior("TaskStatus", TaskStatusBehavior::default())
+        .with_behavior("Tenant", TenantBehavior::default())
         .with_behavior("Task", TaskBehavior::default())
         .with_behavior("TaskExecutionLog", TaskExecutionLogBehavior::default())
 }
@@ -244,6 +242,7 @@ pub fn checker_registry() -> teaql_runtime::InMemoryCheckerRegistry {
     teaql_runtime::InMemoryCheckerRegistry::new()
         .with_checker(teaql_runtime::TypedEntityChecker::<Platform, _>::new(PlatformChecker::default()))
         .with_checker(teaql_runtime::TypedEntityChecker::<TaskStatus, _>::new(TaskStatusChecker::default()))
+        .with_checker(teaql_runtime::TypedEntityChecker::<Tenant, _>::new(TenantChecker::default()))
         .with_checker(teaql_runtime::TypedEntityChecker::<Task, _>::new(TaskChecker::default()))
         .with_checker(teaql_runtime::TypedEntityChecker::<TaskExecutionLog, _>::new(TaskExecutionLogChecker::default()))
 }
@@ -252,6 +251,7 @@ pub fn module() -> teaql_runtime::RuntimeModule {
     teaql_runtime::RuntimeModule::new()
         .entity::<Platform>()
         .entity::<TaskStatus>()
+        .entity::<Tenant>()
         .entity::<Task>()
         .entity::<TaskExecutionLog>()
         .initial_graph(teaql_runtime::GraphNode::new("Platform")
@@ -265,8 +265,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", rust_decimal::Decimal::from(10))
-            .value("progress", rust_decimal::Decimal::from(0))
+            .value("display_order", "10")
+            .value("progress", "0")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -274,8 +274,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", rust_decimal::Decimal::from(20))
-            .value("progress", rust_decimal::Decimal::from(25))
+            .value("display_order", "20")
+            .value("progress", "25")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -283,8 +283,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", rust_decimal::Decimal::from(30))
-            .value("progress", rust_decimal::Decimal::from(50))
+            .value("display_order", "30")
+            .value("progress", "50")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -292,8 +292,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", rust_decimal::Decimal::from(40))
-            .value("progress", rust_decimal::Decimal::from(100))
+            .value("display_order", "40")
+            .value("progress", "100")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }
@@ -304,6 +304,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
         .checker(teaql_runtime::TypedEntityChecker::<Platform, _>::new(PlatformChecker::default()))
         .entity::<TaskStatus>()
         .checker(teaql_runtime::TypedEntityChecker::<TaskStatus, _>::new(TaskStatusChecker::default()))
+        .entity::<Tenant>()
+        .checker(teaql_runtime::TypedEntityChecker::<Tenant, _>::new(TenantChecker::default()))
         .entity::<Task>()
         .checker(teaql_runtime::TypedEntityChecker::<Task, _>::new(TaskChecker::default()))
         .entity::<TaskExecutionLog>()
@@ -319,8 +321,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", rust_decimal::Decimal::from(10))
-            .value("progress", rust_decimal::Decimal::from(0))
+            .value("display_order", "10")
+            .value("progress", "0")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -328,8 +330,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", rust_decimal::Decimal::from(20))
-            .value("progress", rust_decimal::Decimal::from(25))
+            .value("display_order", "20")
+            .value("progress", "25")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -337,8 +339,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", rust_decimal::Decimal::from(30))
-            .value("progress", rust_decimal::Decimal::from(50))
+            .value("display_order", "30")
+            .value("progress", "50")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -346,8 +348,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", rust_decimal::Decimal::from(40))
-            .value("progress", rust_decimal::Decimal::from(100))
+            .value("display_order", "40")
+            .value("progress", "100")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }
@@ -356,6 +358,7 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
     teaql_runtime::RuntimeModule::new()
         .entity_with_behavior::<Platform, _>(PlatformBehavior::default())
         .entity_with_behavior::<TaskStatus, _>(TaskStatusBehavior::default())
+        .entity_with_behavior::<Tenant, _>(TenantBehavior::default())
         .entity_with_behavior::<Task, _>(TaskBehavior::default())
         .entity_with_behavior::<TaskExecutionLog, _>(TaskExecutionLogBehavior::default())
         .initial_graph(teaql_runtime::GraphNode::new("Platform")
@@ -369,8 +372,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", rust_decimal::Decimal::from(10))
-            .value("progress", rust_decimal::Decimal::from(0))
+            .value("display_order", "10")
+            .value("progress", "0")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -378,8 +381,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", rust_decimal::Decimal::from(20))
-            .value("progress", rust_decimal::Decimal::from(25))
+            .value("display_order", "20")
+            .value("progress", "25")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -387,8 +390,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", rust_decimal::Decimal::from(30))
-            .value("progress", rust_decimal::Decimal::from(50))
+            .value("display_order", "30")
+            .value("progress", "50")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -396,8 +399,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", rust_decimal::Decimal::from(40))
-            .value("progress", rust_decimal::Decimal::from(100))
+            .value("display_order", "40")
+            .value("progress", "100")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }
@@ -408,6 +411,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
         .checker(teaql_runtime::TypedEntityChecker::<Platform, _>::new(PlatformChecker::default()))
         .entity_with_behavior::<TaskStatus, _>(TaskStatusBehavior::default())
         .checker(teaql_runtime::TypedEntityChecker::<TaskStatus, _>::new(TaskStatusChecker::default()))
+        .entity_with_behavior::<Tenant, _>(TenantBehavior::default())
+        .checker(teaql_runtime::TypedEntityChecker::<Tenant, _>::new(TenantChecker::default()))
         .entity_with_behavior::<Task, _>(TaskBehavior::default())
         .checker(teaql_runtime::TypedEntityChecker::<Task, _>::new(TaskChecker::default()))
         .entity_with_behavior::<TaskExecutionLog, _>(TaskExecutionLogBehavior::default())
@@ -423,8 +428,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", rust_decimal::Decimal::from(10))
-            .value("progress", rust_decimal::Decimal::from(0))
+            .value("display_order", "10")
+            .value("progress", "0")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -432,8 +437,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", rust_decimal::Decimal::from(20))
-            .value("progress", rust_decimal::Decimal::from(25))
+            .value("display_order", "20")
+            .value("progress", "25")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -441,8 +446,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", rust_decimal::Decimal::from(30))
-            .value("progress", rust_decimal::Decimal::from(50))
+            .value("display_order", "30")
+            .value("progress", "50")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -450,8 +455,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", rust_decimal::Decimal::from(40))
-            .value("progress", rust_decimal::Decimal::from(100))
+            .value("display_order", "40")
+            .value("progress", "100")
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }

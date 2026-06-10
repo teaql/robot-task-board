@@ -1,6 +1,6 @@
-*
-!robot-task-board
-!robot-task-board-release
-!ttyd
-!robot_kanban.db
-!Dockerfile
+target/
+generate-lib/lib/target/
+node_modules/
+web/node_modules/
+.git/
+*.db

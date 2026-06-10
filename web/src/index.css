@@ -1,0 +1,227 @@
+:root {
+  --bg-dark: #0a0a0f;
+  --bg-panel: rgba(20, 20, 30, 0.6);
+  --border-color: rgba(80, 80, 100, 0.3);
+  --accent-primary: #00e5ff;
+  --accent-secondary: #ff0055;
+  --text-main: #e0e0e0;
+  --text-muted: #8a8a9a;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+  
+  --color-info: #00e5ff;
+  --color-warn: #ffcc00;
+  --color-planned: #8a8a9a;
+  --color-ready: #00e5ff;
+  --color-executing: #ffcc00;
+  --color-verified: #00ff66;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.05), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(255, 0, 85, 0.05), transparent 25%);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.4;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
+  gap: 12px;
+}
+
+.panel {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-panel);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: border-color 0.3s ease;
+}
+
+.panel:hover {
+  border-color: rgba(100, 100, 150, 0.5);
+}
+
+.panel-header {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-content {
+  padding: 12px 16px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 1. Log Area */
+.log-panel {
+  flex: 1;
+  min-height: 0;
+}
+.log-content-area {
+  overflow-y: auto;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+}
+.log-line {
+  word-break: break-all;
+  animation: fadeIn 0.3s ease-out;
+}
+.log-time { color: var(--text-muted); }
+.log-level-INFO { color: var(--color-info); font-weight: bold; }
+.log-level-WARN { color: var(--color-warn); font-weight: bold; }
+
+/* 2. Columns */
+.columns-container {
+  display: flex;
+  flex: 1.5;
+  gap: 12px;
+  min-height: 0;
+}
+.kanban-col {
+  flex: 1;
+}
+.kanban-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.task-item {
+  background: rgba(30, 30, 45, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: default;
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.3);
+}
+
+.task-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-primary);
+  background: rgba(0, 229, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.task-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Status specific colors */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.status-PLANNED .status-indicator { background: var(--color-planned); }
+.status-READY .status-indicator { background: var(--color-ready); box-shadow: 0 0 8px var(--color-ready); }
+.status-EXECUTING .status-indicator { background: var(--color-executing); box-shadow: 0 0 8px var(--color-executing); }
+.status-VERIFIED .status-indicator { background: var(--color-verified); box-shadow: 0 0 8px var(--color-verified); }
+
+/* 3. Command Line */
+.cmd-line-panel {
+  height: 60px;
+  flex-shrink: 0;
+}
+.cmd-input-wrapper {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+.cmd-prompt {
+  color: var(--accent-primary);
+  margin-right: 12px;
+  font-weight: bold;
+}
+#cmd-input {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  flex: 1;
+  outline: none;
+  width: 100%;
+}
+#cmd-input::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

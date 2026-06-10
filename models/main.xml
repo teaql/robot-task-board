@@ -1,4 +1,4 @@
-<root name="robot-kanban-service" org="doublechaintech" version="1.0.0" data_service="rusqlite">
+<root name="robot-kanban-service" org="doublechaintech" version="1.0.0" data_service="sqlite">
     <platform
         name="Robot System"
         founded="createTime()"
@@ -31,10 +31,18 @@
 
     <_data_service name="meilisearch" />
 
+    <tenant
+        name="string()"
+        platform="platform()"
+        _name="Tenant"
+        _module="Task"
+        _module_key="task"
+    />
+
     <task
         name="Task Name|[1,200]"
         status="task_status()"
-        platform="platform()"
+        tenant="tenant()"
         _features="custom"
         _name="Task"
         _module="Task"

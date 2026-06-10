@@ -56,9 +56,9 @@ impl<'a> PlatformExpression<'a> {
         crate::TaskStatusListExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_task_list(self) -> crate::TaskListExpression<'a> {
-        let next = self.result.and_then("task_list", |entity| entity.eval_task_list());
-        crate::TaskListExpression::new(next, self.root_desc.clone())
+    pub fn get_tenant_list(self) -> crate::TenantListExpression<'a> {
+        let next = self.result.and_then("tenant_list", |entity| entity.eval_tenant_list());
+        crate::TenantListExpression::new(next, self.root_desc.clone())
     }
 }
 

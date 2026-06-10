@@ -1,0 +1,23 @@
+[package]
+name = "robot-kanban-service"
+version = "1.0.0"
+edition = "2021"
+description = "Generated TeaQL service crate for robot-kanban-service"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+log = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+rust_decimal = { version = "1", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+teaql-core = "3.2.3"
+teaql-macros = "3.2.3"
+teaql-runtime = "3.2.3"
+teaql-sql = "3.2.3"
+teaql-data-service = "3.2.3"
+teaql-tool-core = "1.0.0"
+teaql-provider-rusqlite = "3.2.3"
+rusqlite = { version = "0.32", features = ["bundled", "chrono", "column_decltype"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+teaql-provider-meilisearch = "3.2.3"

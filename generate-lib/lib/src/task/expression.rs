@@ -46,8 +46,8 @@ impl<'a> TaskExpression<'a> {
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_platform_id(self) -> crate::ValueExpression<'a, u64> {
-        let next = self.result.and_then("platform_id", |entity| entity.eval_platform_id());
+    pub fn get_tenant_id(self) -> crate::ValueExpression<'a, u64> {
+        let next = self.result.and_then("tenant_id", |entity| entity.eval_tenant_id());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
     pub fn get_status(self) -> crate::TaskStatusExpression<'a> {
@@ -55,9 +55,9 @@ impl<'a> TaskExpression<'a> {
         crate::TaskStatusExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_platform(self) -> crate::PlatformExpression<'a> {
-        let next = self.result.and_then("platform", |entity| entity.eval_platform());
-        crate::PlatformExpression::new(next, self.root_desc.clone())
+    pub fn get_tenant(self) -> crate::TenantExpression<'a> {
+        let next = self.result.and_then("tenant", |entity| entity.eval_tenant());
+        crate::TenantExpression::new(next, self.root_desc.clone())
     }
     pub fn status_is_planned(self) -> crate::ValueExpression<'a, bool> {
         let next = self.result.and_then("status_id", |entity| {

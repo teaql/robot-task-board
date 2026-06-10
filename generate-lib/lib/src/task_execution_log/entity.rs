@@ -14,17 +14,17 @@ pub struct TaskExecutionLog {
 #[teaql(id)]
     id: u64,
 
-// @source models/main.xml:55
+// @source main.xml:63
     action: String,
 
-// @source models/main.xml:55
+// @source main.xml:63
     detail: String,
 #[teaql(version)]
     version: i64,
-// @source models/main.xml:55
+// @source main.xml:63
 #[teaql(column = "task")]
     task_id: u64,
-// @source models/main.xml:55
+// @source main.xml:63
 #[teaql(relation(target = "Task", local_key = "task_id", foreign_key = "id"))]
     task: Option<crate::Task>,
     #[teaql(dynamic)]
@@ -101,7 +101,7 @@ impl TaskExecutionLog {
 
     pub fn update_action(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.action = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.action.clone());
+        self.action = value.try_text().map(|value| value.trim().to_owned()).unwrap_or_else(|| self.action.clone());
         self.root.set(self.entity_key(), "action", value);
         self
     }
@@ -123,7 +123,7 @@ impl TaskExecutionLog {
 
     pub fn update_detail(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.detail = value.try_text().map(|value| value.to_owned()).unwrap_or_else(|| self.detail.clone());
+        self.detail = value.try_text().map(|value| value.trim().to_owned()).unwrap_or_else(|| self.detail.clone());
         self.root.set(self.entity_key(), "detail", value);
         self
     }
@@ -206,7 +206,7 @@ impl TaskExecutionLog {
         self
     }
 
-    pub(crate) async fn save<'a, C>(
+    pub async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskExecutionLogRepository<'a>>>

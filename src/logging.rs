@@ -1,8 +1,8 @@
-use teaql_runtime::{
-    UserContext, SafeAuditEvent,
-    RawAuditEventKind, SafeAuditEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
-};
 use teaql_core::Value;
+use teaql_runtime::{
+    LogPayload, RawAuditEventKind, RuntimeError, SafeAuditEvent, SafeAuditEventSink,
+    UnifiedLogBuffer, UnifiedLogEntry, UserContext,
+};
 
 /// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
 pub fn short_user(ctx: &UserContext) -> String {
@@ -33,7 +33,9 @@ impl SafeAuditEventSink for AppAuditSink {
     fn on_safe_event(&self, ctx: &UserContext, event: &SafeAuditEvent) -> Result<(), RuntimeError> {
         // Helper to extract a string value from SafeAuditField
         let get_field = |name: &str| -> String {
-            event.fields.iter()
+            event
+                .fields
+                .iter()
                 .find(|f| f.name == name)
                 .and_then(|f| f.value.clone())
                 .unwrap_or_else(|| "unknown".to_owned())
@@ -62,7 +64,10 @@ impl SafeAuditEventSink for AppAuditSink {
                     RawAuditEventKind::DataSeeded => {
                         let inserted: usize = get_field("inserted").parse().unwrap_or(0);
                         let updated: usize = get_field("updated").parse().unwrap_or(0);
-                        format!("Seed {}: {} inserted, {} updated", table_name, inserted, updated)
+                        format!(
+                            "Seed {}: {} inserted, {} updated",
+                            table_name, inserted, updated
+                        )
                     }
                     _ => unreachable!(),
                 };
@@ -98,7 +103,12 @@ impl SafeAuditEventSink for AppAuditSink {
         let comment_part = if event.trace_chain.is_empty() {
             "".to_owned()
         } else {
-            let trace = event.trace_chain.iter().map(|n| n.comment.clone()).collect::<Vec<_>>().join(" -> ");
+            let trace = event
+                .trace_chain
+                .iter()
+                .map(|n| n.comment.clone())
+                .collect::<Vec<_>>()
+                .join(" -> ");
             format!(" [{}]", trace)
         };
 
@@ -106,8 +116,12 @@ impl SafeAuditEventSink for AppAuditSink {
         let mut field_changes = Vec::new();
         for field in &event.fields {
             let mut val_str = field.value.clone().unwrap_or_else(|| "NULL".to_owned());
-            if field.masked { val_str.push_str(" [MASKED]"); }
-            if field.truncated { val_str.push_str(" [TRUNCATED]"); }
+            if field.masked {
+                val_str.push_str(" [MASKED]");
+            }
+            if field.truncated {
+                val_str.push_str(" [TRUNCATED]");
+            }
             field_changes.push(format!("{}: {}", display_field_name(&field.name), val_str));
         }
         let fields_part = if field_changes.is_empty() {
@@ -154,10 +168,14 @@ impl SafeAuditEventSink for AppAuditSink {
                     detail = field.value.clone().unwrap_or_default();
                     // Remove quotes if any
                     if detail.starts_with('\'') && detail.ends_with('\'') {
-                        detail = detail[1..detail.len()-1].to_owned();
+                        detail = detail[1..detail.len() - 1].to_owned();
                     }
-                    if field.masked { detail.push_str(" [MASKED]"); }
-                    if field.truncated { detail.push_str(" [TRUNCATED]"); }
+                    if field.masked {
+                        detail.push_str(" [MASKED]");
+                    }
+                    if field.truncated {
+                        detail.push_str(" [TRUNCATED]");
+                    }
                 }
             }
             let business_line = format!(
@@ -191,7 +209,9 @@ impl SafeAuditEventSink for AppAuditSink {
         }
 
         // Write to audit.log with the long format
-        let timestamp_with_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        let timestamp_with_date = chrono::Local::now()
+            .format("%Y-%m-%d %H:%M:%S%.3f")
+            .to_string();
         let audit_header = format!(
             "[{}] - [{}] - [AUDIT] Entity [{}] {}.{}",
             timestamp_with_date, user, entity_identity, action_name, comment_part
@@ -199,17 +219,27 @@ impl SafeAuditEventSink for AppAuditSink {
         let mut audit_lines = vec![audit_header];
         for field in &event.fields {
             let mut val_str = field.value.clone().unwrap_or_else(|| "NULL".to_owned());
-            if field.masked { val_str.push_str(" [MASKED]"); }
-            if field.truncated { val_str.push_str(" [TRUNCATED]"); }
+            if field.masked {
+                val_str.push_str(" [MASKED]");
+            }
+            if field.truncated {
+                val_str.push_str(" [TRUNCATED]");
+            }
 
             let detail = format!(
                 "[{}] - [{}] - [AUDIT]   -> Field [{}]: {}",
-                timestamp_with_date, user, display_field_name(&field.name), val_str
+                timestamp_with_date,
+                user,
+                display_field_name(&field.name),
+                val_str
             );
             audit_lines.push(detail);
         }
-        audit_lines.push(format!("[{}] - [{}] - [AUDIT] ------------------------------------------------------------", timestamp_with_date, user));
-        
+        audit_lines.push(format!(
+            "[{}] - [{}] - [AUDIT] ------------------------------------------------------------",
+            timestamp_with_date, user
+        ));
+
         for line in &audit_lines {
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
@@ -224,4 +254,3 @@ impl SafeAuditEventSink for AppAuditSink {
         Ok(())
     }
 }
-

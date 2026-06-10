@@ -1,5 +1,7 @@
-/// A lightweight view model for tasks displayed in the TUI.
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+/// A lightweight view model for tasks displayed in the UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskModel {
     pub id: u64,
     pub name: String,
@@ -15,6 +17,7 @@ impl TaskModel {
 }
 
 /// Data returned from a reload query.
+#[derive(Serialize, Deserialize)]
 pub struct ReloadedData {
     pub planned_tasks: Vec<TaskModel>,
     pub ready_tasks: Vec<TaskModel>,
