@@ -1,15 +1,18 @@
 #!/bin/bash
 set -e
 
-# Build the docker container
-# By default, docker build builds for the host's architecture.
-# If you are on an M1/M2/M3 Mac (arm64), it will automatically build an arm64 container.
-# If you are on x86_64 and want to cross-compile for arm64, you can use buildx:
-# docker buildx build --platform linux/arm64 -t robot-task-board:latest .
+# This Dockerfile uses zigbuild to build an optimized, statically-linked arm64 binary.
+# It then packages it into a tiny Alpine Linux image.
 
-echo "Building Docker container for Robot Task Board..."
+echo "Building a tiny Alpine-based Docker container for Robot Task Board (arm64)..."
+
+# If you are already on an arm64 machine (e.g. Apple M1/M2), just run:
 docker build -t robot-task-board:latest .
 
-echo "Build complete!"
+# If you are on an x86_64 machine and want to cross-build for arm64, 
+# you should uncomment the line below to explicitly set the platform for the final image:
+# docker buildx build --platform linux/arm64 -t robot-task-board:latest .
+
+echo "Build complete! The resulting image should be very small (under 50MB)."
 echo "To run the container, use:"
-echo "docker run -p 3000:3000 -e PG_HOST=... -e PG_USER=... -e PG_PASSWORD=... -e PG_DBNAME=... robot-task-board:latest"
+echo "docker compose up -d"
