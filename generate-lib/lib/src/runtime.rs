@@ -211,7 +211,7 @@ fn env_value(name: &'static str) -> Result<String, ServiceRuntimeError> {
 }
 
 async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
-    pub async fn create_service_pool(url: &String) -> Result<DataServicePool, ServiceRuntimeError> {
+    pub async fn create_service_pool(_url: &String) -> Result<DataServicePool, ServiceRuntimeError> {
         let mut cfg = deadpool_postgres::Config::new();
         cfg.host = Some("localhost".to_string());
         cfg.user = Some("postgres".to_string());

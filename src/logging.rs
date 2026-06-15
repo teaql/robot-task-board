@@ -2,7 +2,7 @@ use teaql_runtime::{
     UserContext, SafeAuditEvent,
     RawAuditEventKind, SafeAuditEventSink, RuntimeError, UnifiedLogEntry, UnifiedLogBuffer, LogPayload,
 };
-use teaql_core::Value;
+
 
 /// Extract just the OS username from the full user identifier (e.g. "philip@pid-123.tid-1" → "philip")
 pub fn short_user(ctx: &UserContext) -> String {

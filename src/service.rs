@@ -109,7 +109,7 @@ impl TaskService {
     /// Bootstrap progress is observable through `EntityEventSink`:
     /// - `SchemaCreated` events are fired for each table created
     /// - `DataSeeded` events are fired for each entity type seeded
-    pub async fn new(db_path: &str) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(_db_path: &str) -> Result<Self, Box<dyn Error>> {
         let mut cfg = deadpool_postgres::Config::new();
         cfg.host = Some("localhost".to_string());
         cfg.user = Some("postgres".to_string());
