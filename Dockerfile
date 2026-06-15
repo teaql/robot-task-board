@@ -16,8 +16,8 @@ COPY . .
 RUN rustup target add aarch64-unknown-linux-musl
 RUN cargo zigbuild --release --target aarch64-unknown-linux-musl
 
-# Stage 3: Runtime (explicitly arm64, incredibly small)
-FROM --platform=linux/arm64 alpine:latest
+# Stage 3: Runtime (FROM scratch, absolutely zero OS)
+FROM scratch
 # Copy CA certificates from frontend stage
 COPY --from=frontend-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 WORKDIR /app
