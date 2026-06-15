@@ -1,15 +1,15 @@
 use axum::{
     extract::{Path, Query, State},
-    http::{header, StatusCode},
+    http::StatusCode,
     response::IntoResponse,
-    routing::{delete, get, post, put},
+    routing::{delete, get, put},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::models::{ReloadedData, TaskModel};
+use crate::models::ReloadedData;
 use crate::service::TaskService;
 
 pub fn router(service: Arc<TaskService>) -> Router {

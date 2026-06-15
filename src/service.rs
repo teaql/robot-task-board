@@ -1,16 +1,15 @@
-use robot_kanban::{AuditedSave, Platform, Task, TaskExecutionLog, Q};
+use robot_kanban::{Platform, Task, TaskExecutionLog, Q};
 use std::error::Error;
 use std::sync::Mutex;
-use teaql_core::{Entity, TeaqlEntity};
+use teaql_core::TeaqlEntity;
 use teaql_provider_postgres::{
     ensure_postgres_schema_for, PgIdSpaceGenerator, PgMutationExecutor, PostgresProviderExt,
 };
 use deadpool_postgres::{Config, Runtime};
 use tokio_postgres::NoTls;
-use std::sync::Arc;
 use teaql_runtime::{LogPayload, UnifiedLogBuffer, UserContext};
 
-use crate::logging::{is_bootstrap_message, AppAuditSink};
+use crate::logging::AppAuditSink;
 use crate::models::{MoveResult, ReloadedData, TaskModel};
 
 pub trait UserContextExt {

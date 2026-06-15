@@ -1,4 +1,3 @@
-use teaql_core::Value;
 use teaql_runtime::{
     LogPayload, RawAuditEventKind, RuntimeError, SafeAuditEvent, SafeAuditEventSink,
     UnifiedLogBuffer, UnifiedLogEntry, UserContext,
@@ -19,7 +18,7 @@ fn display_field_name(field: &str) -> &str {
 }
 
 /// Check if a log message is a bootstrap event (schema or seed).
-pub fn is_bootstrap_message(msg: &str) -> bool {
+pub fn _is_bootstrap_message(msg: &str) -> bool {
     msg.starts_with("Create ")
         || msg.starts_with("Verified ")
         || msg.starts_with("Seed ")

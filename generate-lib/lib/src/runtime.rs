@@ -1,7 +1,7 @@
 use crate::*;
 use teaql_core::TeaqlEntity;
 
-use teaql_provider_postgres::PostgresProviderExt as _;
+
 
 pub type DataServiceDialect = teaql_provider_postgres::PostgresDialect;
 pub type DataServiceMutationExecutor = teaql_provider_postgres::PgMutationExecutor;
@@ -216,7 +216,7 @@ fn env_value(name: &'static str) -> Result<String, ServiceRuntimeError> {
     std::env::var(name).map_err(|source| ServiceRuntimeError::MissingEnv { name, source })
 }
 
-async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
+async fn _connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
     let mut cfg = deadpool_postgres::Config::new();
     cfg.host = Some(config.database_url.clone());
     cfg.user = Some(config.database_user.clone());
