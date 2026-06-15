@@ -2,10 +2,11 @@ use robot_kanban::{AuditedSave, Platform, Task, TaskExecutionLog, Q};
 use std::error::Error;
 use std::sync::Mutex;
 use teaql_core::{Entity, TeaqlEntity};
-use teaql_provider_sqlite::{
-    ensure_sqlite_schema_for, SqliteMutationExecutor, SqliteProviderExt,
+use teaql_provider_postgres::{
+    ensure_postgres_schema_for, PgIdSpaceGenerator, PgMutationExecutor, PostgresProviderExt,
 };
-use rusqlite::Connection;
+use deadpool_postgres::{Config, Runtime};
+use tokio_postgres::NoTls;
 use std::sync::Arc;
 use teaql_runtime::{LogPayload, UnifiedLogBuffer, UserContext};
 
@@ -111,15 +112,20 @@ impl TaskDomainBehavior for Task {
 pub struct TaskService {
     ctx: UserContext,
     #[allow(dead_code)]
-    inner_executor: SqliteMutationExecutor,
+    inner_executor: PgMutationExecutor,
     last_log_index: Mutex<usize>,
     pub status_cache: std::collections::HashMap<u64, String>,
 }
 
 impl TaskService {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
-        let conn = Connection::open("teaql_data.db").map_err(|e| e.to_string())?;
-        let inner_executor = SqliteMutationExecutor::new(Arc::new(Mutex::new(conn)));
+        let mut cfg = Config::new();
+        cfg.host = Some(std::env::var("PG_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()));
+        cfg.user = Some(std::env::var("PG_USER").unwrap_or_else(|_| "postgres".to_string()));
+        cfg.password = Some(std::env::var("PG_PASSWORD").unwrap_or_else(|_| "postgres".to_string()));
+        cfg.dbname = Some(std::env::var("PG_DBNAME").unwrap_or_else(|_| "postgres".to_string()));
+        let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).map_err(|e| e.to_string())?;
+        let inner_executor = PgMutationExecutor::new(pool);
 
         let mut ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
 
@@ -133,14 +139,14 @@ impl TaskService {
             }
         }
 
-        ctx.use_sqlite_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(teaql_provider_sqlite::SqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
+        ctx.use_postgres_provider(inner_executor.clone());
+        ctx.set_internal_id_generator(PgIdSpaceGenerator::from_executor(inner_executor.clone()));
 
         let service_runtime_executor =
             robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
         ctx.insert_resource(service_runtime_executor);
 
-        ensure_sqlite_schema_for(&ctx).map_err(|e| e.to_string())?;
+        ensure_postgres_schema_for(&ctx).await.map_err(|e| e.to_string())?;
 
         let mut status_cache = std::collections::HashMap::new();
         let statuses = robot_kanban::Q::task_status()

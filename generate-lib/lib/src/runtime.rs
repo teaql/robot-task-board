@@ -1,13 +1,13 @@
 use crate::*;
 use teaql_core::TeaqlEntity;
 
-use teaql_provider_sqlite::SqliteProviderExt as _;
+use teaql_provider_postgres::PostgresProviderExt as _;
 
-pub type DataServiceDialect = teaql_provider_sqlite::SqliteDialect;
-pub type DataServiceMutationExecutor = teaql_provider_sqlite::SqliteMutationExecutor;
-pub type DataServiceMutationError = teaql_provider_sqlite::MutationExecutorError;
-pub type DataServiceIdGenerator = teaql_provider_sqlite::SqliteIdSpaceGenerator;
-pub type DataServicePool = std::sync::Arc<std::sync::Mutex<rusqlite::Connection>>;
+pub type DataServiceDialect = teaql_provider_postgres::PostgresDialect;
+pub type DataServiceMutationExecutor = teaql_provider_postgres::PgMutationExecutor;
+pub type DataServiceMutationError = teaql_provider_postgres::MutationExecutorError;
+pub type DataServiceIdGenerator = teaql_provider_postgres::PgIdSpaceGenerator;
+pub type DataServicePool = deadpool_postgres::Pool;
 pub type DataServiceExecutor = ServiceRuntimeExecutor;
 pub type ServiceRuntime = teaql_runtime::UserContext;
 
@@ -182,7 +182,7 @@ pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceR
     let id_generator = DataServiceIdGenerator::new(pool.clone());
     let mutation_executor = DataServiceMutationExecutor::new(pool);let mut context = module_with_behaviors_and_checkers().into_context();
     context.set_internal_id_generator(id_generator);
-    context.use_sqlite_provider(mutation_executor.clone());
+    context.use_postgres_provider(mutation_executor.clone());
     context.insert_resource(ServiceRuntimeExecutor::new(mutation_executor));
 
     // 自动加载 Zero-Code 审计配置与 Schema 模式
@@ -217,8 +217,11 @@ fn env_value(name: &'static str) -> Result<String, ServiceRuntimeError> {
 }
 
 async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
-    let conn = rusqlite::Connection::open(&config.database_url).map_err(|e| ServiceRuntimeError::ConnectionError(e.to_string()))?;
-    Ok(std::sync::Arc::new(std::sync::Mutex::new(conn)))
+    let mut cfg = deadpool_postgres::Config::new();
+    cfg.host = Some(config.database_url.clone());
+    cfg.user = Some(config.database_user.clone());
+    cfg.password = Some(config.database_password.clone());
+    cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), tokio_postgres::NoTls).map_err(|e| ServiceRuntimeError::ConnectionError(e.to_string()))
 }
 pub fn repository_registry() -> teaql_runtime::InMemoryRepositoryRegistry {
     teaql_runtime::InMemoryRepositoryRegistry::new()
