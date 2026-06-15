@@ -1,4 +1,4 @@
-<root name="robot-kanban-service" org="doublechaintech" version="1.0.0" data_service="sqlite">
+<root name="robot-kanban-service" org="doublechaintech" version="1.0.0" data_service="postgres" teaql_rs_version="4.0.4">
     <platform
         name="Robot System"
         founded="createTime()"
@@ -13,8 +13,8 @@
         name="string()"
         code="string()"
         color="string()"
-        display_order="number()"
-        progress="number()"
+        display_order="long()"
+        progress="long()"
         _features="status"
         _identifier="code"
         _constant="true"
