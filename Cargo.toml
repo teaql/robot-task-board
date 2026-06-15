@@ -27,8 +27,8 @@ robot_kanban = { path = "./generate-lib/lib", package = "robot-kanban-service" }
 teaql-provider-meilisearch = "4.0.1"
 whoami = "2.1.2"
 rand = "0.10.1"
-teaql-provider-postgres = { version = "4.0.1", path = "../teaql-rs/teaql-provider-postgres" }
-teaql-provider-mysql = { version = "4.0.1", path = "../teaql-rs/teaql-provider-mysql" }
+teaql-provider-postgres = "4.0.1"
+teaql-provider-mysql = "4.0.1"
 tokio-postgres = "0.7.17"
 deadpool-postgres = "0.14.1"
 mysql_async = "0.37.0"
@@ -42,13 +42,4 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
-[patch.crates-io]
-teaql-core = { path = "../teaql-rs/teaql-core" }
-teaql-macros = { path = "../teaql-rs/teaql-macros" }
-teaql-runtime = { path = "../teaql-rs/teaql-runtime" }
-teaql-sql = { path = "../teaql-rs/teaql-sql" }
-teaql-data-service = { path = "../teaql-rs/teaql-data-service" }
-teaql-provider-sqlite = { path = "../teaql-rs/teaql-provider-sqlite" }
-teaql-provider-meilisearch = { path = "../teaql-rs/teaql-provider-meilisearch" }
-teaql-provider-postgres = { path = "../teaql-rs/teaql-provider-postgres" }
-teaql-provider-mysql = { path = "../teaql-rs/teaql-provider-mysql" }
+
