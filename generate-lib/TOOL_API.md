@@ -9,7 +9,33 @@
 
 `UserContext` is the runtime context passed to all queries and mutations.
 
-### Setup (in main.rs)
+### Default Setup (in main.rs)
+Use the generated runtime helper first:
+
+```rust
+let ctx = robot_kanban_service::service_runtime_from_env().await?;
+```
+
+This helper reads the generated database environment variables, connects to the
+data service, registers generated modules/repositories/behaviors/checkers,
+inserts the SQL runtime resources, and calls `ensure_schema().await?`.
+
+If you already have a pool, use:
+
+```rust
+let ctx = robot_kanban_service::service_runtime_from_pool(pool).await?;
+```
+
+Do not duplicate generated constant seed data with manual SQL `INSERT`
+statements. The generated module registers root and constant seed data through
+`initial_graph`, and the default runtime setup applies that path through
+`ensure_schema()`.
+
+### Advanced Manual Setup
+Manual `UserContext` assembly is only for custom runtime integration. If you use
+it, you are responsible for matching the generated runtime helper's registration
+and schema setup behavior.
+
 ```rust
 let ctx = UserContext::new()
     .with_module(module())                          // entity metadata

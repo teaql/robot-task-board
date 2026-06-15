@@ -15,22 +15,22 @@ pub struct Task {
 #[teaql(id)]
     id: u64,
 
-// @source main.xml:50
+// @source main.xml:49
     name: String,
 #[teaql(version)]
     version: i64,
-// @source main.xml:50
+// @source main.xml:49
 #[teaql(column = "status")]
     status_id: u64,
 
-// @source main.xml:50
+// @source main.xml:49
 #[teaql(column = "tenant")]
     tenant_id: u64,
-// @source main.xml:50
+// @source main.xml:49
 #[teaql(relation(target = "TaskStatus", local_key = "status_id", foreign_key = "id"))]
     status: Option<crate::TaskStatus>,
 
-// @source main.xml:50
+// @source main.xml:49
 #[teaql(relation(target = "Tenant", local_key = "tenant_id", foreign_key = "id"))]
     tenant: Option<crate::Tenant>,
 #[teaql(relation(target = "TaskExecutionLog", local_key = "id", foreign_key = "task_id", many))]
@@ -280,7 +280,7 @@ impl Task {
         self
     }
 
-    pub async fn save<'a, C>(
+    pub(crate) async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskRepository<'a>>>

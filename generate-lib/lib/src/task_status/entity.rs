@@ -26,10 +26,10 @@ pub struct TaskStatus {
     color: String,
 
 // @source main.xml:25
-    display_order: rust_decimal::Decimal,
+    display_order: i64,
 
 // @source main.xml:25
-    progress: rust_decimal::Decimal,
+    progress: i64,
 #[teaql(version)]
     version: i64,
 // @source main.xml:25
@@ -59,8 +59,8 @@ impl TaskStatus {
             name: String::new(),
             code: String::new(),
             color: String::new(),
-            display_order: rust_decimal::Decimal::ZERO,
-            progress: rust_decimal::Decimal::ZERO,
+            display_order: 0_i64,
+            progress: 0_i64,
             version: 0_i64,
             platform_id: 0_u64,
             platform: None,
@@ -181,13 +181,13 @@ impl TaskStatus {
                     teaql_core::eval::EvalResult::Value(self.color())
                 }}
 
-    pub fn display_order(&self) -> rust_decimal::Decimal {
-        self.changed_display_order().and_then(|value| value.try_decimal()).unwrap_or(self.display_order)
+    pub fn display_order(&self) -> i64 {
+        self.changed_display_order().and_then(|value| value.try_i64()).unwrap_or(self.display_order)
     }
 
     pub fn update_display_order(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.display_order = value.try_decimal().unwrap_or(self.display_order.clone());
+        self.display_order = value.try_i64().unwrap_or(self.display_order.clone());
         self.root.set(self.entity_key(), "display_order", value);
         self
     }
@@ -196,20 +196,20 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "display_order")
     }
 
-    pub fn eval_display_order(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
+    pub fn eval_display_order(&self) -> teaql_core::eval::EvalResult<i64> {
         if !self.is_loaded("display_order") {
                     teaql_core::eval::EvalResult::NotLoaded { failed_node: "display_order".to_string(), attempted_path: "display_order".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.display_order())
                 }}
 
-    pub fn progress(&self) -> rust_decimal::Decimal {
-        self.changed_progress().and_then(|value| value.try_decimal()).unwrap_or(self.progress)
+    pub fn progress(&self) -> i64 {
+        self.changed_progress().and_then(|value| value.try_i64()).unwrap_or(self.progress)
     }
 
     pub fn update_progress(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.progress = value.try_decimal().unwrap_or(self.progress.clone());
+        self.progress = value.try_i64().unwrap_or(self.progress.clone());
         self.root.set(self.entity_key(), "progress", value);
         self
     }
@@ -218,7 +218,7 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "progress")
     }
 
-    pub fn eval_progress(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
+    pub fn eval_progress(&self) -> teaql_core::eval::EvalResult<i64> {
         if !self.is_loaded("progress") {
                     teaql_core::eval::EvalResult::NotLoaded { failed_node: "progress".to_string(), attempted_path: "progress".to_string() }
                 } else {
@@ -307,7 +307,7 @@ impl TaskStatus {
         self
     }
 
-    pub async fn save<'a, C>(
+    pub(crate) async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TaskStatusRepository<'a>>>

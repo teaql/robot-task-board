@@ -1,7 +1,7 @@
 use crate::*;
 use teaql_core::TeaqlEntity;
 
-
+use teaql_provider_postgres::PostgresProviderExt as _;
 
 pub type DataServiceDialect = teaql_provider_postgres::PostgresDialect;
 pub type DataServiceMutationExecutor = teaql_provider_postgres::PgMutationExecutor;
@@ -92,7 +92,6 @@ pub struct ServiceRuntimeExecutor {
         DataServiceMutationExecutor,
         LocalSchemaProvider
     >,
-    meilisearch: Option<teaql_provider_meilisearch::MeilisearchProvider>,
 }
 
 impl ServiceRuntimeExecutor {
@@ -103,14 +102,9 @@ impl ServiceRuntimeExecutor {
                 inner,
                 LocalSchemaProvider
             ),
-            meilisearch: None,
         }
     }
 
-    pub fn with_meilisearch(mut self, meilisearch: teaql_provider_meilisearch::MeilisearchProvider) -> Self {
-        self.meilisearch = Some(meilisearch);
-        self
-    }
 }
 
 impl teaql_data_service::DataServiceExecutor for ServiceRuntimeExecutor {
@@ -122,38 +116,18 @@ impl teaql_data_service::DataServiceExecutor for ServiceRuntimeExecutor {
 
 impl teaql_data_service::QueryExecutor for ServiceRuntimeExecutor {
     async fn query(&self, request: teaql_data_service::QueryRequest) -> Result<teaql_data_service::QueryResult, Self::Error> {
-        use teaql_data_service::SchemaProvider;
-        if let Some(desc) = self.inner.schema_provider.get_entity(&request.query.entity) {
-            if desc.data_service.as_deref() == Some("meilisearch") {
-                if let Some(meili) = &self.meilisearch {
-                    return teaql_data_service::QueryExecutor::query(meili, request).await.map_err(|e| teaql_sql::SqlExecutorError::Compile(teaql_sql::SqlCompileError::UnknownEntity(e.to_string())));
-                }
-            }
-        }
         teaql_data_service::QueryExecutor::query(&self.inner, request).await
+    }
+}
+
+impl teaql_data_service::StreamQueryExecutor for ServiceRuntimeExecutor {
+    async fn query_stream(&self, request: teaql_data_service::QueryRequest, chunk_size: usize) -> Result<Vec<teaql_data_service::StreamChunk>, Self::Error> {
+        teaql_data_service::StreamQueryExecutor::query_stream(&self.inner, request, chunk_size).await
     }
 }
 
 impl teaql_data_service::MutationExecutor for ServiceRuntimeExecutor {
     async fn mutate(&self, request: teaql_data_service::MutationRequest) -> Result<teaql_data_service::MutationResult, Self::Error> {
-        use teaql_data_service::SchemaProvider;
-        let entity_name = match &request {
-            teaql_data_service::MutationRequest::Insert(cmd) => Some(&cmd.entity),
-            teaql_data_service::MutationRequest::Update(cmd) => Some(&cmd.entity),
-            teaql_data_service::MutationRequest::Delete(cmd) => Some(&cmd.entity),
-            teaql_data_service::MutationRequest::Recover(cmd) => Some(&cmd.entity),
-            teaql_data_service::MutationRequest::Batch(_) => None,
-        };
-        if let Some(entity_name) = entity_name {
-            if let Some(desc) = self.inner.schema_provider.get_entity(entity_name) {
-                if desc.data_service.as_deref() == Some("meilisearch") {
-                    if let Some(meili) = &self.meilisearch {
-                        // Always fallback to Meilisearch if it's explicitly set for the entity.
-                        return teaql_data_service::MutationExecutor::mutate(meili, request).await.map_err(|e| teaql_sql::SqlExecutorError::Compile(teaql_sql::SqlCompileError::UnknownEntity(e.to_string())));
-                    }
-                }
-            }
-        }
         teaql_data_service::MutationExecutor::mutate(&self.inner, request).await
     }
 }
@@ -166,13 +140,10 @@ impl teaql_data_service::TransactionExecutor for ServiceRuntimeExecutor {
     }
 }
 
-/*
 pub async fn service_runtime_from_env() -> Result<ServiceRuntime, ServiceRuntimeError> {
     service_runtime(ServiceRuntimeConfig::from_env()?).await
 }
-*/
 
-/*
 pub async fn service_runtime(config: ServiceRuntimeConfig) -> Result<ServiceRuntime, ServiceRuntimeError> {
     let pool = connect_data_service_pool(&config).await?;
     service_runtime_from_pool(pool).await
@@ -208,7 +179,6 @@ pub async fn service_runtime_from_pool(pool: DataServicePool) -> Result<ServiceR
 
     Ok(context)
 }
-*/
 
 
 
@@ -216,12 +186,11 @@ fn env_value(name: &'static str) -> Result<String, ServiceRuntimeError> {
     std::env::var(name).map_err(|source| ServiceRuntimeError::MissingEnv { name, source })
 }
 
-async fn _connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
-    let mut cfg = deadpool_postgres::Config::new();
-    cfg.host = Some(config.database_url.clone());
-    cfg.user = Some(config.database_user.clone());
-    cfg.password = Some(config.database_password.clone());
-    cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), tokio_postgres::NoTls).map_err(|e| ServiceRuntimeError::ConnectionError(e.to_string()))
+async fn connect_data_service_pool(config: &ServiceRuntimeConfig) -> Result<DataServicePool, ServiceRuntimeError> {
+    let pg_config = config.database_url.parse::<tokio_postgres::Config>().map_err(|e| ServiceRuntimeError::ConnectionError(e.to_string()))?;
+    let mgr = deadpool_postgres::Manager::new(pg_config, tokio_postgres::NoTls);
+    let pool = deadpool_postgres::Pool::builder(mgr).build().map_err(|e| ServiceRuntimeError::ConnectionError(e.to_string()))?;
+    Ok(pool)
 }
 pub fn repository_registry() -> teaql_runtime::InMemoryRepositoryRegistry {
     teaql_runtime::InMemoryRepositoryRegistry::new()
@@ -268,8 +237,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("display_order", 10_i64)
+            .value("progress", 0_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -277,8 +246,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", "20")
-            .value("progress", "25")
+            .value("display_order", 20_i64)
+            .value("progress", 25_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -286,8 +255,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", "30")
-            .value("progress", "50")
+            .value("display_order", 30_i64)
+            .value("progress", 50_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -295,8 +264,8 @@ pub fn module() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", "40")
-            .value("progress", "100")
+            .value("display_order", 40_i64)
+            .value("progress", 100_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }
@@ -324,8 +293,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("display_order", 10_i64)
+            .value("progress", 0_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -333,8 +302,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", "20")
-            .value("progress", "25")
+            .value("display_order", 20_i64)
+            .value("progress", 25_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -342,8 +311,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", "30")
-            .value("progress", "50")
+            .value("display_order", 30_i64)
+            .value("progress", 50_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -351,8 +320,8 @@ pub fn module_with_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", "40")
-            .value("progress", "100")
+            .value("display_order", 40_i64)
+            .value("progress", 100_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }
@@ -375,8 +344,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("display_order", 10_i64)
+            .value("progress", 0_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -384,8 +353,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", "20")
-            .value("progress", "25")
+            .value("display_order", 20_i64)
+            .value("progress", 25_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -393,8 +362,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", "30")
-            .value("progress", "50")
+            .value("display_order", 30_i64)
+            .value("progress", 50_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -402,8 +371,8 @@ pub fn module_with_behaviors() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", "40")
-            .value("progress", "100")
+            .value("display_order", 40_i64)
+            .value("progress", 100_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }
@@ -431,8 +400,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Planned")
             .value("code", "PLANNED")
             .value("color", "#94A3B8")
-            .value("display_order", "10")
-            .value("progress", "0")
+            .value("display_order", 10_i64)
+            .value("progress", 0_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -440,8 +409,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Ready")
             .value("code", "READY")
             .value("color", "#3B82F6")
-            .value("display_order", "20")
-            .value("progress", "25")
+            .value("display_order", 20_i64)
+            .value("progress", 25_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -449,8 +418,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Executing")
             .value("code", "EXECUTING")
             .value("color", "#F59E0B")
-            .value("display_order", "30")
-            .value("progress", "50")
+            .value("display_order", 30_i64)
+            .value("progress", 50_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
         .initial_graph(teaql_runtime::GraphNode::new("TaskStatus")
@@ -458,8 +427,8 @@ pub fn module_with_behaviors_and_checkers() -> teaql_runtime::RuntimeModule {
             .value("name", "Verified")
             .value("code", "VERIFIED")
             .value("color", "#16A34A")
-            .value("display_order", "40")
-            .value("progress", "100")
+            .value("display_order", 40_i64)
+            .value("progress", 100_i64)
             .value("version", 1_i64)
             .value("platform_id", 1_u64))
 }

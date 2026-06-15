@@ -15,14 +15,14 @@ pub struct Tenant {
 #[teaql(id)]
     id: u64,
 
-// @source main.xml:40
+// @source main.xml:39
     name: String,
 #[teaql(version)]
     version: i64,
-// @source main.xml:40
+// @source main.xml:39
 #[teaql(column = "platform")]
     platform_id: u64,
-// @source main.xml:40
+// @source main.xml:39
 #[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
     platform: Option<crate::Platform>,
 #[teaql(relation(target = "Task", local_key = "id", foreign_key = "tenant_id", many))]
@@ -202,7 +202,7 @@ impl Tenant {
         self
     }
 
-    pub async fn save<'a, C>(
+    pub(crate) async fn save<'a, C>(
         self,
         ctx: &'a C,
     ) -> Result<teaql_runtime::GraphNode, crate::TeaqlRepositoryError<C::TenantRepository<'a>>>

@@ -138,36 +138,23 @@ export default function App() {
       }
       const id = parseInt(moveParts[0], 10);
       const target = moveParts.length > 1 ? moveParts[1].toLowerCase() : "";
-      const task = tasks.find(t => t.id === id);
-      if (!task) {
-        addLog("INFO", `WARNING: Task ${id} not found.`);
-      } else {
-        const currentIdx = STATUSES.indexOf(task.status);
-        let nextStatus = task.status;
-        
-        if (target === "planned") nextStatus = "PLANNED";
-        else if (target === "ready") nextStatus = "READY";
-        else if (target === "executing") nextStatus = "EXECUTING";
-        else if (target === "verified") nextStatus = "VERIFIED";
-        else if (target === "next" || target === "") {
-           if (currentIdx < STATUSES.length - 1) nextStatus = STATUSES[currentIdx + 1];
-        }
-
-        if (nextStatus === task.status) {
-          addLog("INFO", `WARNING: Task ${id} is already in its final status.`);
-        } else {
-          try {
-            const res = await fetch(`/api/tasks/${id}/move`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json", "x-session-id": sessionId },
-              body: JSON.stringify({ status: nextStatus })
-            });
-            if (res.ok) await fetchTasks();
-            else addLog("WARN", "Error moving task: " + await res.text());
-          } catch (e) {
-            addLog("WARN", "Error moving task: " + e.message);
+      
+      try {
+        const res = await fetch(`/api/tasks/${id}/move`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+          body: JSON.stringify({ status: target })
+        });
+        if (res.ok) await fetchTasks();
+        else {
+          if (res.status === 404) {
+            addLog("INFO", `WARNING: Task ${id} not found.`);
+          } else {
+            addLog("WARN", "Error moving task: " + await res.text());
           }
         }
+      } catch (e) {
+        addLog("WARN", "Error moving task: " + e.message);
       }
     } else if (cmd === "delete" || cmd === "del" || cmd === "rm") {
       if (args.trim() === "") {

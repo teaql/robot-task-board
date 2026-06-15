@@ -63,6 +63,8 @@ pub trait TeaqlRecordRepository {
         query: &SelectQuery,
         relation_aggregates: &[RuntimeRelationAggregate],
     ) -> Result<SmartList<Record>, RepositoryError<Self::Error>>;
+
+    async fn fetch_stream(&self, query: &SelectQuery) -> Result<Vec<teaql_data_service::StreamChunk>, RepositoryError<Self::Error>>;
 }
 
 pub trait TeaqlEntityRepository: TeaqlRecordRepository {
@@ -78,14 +80,14 @@ pub trait TeaqlEntityRepository: TeaqlRecordRepository {
     where
         T: teaql_core::Entity;
 
-    async fn save_entity_graph<T>(&self, entity: T) -> Result<GraphNode, RepositoryError<Self::Error>>
+    fn save_entity_graph<T>(&self, entity: T) -> impl std::future::Future<Output = Result<GraphNode, RepositoryError<Self::Error>>> + Send + '_
     where
-        T: teaql_core::Entity;
+        T: teaql_core::Entity + Send + 'static;
 }
 
 impl<'a, E> TeaqlRecordRepository for teaql_runtime::ResolvedRepository<'a, E>
 where
-    E: teaql_data_service::QueryExecutor + teaql_data_service::MutationExecutor + Send + Sync + 'static,
+    E: teaql_data_service::QueryExecutor + teaql_data_service::MutationExecutor + teaql_data_service::StreamQueryExecutor + Send + Sync + 'static,
 {
     type Error = E::Error;
 
@@ -108,11 +110,15 @@ where
             relation_aggregates,
         ).await
     }
+
+    async fn fetch_stream(&self, query: &SelectQuery) -> Result<Vec<teaql_data_service::StreamChunk>, RepositoryError<Self::Error>> {
+        teaql_runtime::ResolvedRepository::fetch_stream(self, query).await
+    }
 }
 
 impl<'a, E> TeaqlEntityRepository for teaql_runtime::ResolvedRepository<'a, E>
 where
-    E: teaql_data_service::QueryExecutor + teaql_data_service::MutationExecutor + Send + Sync + 'static,
+    E: teaql_data_service::QueryExecutor + teaql_data_service::MutationExecutor + teaql_data_service::StreamQueryExecutor + Send + Sync + 'static,
 {
     async fn fetch_enhanced_entities<T>(&self, query: &SelectQuery) -> Result<SmartList<T>, RepositoryError<Self::Error>>
     where
@@ -138,7 +144,7 @@ where
 
     async fn save_entity_graph<T>(&self, entity: T) -> Result<GraphNode, RepositoryError<Self::Error>>
     where
-        T: teaql_core::Entity,
+        T: teaql_core::Entity + Send + 'static,
     {
         teaql_runtime::ResolvedRepository::save_entity_graph(self, entity).await
     }
@@ -162,36 +168,36 @@ pub trait TeaqlRuntime {
 #[doc(hidden)]
 pub trait AuditedSave<'a, C>
 where
-    C: TeaqlRepositoryProvider + ?Sized + 'a,
+    C: TeaqlRepositoryProvider + ?Sized + 'a + std::marker::Sync + 'static,
 {
     type Error;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>>;
+    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + Send + '_>>;
 }
 
 
 
 pub trait TeaqlRepositoryProvider: TeaqlRuntime {
-    type PlatformRepository<'a>: TeaqlEntityRepository + 'a
+    type PlatformRepository<'a>: TeaqlEntityRepository + Send + Sync + 'a
     where
         Self: 'a;
 
     fn platform_repository(&self) -> Result<Self::PlatformRepository<'_>, ContextError>;
-    type TaskStatusRepository<'a>: TeaqlEntityRepository + 'a
+    type TaskStatusRepository<'a>: TeaqlEntityRepository + Send + Sync + 'a
     where
         Self: 'a;
 
     fn task_status_repository(&self) -> Result<Self::TaskStatusRepository<'_>, ContextError>;
-    type TenantRepository<'a>: TeaqlEntityRepository + 'a
+    type TenantRepository<'a>: TeaqlEntityRepository + Send + Sync + 'a
     where
         Self: 'a;
 
     fn tenant_repository(&self) -> Result<Self::TenantRepository<'_>, ContextError>;
-    type TaskRepository<'a>: TeaqlEntityRepository + 'a
+    type TaskRepository<'a>: TeaqlEntityRepository + Send + Sync + 'a
     where
         Self: 'a;
 
     fn task_repository(&self) -> Result<Self::TaskRepository<'_>, ContextError>;
-    type TaskExecutionLogRepository<'a>: TeaqlEntityRepository + 'a
+    type TaskExecutionLogRepository<'a>: TeaqlEntityRepository + Send + Sync + 'a
     where
         Self: 'a;
 

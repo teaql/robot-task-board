@@ -47,12 +47,12 @@ impl<'a> TaskStatusExpression<'a> {
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_display_order(self) -> crate::ValueExpression<'a, rust_decimal::Decimal> {
+    pub fn get_display_order(self) -> crate::ValueExpression<'a, i64> {
         let next = self.result.and_then("display_order", |entity| entity.eval_display_order());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_progress(self) -> crate::ValueExpression<'a, rust_decimal::Decimal> {
+    pub fn get_progress(self) -> crate::ValueExpression<'a, i64> {
         let next = self.result.and_then("progress", |entity| entity.eval_progress());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }

@@ -118,6 +118,23 @@ impl<R> PlatformRequest<R> {
         Ok(rows)
     }
 
+    pub(crate) async fn _execute_for_stream<'a, C>(
+        self,
+        ctx: &'a C,
+    ) -> Result<Vec<teaql_data_service::StreamChunk>, TeaqlRepositoryError<C::PlatformRepository<'a>>>
+    where
+        C: TeaqlRepositoryProvider + ?Sized,
+    {
+        let repository = ctx
+            .platform_repository()
+            .map_err(|err| RepositoryError::Runtime(RuntimeError::Graph(err.to_string())))?;
+        let query_options = self.query_options.clone();
+        let query = apply_runtime_metadata(self.query, &query_options, &self.child_enhancements);
+        let chunks = repository.fetch_stream(&query)
+            .await?;
+        Ok(chunks)
+    }
+
     pub(crate) async fn _execute_for_first<'a, C>(
         self,
         ctx: &'a C,
@@ -455,7 +472,7 @@ impl<R> PlatformRequest<R> {
         match head {
             "task_status_list" => {
                 self.with_task_status_list_matching(
-                    crate::Q::task_status_minimal()
+                    crate::Q::task_statuses_minimal()
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
@@ -1844,7 +1861,7 @@ impl<R> PlatformRequest<R> {
     }
 
     pub fn count_task_statuses_as(self, alias: impl Into<String>) -> Self {
-        self.count_task_statuses_with(alias, crate::Q::task_status().unlimited())
+        self.count_task_statuses_with(alias, crate::Q::task_statuses().unlimited())
     }
 
     pub fn count_task_statuses_with(mut self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
@@ -1879,112 +1896,112 @@ impl<R> PlatformRequest<R> {
 
 
     pub fn sum_display_order_of_task_statuses(self) -> Self {
-        self.sum_display_order_of_task_statuses_as("sum_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.sum_display_order_of_task_statuses_as("sum_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn sum_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().sum("display_order", "sum_display_order"))
     }
     pub fn min_display_order_of_task_statuses(self) -> Self {
-        self.min_display_order_of_task_statuses_as("min_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.min_display_order_of_task_statuses_as("min_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn min_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().min("display_order", "min_display_order"))
     }
     pub fn max_display_order_of_task_statuses(self) -> Self {
-        self.max_display_order_of_task_statuses_as("max_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.max_display_order_of_task_statuses_as("max_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn max_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().max("display_order", "max_display_order"))
     }
     pub fn avg_display_order_of_task_statuses(self) -> Self {
-        self.avg_display_order_of_task_statuses_as("avg_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.avg_display_order_of_task_statuses_as("avg_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn avg_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().avg("display_order", "avg_display_order"))
     }
     pub fn standard_deviation_display_order_of_task_statuses(self) -> Self {
-        self.standard_deviation_display_order_of_task_statuses_as("standard_deviation_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.standard_deviation_display_order_of_task_statuses_as("standard_deviation_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn standard_deviation_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().stddev("display_order", "stdDev_display_order"))
     }
     pub fn square_root_of_population_standard_deviation_display_order_of_task_statuses(self) -> Self {
-        self.square_root_of_population_standard_deviation_display_order_of_task_statuses_as("square_root_of_population_standard_deviation_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.square_root_of_population_standard_deviation_display_order_of_task_statuses_as("square_root_of_population_standard_deviation_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn square_root_of_population_standard_deviation_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().stddev_pop("display_order", "stdDevPop_display_order"))
     }
     pub fn sample_variance_display_order_of_task_statuses(self) -> Self {
-        self.sample_variance_display_order_of_task_statuses_as("sample_variance_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.sample_variance_display_order_of_task_statuses_as("sample_variance_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn sample_variance_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().var_samp("display_order", "varSamp_display_order"))
     }
     pub fn sample_population_variance_display_order_of_task_statuses(self) -> Self {
-        self.sample_population_variance_display_order_of_task_statuses_as("sample_population_variance_display_order_of_task_statuses", crate::Q::task_status().unlimited())
+        self.sample_population_variance_display_order_of_task_statuses_as("sample_population_variance_display_order_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn sample_population_variance_display_order_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().var_pop("display_order", "varPop_display_order"))
     }
     pub fn sum_progress_of_task_statuses(self) -> Self {
-        self.sum_progress_of_task_statuses_as("sum_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.sum_progress_of_task_statuses_as("sum_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn sum_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().sum("progress", "sum_progress"))
     }
     pub fn min_progress_of_task_statuses(self) -> Self {
-        self.min_progress_of_task_statuses_as("min_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.min_progress_of_task_statuses_as("min_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn min_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().min("progress", "min_progress"))
     }
     pub fn max_progress_of_task_statuses(self) -> Self {
-        self.max_progress_of_task_statuses_as("max_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.max_progress_of_task_statuses_as("max_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn max_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().max("progress", "max_progress"))
     }
     pub fn avg_progress_of_task_statuses(self) -> Self {
-        self.avg_progress_of_task_statuses_as("avg_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.avg_progress_of_task_statuses_as("avg_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn avg_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().avg("progress", "avg_progress"))
     }
     pub fn standard_deviation_progress_of_task_statuses(self) -> Self {
-        self.standard_deviation_progress_of_task_statuses_as("standard_deviation_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.standard_deviation_progress_of_task_statuses_as("standard_deviation_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn standard_deviation_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().stddev("progress", "stdDev_progress"))
     }
     pub fn square_root_of_population_standard_deviation_progress_of_task_statuses(self) -> Self {
-        self.square_root_of_population_standard_deviation_progress_of_task_statuses_as("square_root_of_population_standard_deviation_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.square_root_of_population_standard_deviation_progress_of_task_statuses_as("square_root_of_population_standard_deviation_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn square_root_of_population_standard_deviation_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().stddev_pop("progress", "stdDevPop_progress"))
     }
     pub fn sample_variance_progress_of_task_statuses(self) -> Self {
-        self.sample_variance_progress_of_task_statuses_as("sample_variance_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.sample_variance_progress_of_task_statuses_as("sample_variance_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn sample_variance_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_statuses_as(alias, request.into().into_query().var_samp("progress", "varSamp_progress"))
     }
     pub fn sample_population_variance_progress_of_task_statuses(self) -> Self {
-        self.sample_population_variance_progress_of_task_statuses_as("sample_population_variance_progress_of_task_statuses", crate::Q::task_status().unlimited())
+        self.sample_population_variance_progress_of_task_statuses_as("sample_population_variance_progress_of_task_statuses", crate::Q::task_statuses().unlimited())
     }
 
     pub fn sample_population_variance_progress_of_task_statuses_as(self, alias: impl Into<String>, request: impl Into<QuerySelection>) -> Self {
@@ -2059,10 +2076,10 @@ impl<R> From< PlatformRequest<R> > for QuerySelection {
 
 
 impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::Platform> 
-where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
+where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a + std::marker::Sync + 'static
 {
     type Error = crate::TeaqlRepositoryError<C::PlatformRepository<'a>>;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
+    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + Send + '_>> {
         Box::pin(async move { self.into_entity().save(ctx).await })
     }
 }
@@ -2089,6 +2106,16 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<PlatformRequest<R>> {
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.into_inner_with_trace()._execute_for_list(ctx).await
+    }
+
+    /// Execute query in streaming mode (chunked).
+    /// Returns a Vec of StreamChunk, each containing up to chunk_size rows.
+    /// Set chunk size via .stream(chunk_size) or .stream_default() on the query.
+    pub async fn execute_for_stream<'a, C>(self, ctx: &'a C) -> Result<Vec<teaql_data_service::StreamChunk>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.into_inner_with_trace()._execute_for_stream(ctx).await
     }
 
     pub async fn execute_for_first<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::PlatformRepository<'a>>>

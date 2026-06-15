@@ -118,6 +118,23 @@ impl<R> TaskRequest<R> {
         Ok(rows)
     }
 
+    pub(crate) async fn _execute_for_stream<'a, C>(
+        self,
+        ctx: &'a C,
+    ) -> Result<Vec<teaql_data_service::StreamChunk>, TeaqlRepositoryError<C::TaskRepository<'a>>>
+    where
+        C: TeaqlRepositoryProvider + ?Sized,
+    {
+        let repository = ctx
+            .task_repository()
+            .map_err(|err| RepositoryError::Runtime(RuntimeError::Graph(err.to_string())))?;
+        let query_options = self.query_options.clone();
+        let query = apply_runtime_metadata(self.query, &query_options, &self.child_enhancements);
+        let chunks = repository.fetch_stream(&query)
+            .await?;
+        Ok(chunks)
+    }
+
     pub(crate) async fn _execute_for_first<'a, C>(
         self,
         ctx: &'a C,
@@ -455,7 +472,7 @@ impl<R> TaskRequest<R> {
         match head {
             "status" => {
                 self.with_status_matching(
-                    crate::Q::task_status_minimal()
+                    crate::Q::task_statuses_minimal()
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
@@ -1234,7 +1251,7 @@ impl<R> TaskRequest<R> {
     /// # Example
     /// ```rust
     /// // Only use when building dynamic queries
-    /// let dynamic_query = crate::Q::task_status_minimal().filter(...);
+    /// let dynamic_query = crate::Q::task_statuses_minimal().filter(...);
     /// let request = crate::Q::tasks().with_status_matching(dynamic_query);
     /// ```
     pub fn with_status_matching(mut self, request: impl Into<QuerySelection>) -> Self {
@@ -1264,7 +1281,7 @@ impl<R> TaskRequest<R> {
     /// # Example
     /// ```rust
     /// // Only use when building dynamic queries
-    /// let dynamic_query = crate::Q::task_status_minimal().filter(...);
+    /// let dynamic_query = crate::Q::task_statuses_minimal().filter(...);
     /// let request = crate::Q::tasks().without_status_matching(dynamic_query);
     /// ```
     pub fn without_status_matching(mut self, request: impl Into<QuerySelection>) -> Self {
@@ -1324,7 +1341,7 @@ impl<R> TaskRequest<R> {
     }
 
     pub fn group_by_status_with_details(self) -> Self {
-        self.group_by_status_with_details_from(crate::Q::task_status().unlimited())
+        self.group_by_status_with_details_from(crate::Q::task_statuses().unlimited())
     }
 
     pub fn group_by_status_with_details_from(self, request: impl Into<QuerySelection>) -> Self {
@@ -1333,7 +1350,7 @@ impl<R> TaskRequest<R> {
 
 
     pub fn roll_up_to_status(self) -> Self {
-        self.roll_up_to_status_with(crate::Q::task_status().unlimited())
+        self.roll_up_to_status_with(crate::Q::task_statuses().unlimited())
     }
 
     pub fn roll_up_to_status_with(self, request: impl Into<QuerySelection>) -> Self {
@@ -1701,10 +1718,10 @@ impl<R> From< TaskRequest<R> > for QuerySelection {
 
 
 impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::Task> 
-where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
+where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a + std::marker::Sync + 'static
 {
     type Error = crate::TeaqlRepositoryError<C::TaskRepository<'a>>;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
+    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + Send + '_>> {
         Box::pin(async move { self.into_entity().save(ctx).await })
     }
 }
@@ -1731,6 +1748,16 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<TaskRequest<R>> {
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.into_inner_with_trace()._execute_for_list(ctx).await
+    }
+
+    /// Execute query in streaming mode (chunked).
+    /// Returns a Vec of StreamChunk, each containing up to chunk_size rows.
+    /// Set chunk size via .stream(chunk_size) or .stream_default() on the query.
+    pub async fn execute_for_stream<'a, C>(self, ctx: &'a C) -> Result<Vec<teaql_data_service::StreamChunk>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.into_inner_with_trace()._execute_for_stream(ctx).await
     }
 
     pub async fn execute_for_first<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TaskRepository<'a>>>

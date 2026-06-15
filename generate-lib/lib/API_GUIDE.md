@@ -294,12 +294,12 @@ let stats = records.facet("stats");
 | Attribute | Value |
 |-----------|-------|
 | Module | `task_status` |
-| Query entry | `Q::task_status()` |
-| Minimal query | `Q::task_status_minimal()` |
-| With-children query | `Q::task_status_with_children()` |
+| Query entry | `Q::task_statuses()` |
+| Minimal query | `Q::task_statuses_minimal()` |
+| With-children query | `Q::task_statuses_with_children()` |
 | Expression | `E::task_status(value)` |
 | Graph save | `task_status.audit_as("comment").save(&ctx).await` |
-| New entity | `Q::task_status().purpose("purpose").new_entity(&ctx)` |
+| New entity | `Q::task_statuses().purpose("purpose").new_entity(&ctx)` |
 | Filter prefix | `with_` (thing) |
 
 **Properties:**
@@ -308,8 +308,8 @@ let stats = records.facet("stats");
 - `name`: `String` — read: `.name()`, update: `.update_name(value)`, changed: `.changed_name()`
 - `code`: `String` — read: `.code()`, update: `.update_code(value)`, changed: `.changed_code()`
 - `color`: `String` — read: `.color()`, update: `.update_color(value)`, changed: `.changed_color()`
-- `display_order`: `rust_decimal::Decimal` — read: `.display_order()`, update: `.update_display_order(value)`, changed: `.changed_display_order()`
-- `progress`: `rust_decimal::Decimal` — read: `.progress()`, update: `.update_progress(value)`, changed: `.changed_progress()`
+- `display_order`: `i64` — read: `.display_order()`, update: `.update_display_order(value)`, changed: `.changed_display_order()`
+- `progress`: `i64` — read: `.progress()`, update: `.update_progress(value)`, changed: `.changed_progress()`
 - `version`: `i64` — read: `.version()`, update: `.update_version(value)`, changed: `.changed_version()`
 
 **Relations (outgoing):**

@@ -127,14 +127,14 @@ pub async fn generate_sample_data<C>(
     plan: SampleDataPlan,
 ) -> Result<SampleDataReport, String>
 where
-    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider + std::marker::Sync + 'static,
 {
     log::info!("Starting sample data generation. Scale: {:?}, Seed: {}", plan.scale, plan.seed);
     let mut state = SampleDataState::new(plan);
 
     load_root_platforms(ctx, &mut state).await?; //depth: 0
 
-    load_constant_task_status(ctx, &mut state).await?;
+    load_constant_task_statuses(ctx, &mut state).await?;
 
     ctx.user_context().transaction_data(|| async {
         Box::pin(generate_tenants(ctx, &mut state)).await.map_err(|e| {
@@ -165,7 +165,7 @@ async fn load_root_platforms<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider + std::marker::Sync + 'static,
 {
     let list = Q::platforms().purpose("Init Sample Data").execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
@@ -174,14 +174,14 @@ where
     Ok(())
 }
 
-async fn load_constant_task_status<C>(
+async fn load_constant_task_statuses<C>(
     ctx: &C,
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider + std::marker::Sync + 'static,
 {
-    let list = Q::task_status().purpose("Init Sample Data").execute_for_list(ctx).await.unwrap_or_default();
+    let list = Q::task_statuses().purpose("Init Sample Data").execute_for_list(ctx).await.unwrap_or_default();
     for item in list {
         state.add_reference("Task Status", item.id().into_u64());
     }
@@ -193,7 +193,7 @@ async fn generate_tenants<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider + std::marker::Sync + 'static,
 {
         if state.ids("Platform").is_empty() {
             state.record_skipped("Tenant", "Required dependency Platform is missing in reference pool".to_string());
@@ -248,7 +248,7 @@ async fn generate_tasks<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider + std::marker::Sync + 'static,
 {
         if state.ids("Task Status").is_empty() {
             state.record_skipped("Task", "Required dependency Task Status is missing in reference pool".to_string());
@@ -315,7 +315,7 @@ async fn generate_task_execution_logs<C>(
     state: &mut SampleDataState,
 ) -> Result<(), String>
 where
-    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider + std::marker::Sync + 'static,
 {
         if state.ids("Task").is_empty() {
             state.record_skipped("Task Execution Log", "Required dependency Task is missing in reference pool".to_string());

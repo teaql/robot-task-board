@@ -118,6 +118,23 @@ impl<R> TenantRequest<R> {
         Ok(rows)
     }
 
+    pub(crate) async fn _execute_for_stream<'a, C>(
+        self,
+        ctx: &'a C,
+    ) -> Result<Vec<teaql_data_service::StreamChunk>, TeaqlRepositoryError<C::TenantRepository<'a>>>
+    where
+        C: TeaqlRepositoryProvider + ?Sized,
+    {
+        let repository = ctx
+            .tenant_repository()
+            .map_err(|err| RepositoryError::Runtime(RuntimeError::Graph(err.to_string())))?;
+        let query_options = self.query_options.clone();
+        let query = apply_runtime_metadata(self.query, &query_options, &self.child_enhancements);
+        let chunks = repository.fetch_stream(&query)
+            .await?;
+        Ok(chunks)
+    }
+
     pub(crate) async fn _execute_for_first<'a, C>(
         self,
         ctx: &'a C,
@@ -1453,10 +1470,10 @@ impl<R> From< TenantRequest<R> > for QuerySelection {
 
 
 impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::Tenant> 
-where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
+where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a + std::marker::Sync + 'static
 {
     type Error = crate::TeaqlRepositoryError<C::TenantRepository<'a>>;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
+    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + Send + '_>> {
         Box::pin(async move { self.into_entity().save(ctx).await })
     }
 }
@@ -1483,6 +1500,16 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<TenantRequest<R>> {
         C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
     {
         self.into_inner_with_trace()._execute_for_list(ctx).await
+    }
+
+    /// Execute query in streaming mode (chunked).
+    /// Returns a Vec of StreamChunk, each containing up to chunk_size rows.
+    /// Set chunk size via .stream(chunk_size) or .stream_default() on the query.
+    pub async fn execute_for_stream<'a, C>(self, ctx: &'a C) -> Result<Vec<teaql_data_service::StreamChunk>, crate::request_support::TeaqlRepositoryError<C::TenantRepository<'a>>>
+    where
+        C: crate::request_support::TeaqlRepositoryProvider + ?Sized,
+    {
+        self.into_inner_with_trace()._execute_for_stream(ctx).await
     }
 
     pub async fn execute_for_first<'a, C>(self, ctx: &'a C) -> Result<Option<R>, crate::request_support::TeaqlRepositoryError<C::TenantRepository<'a>>>

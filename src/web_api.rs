@@ -125,14 +125,22 @@ pub async fn update_task_status(
         .unwrap_or("default-session");
 
     match service.move_task(session_id, id, &payload.status).await {
-        Ok(_) => StatusCode::OK.into_response(),
+        Ok(crate::models::MoveResult::Moved { .. }) => StatusCode::OK.into_response(),
+        Ok(crate::models::MoveResult::AlreadyFinal) => (StatusCode::BAD_REQUEST, "Task already in final state").into_response(),
+        Ok(crate::models::MoveResult::NotFound) => StatusCode::NOT_FOUND.into_response(),
+        Ok(crate::models::MoveResult::Error { err_msg }) => (StatusCode::BAD_REQUEST, err_msg).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
 
 pub async fn get_logs(
     State(service): State<Arc<TaskService>>,
+    headers: axum::http::HeaderMap,
 ) -> impl axum::response::IntoResponse {
-    let logs = service.check_sql_logs();
+    let session_id = headers
+        .get("x-session-id")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("default-session");
+    let logs = service.check_sql_logs(session_id);
     Json(logs).into_response()
 }

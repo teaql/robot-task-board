@@ -88,7 +88,7 @@ body {
 }
 .log-content-area {
   overflow-y: auto;
-  user-select: none;
+  user-select: text;
   font-family: var(--font-mono);
   font-size: 12px;
   display: flex;

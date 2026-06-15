@@ -10,4 +10,4 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 robot_kanban_service = { package = "robot-kanban-service", path = "../generate-lib/lib" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-teaql-core = "4.0.1"
+teaql-core = "4.0.4"

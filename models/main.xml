@@ -29,7 +29,6 @@
         <_value id="1004" name="Verified" code="VERIFIED" color="#16A34A" display_order="40" progress="100"/>
     </task_status>
 
-    <_data_service name="meilisearch" />
 
     <tenant
         name="string()"
@@ -55,7 +54,6 @@
         detail="string()"
         _audit_mask_fields="detail"
         _audit_value_max_len="2048"
-        _data_service="meilisearch"
         _features="custom"
         _name="Task Execution Log"
         _module="Task"

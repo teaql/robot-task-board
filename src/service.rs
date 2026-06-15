@@ -1,7 +1,7 @@
-use robot_kanban::{Platform, Task, TaskExecutionLog, Q};
+use robot_kanban::{Platform, Task, TaskExecutionLog, Q, AuditedSave};
 use std::error::Error;
 use std::sync::Mutex;
-use teaql_core::TeaqlEntity;
+use teaql_core::{TeaqlEntity, Entity};
 use teaql_provider_postgres::{
     ensure_postgres_schema_for, PgIdSpaceGenerator, PgMutationExecutor, PostgresProviderExt,
 };
@@ -11,6 +11,46 @@ use teaql_runtime::{LogPayload, UnifiedLogBuffer, UserContext};
 
 use crate::logging::AppAuditSink;
 use crate::models::{MoveResult, ReloadedData, TaskModel};
+
+pub struct TenantIsolationPolicy {
+    pub current_tenant_id: u64,
+}
+
+impl teaql_runtime::RequestPolicy for TenantIsolationPolicy {
+    fn enforce_select(
+        &self,
+        _ctx: &UserContext,
+        query: &mut teaql_core::SelectQuery,
+    ) -> Result<(), teaql_runtime::RuntimeError> {
+        if query.entity == "Task" {
+            let tenant_cond = teaql_core::Expr::Binary {
+                left: Box::new(teaql_core::Expr::Column("tenant_id".to_string())),
+                op: teaql_core::BinaryOp::Eq,
+                right: Box::new(teaql_core::Expr::Value(teaql_core::Value::U64(self.current_tenant_id))),
+            };
+            if let Some(existing) = query.filter.take() {
+                query.filter = Some(teaql_core::Expr::And(vec![existing, tenant_cond]));
+            } else {
+                query.filter = Some(tenant_cond);
+            }
+        }
+        Ok(())
+    }
+
+    fn enforce_insert(
+        &self,
+        _ctx: &UserContext,
+        command: &mut teaql_core::InsertCommand,
+    ) -> Result<(), teaql_runtime::RuntimeError> {
+        if command.entity == "Task" {
+            command.values.insert("tenant_id".to_string(), teaql_core::Value::U64(self.current_tenant_id));
+        }
+        Ok(())
+    }
+    
+    // Updates and deletes in TeaQL SDK target by primary ID, so as long as the read (SelectQuery)
+    // is protected by `enforce_select`, an attacker cannot load another tenant's entity to mutate it.
+}
 
 pub trait UserContextExt {
     fn next_id_for<T: TeaqlEntity>(&self) -> Result<u64, Box<dyn Error>>;
@@ -87,7 +127,7 @@ impl TaskDomainBehavior for Task {
         let current_status = self.status_id();
         let target = cmd.target_status.trim().to_lowercase();
 
-        let next_status_id = if target.is_empty() {
+        let next_status_id = if target.is_empty() || target == "next" {
             match current_status {
                 1001 => Some(1002_u64),
                 1002 => Some(1003_u64),
@@ -112,7 +152,7 @@ pub struct TaskService {
     ctx: UserContext,
     #[allow(dead_code)]
     inner_executor: PgMutationExecutor,
-    last_log_index: Mutex<usize>,
+    session_log_indices: Mutex<std::collections::HashMap<String, usize>>,
     pub status_cache: std::collections::HashMap<u64, String>,
 }
 
@@ -123,6 +163,11 @@ impl TaskService {
         cfg.user = Some(std::env::var("PG_USER").unwrap_or_else(|_| "postgres".to_string()));
         cfg.password = Some(std::env::var("PG_PASSWORD").unwrap_or_else(|_| "postgres".to_string()));
         cfg.dbname = Some(std::env::var("PG_DBNAME").unwrap_or_else(|_| "postgres".to_string()));
+        if let Ok(port_str) = std::env::var("PG_PORT") {
+            if let Ok(port) = port_str.parse::<u16>() {
+                cfg.port = Some(port);
+            }
+        }
         let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).map_err(|e| e.to_string())?;
         let inner_executor = PgMutationExecutor::new(pool);
 
@@ -145,15 +190,22 @@ impl TaskService {
             robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
         ctx.insert_resource(service_runtime_executor);
 
-        ensure_postgres_schema_for(&ctx).await.map_err(|e| e.to_string())?;
+    ctx.enable_all_sql_log();
+        println!("Before ensure_postgres_schema_for");
+    ctx.enable_all_sql_log();
+        ensure_postgres_schema_for(&ctx).await.map_err(|e| format!("{:?}", e))?;
+    ctx.enable_all_sql_log();
+        println!("After ensure_postgres_schema_for");
 
         let mut status_cache = std::collections::HashMap::new();
-        let statuses = robot_kanban::Q::task_status()
+        let statuses = robot_kanban::Q::task_statuses()
             .comment("Load task statuses for cache")
             .purpose("Load task statuses for cache")
             .execute_for_list(&ctx)
-            .await?
+            .await
+            .map_err(|e| format!("Query Error: {:?}", e))?
             .data;
+        println!("After task_status query");
         for status in statuses {
             status_cache.insert(status.id(), status.code().to_string());
         }
@@ -161,7 +213,7 @@ impl TaskService {
         Ok(Self {
             ctx,
             inner_executor,
-            last_log_index: Mutex::new(0),
+            session_log_indices: Mutex::new(std::collections::HashMap::new()),
             status_cache,
         })
     }
@@ -174,18 +226,41 @@ impl TaskService {
         &self.ctx
     }
 
+    pub async fn get_isolated_context(&self, session_id: &str) -> Result<UserContext, Box<dyn Error>> {
+        let tenant_id = self.get_or_create_tenant(session_id).await?;
+        let mut isolated_ctx = robot_kanban::module_with_behaviors_and_checkers().into_context();
+        isolated_ctx.use_postgres_provider(self.inner_executor.clone());
+        isolated_ctx.set_internal_id_generator(PgIdSpaceGenerator::from_executor(self.inner_executor.clone()));
+        
+        if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
+            isolated_ctx.insert_resource(buf.clone());
+        }
+        
+        let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(self.inner_executor.clone());
+        isolated_ctx.insert_resource(service_runtime_executor);
+
+        isolated_ctx.set_user_identifier(session_id);
+        isolated_ctx.set_custom_event_sink(AppAuditSink);
+        isolated_ctx.enable_all_sql_log();
+        isolated_ctx.set_request_policy(TenantIsolationPolicy {
+            current_tenant_id: tenant_id,
+        });
+        Ok(isolated_ctx)
+    }
+
     pub fn log_info(&self, message: &str) {
-        let user = crate::logging::short_user(&self.ctx);
         let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f").to_string();
-        let log_line = format!("[{}]-[{}]-[INFO]-{}", timestamp, user, message);
+        let log_line = format!("[{}]-[SYSTEM]-[INFO]-{}", timestamp, message);
 
         if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
             if let Ok(mut entries) = buf.entries.lock() {
                 entries.push(teaql_runtime::UnifiedLogEntry {
                     timestamp: std::time::SystemTime::now(),
-                    user_identifier: Some(user),
+                    user_identifier: None, // Global so all sessions can see it
                     trace_chain: Vec::new(),
-                    payload: LogPayload::Info(teaql_runtime::InfoLogEntry { message: log_line }),
+                    payload: teaql_runtime::LogPayload::Info(teaql_runtime::InfoLogEntry {
+                        message: log_line,
+                    }),
                 });
             }
         }
@@ -208,7 +283,7 @@ impl TaskService {
             .new_entity(&self.ctx);
         p.update_id(next_id).update_name("Robot System".to_string());
         teaql_core::Entity::set_comment(&mut p, "Init platform".to_string());
-        p.save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        p.audit_as("Create Platform").save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
         Ok(next_id)
     }
 
@@ -236,7 +311,7 @@ impl TaskService {
             .update_platform_id(platform_id);
 
         teaql_core::Entity::set_comment(&mut p, "New user session".to_string());
-        p.save(&self.ctx)
+        p.audit_as("Create Tenant").save(&self.ctx)
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
@@ -248,6 +323,7 @@ impl TaskService {
         session_id: &str,
         search_term: &Option<String>,
     ) -> Result<ReloadedData, Box<dyn Error>> {
+        let isolated_ctx = self.get_isolated_context(session_id).await?;
         let search_comment = if search_term.is_some() {
             "Get filtered tasks by keyword"
         } else {
@@ -255,11 +331,10 @@ impl TaskService {
         };
 
         let query = robot_kanban::Q::tasks()
-            .with_tenant_matching(Q::tenants().with_name_is(format!("Session {}", session_id)))
             .comment(search_comment)
             .facet_by_status_as(
                 "status_stats",
-                robot_kanban::Q::task_status()
+                robot_kanban::Q::task_statuses()
                     .comment("Count status")
                     .count_tasks(),
             );
@@ -267,7 +342,7 @@ impl TaskService {
         self.log_info(&format!("Starting query: {}", search_comment));
         let list_result = query
             .purpose("List tasks")
-            .execute_for_list(&self.ctx)
+            .execute_for_list(&isolated_ctx)
             .await?;
 
         let mut planned_count = 0;
@@ -345,23 +420,24 @@ impl TaskService {
     }
 
     pub async fn add_task(&self, session_id: &str, name: &str) -> Result<u64, Box<dyn Error>> {
-        let tenant_id = self.get_or_create_tenant(session_id).await?;
+        let isolated_ctx = self.get_isolated_context(session_id).await?;
 
         self.log_info(&format!("Starting business action: Create task '{}'", name));
-        let next_id = self.ctx.next_id_for::<Task>()?;
+        let next_id = isolated_ctx.next_id_for::<Task>()?;
+        let current_tenant_id = self.get_or_create_tenant(session_id).await?;
         let cmd = CreateTaskCommand {
             name: name.to_owned(),
-            tenant_id,
+            tenant_id: current_tenant_id,
         };
-        let mut task = Task::create(&cmd, next_id, &self.ctx)?;
+        let mut task = Task::create(&cmd, next_id, &isolated_ctx)?;
 
         let log =
-            task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx);
+            task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &isolated_ctx);
         let comment = format!("Create task '{}'", name);
 
         task.task_execution_log_list_mut().push(log);
         teaql_core::Entity::set_comment(&mut task, comment.to_string());
-        task.save(&self.ctx)
+        task.audit_as("Create Task").save(&isolated_ctx)
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
@@ -369,12 +445,12 @@ impl TaskService {
     }
 
     pub async fn delete_task(&self, session_id: &str, id: u64) -> Result<bool, Box<dyn Error>> {
+        let isolated_ctx = self.get_isolated_context(session_id).await?;
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
-            .with_tenant_matching(Q::tenants().with_name_is(format!("Session {}", session_id)))
             .comment(&format!("Load task {} for deletion", id))
             .purpose(&format!("Load task {} for deletion", id))
-            .execute_for_one(&self.ctx)
+            .execute_for_one(&isolated_ctx)
             .await?;
 
         if let Some(mut task) = task_opt {
@@ -382,7 +458,7 @@ impl TaskService {
             let comment = format!("Delete task '{}'", task_name);
             task.mark_as_delete();
             teaql_core::Entity::set_comment(&mut task, comment.to_string());
-            task.save(&self.ctx)
+            task.audit_as("Update Task").save(&isolated_ctx)
                 .await
                 .map_err(|e| Box::new(e) as Box<dyn Error>)?;
             Ok(true)
@@ -397,14 +473,14 @@ impl TaskService {
         id: u64,
         target_status: &str,
     ) -> Result<MoveResult, Box<dyn Error>> {
+        let isolated_ctx = self.get_isolated_context(session_id).await?;
         let trimmed_status = target_status.trim();
 
         let task_opt = robot_kanban::Q::tasks()
             .with_id_is(id)
-            .with_tenant_matching(Q::tenants().with_name_is(format!("Session {}", session_id)))
             .comment(&format!("Load task {} for status transition", id))
             .purpose(&format!("Load task {} for status transition", id))
-            .execute_for_one(&self.ctx)
+            .execute_for_one(&isolated_ctx)
             .await?;
 
         if let Some(mut task) = task_opt {
@@ -447,7 +523,7 @@ impl TaskService {
                         "Status changed from {} to {}.",
                         old_status_name, status_name
                     );
-                    let log = task.generate_execution_log("STATUS_CHANGED", &detail, &self.ctx);
+                    let log = task.generate_execution_log("STATUS_CHANGED", &detail, &isolated_ctx);
                     let comment = format!(
                         "DOMAIN: Move '{}' {} => {}",
                         task_name, old_status_name, status_name
@@ -455,7 +531,7 @@ impl TaskService {
 
                     task.task_execution_log_list_mut().push(log);
                     teaql_core::Entity::set_comment(&mut task, comment.to_string());
-                    task.save(&self.ctx)
+                    task.audit_as("Delete Task").save(&isolated_ctx)
                         .await
                         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
@@ -471,39 +547,47 @@ impl TaskService {
         }
     }
 
-    pub fn check_sql_logs(&self) -> Vec<String> {
-        self.check_sql_logs_metadata()
+    pub fn check_sql_logs(&self, session_id: &str) -> Vec<String> {
+        self.check_sql_logs_metadata(session_id)
             .into_iter()
             .map(|(text, _)| text)
             .collect()
     }
 
-    pub fn check_sql_logs_metadata(&self) -> Vec<(String, Option<f64>)> {
+    pub fn check_sql_logs_metadata(&self, session_id: &str) -> Vec<(String, Option<f64>)> {
         let mut new_logs = Vec::new();
         if let Some(buf) = self.ctx.get_resource::<UnifiedLogBuffer>() {
-            if let Ok(mut last_log) = self.last_log_index.lock() {
+            if let Ok(mut indices) = self.session_log_indices.lock() {
+                let last_log = indices.entry(session_id.to_string()).or_insert(0);
                 if let Ok(entries) = buf.entries.lock() {
                     if entries.len() > *last_log {
                         for entry in &entries[*last_log..] {
-                            match &entry.payload {
-                                LogPayload::Sql(sql_entry) => {
-                                    let local_time: chrono::DateTime<chrono::Local> =
-                                        entry.timestamp.into();
-                                    let ts = local_time.format("%H:%M:%S%.3f");
-                                    let uid = entry
-                                        .user_identifier
-                                        .as_deref()
-                                        .unwrap_or("")
-                                        .split('@')
-                                        .next()
-                                        .unwrap_or("");
-                                    let trace = if entry.trace_chain.is_empty() {
-                                        "".to_owned()
-                                    } else {
-                                        format!(
-                                            " - [{}]",
-                                            entry
-                                                .trace_chain
+                            // Only include logs that have the session_id as the user_identifier OR are global/system logs (no user)
+                            let is_global_or_mine = match &entry.user_identifier {
+                                Some(uid) => uid == session_id,
+                                None => true,
+                            };
+                            
+                            if is_global_or_mine {
+                                match &entry.payload {
+                                    LogPayload::Sql(sql_entry) => {
+                                        let local_time: chrono::DateTime<chrono::Local> =
+                                            entry.timestamp.into();
+                                        let ts = local_time.format("%H:%M:%S%.3f");
+                                        let uid = entry
+                                            .user_identifier
+                                            .as_deref()
+                                            .unwrap_or("")
+                                            .split('@')
+                                            .next()
+                                            .unwrap_or("");
+                                        let trace = if entry.trace_chain.is_empty() {
+                                            "".to_owned()
+                                        } else {
+                                            format!(
+                                                " - [{}]",
+                                                entry
+                                                    .trace_chain
                                                 .iter()
                                                 .map(|n| n.comment.clone())
                                                 .collect::<Vec<_>>()
@@ -528,6 +612,7 @@ impl TaskService {
                                 LogPayload::Info(info) => {
                                     new_logs.push((info.message.clone(), None));
                                 }
+                            }
                             }
                         }
                         *last_log = entries.len();

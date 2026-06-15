@@ -228,7 +228,29 @@ Do not write nested `unwrap()` chains for optional relations.
 
 ## Runtime Setup
 
-Register generated metadata and repositories through the generated crate:
+Use the generated runtime helper as the default application entrypoint:
+
+```rust
+let ctx = robot_kanban_service::service_runtime_from_env().await?;
+```
+
+This helper reads the generated database environment variables, connects to the
+data service, registers the generated module, repositories, behaviors, and
+checkers, and calls `ensure_schema().await?`. `ensure_schema()` is the standard
+schema and seed-data path; it applies the generated `initial_graph` entries for
+root and constant data. Do not hand-write duplicate seed `INSERT` statements for
+generated constants.
+
+If a connection pool already exists, use:
+
+```rust
+let ctx = robot_kanban_service::service_runtime_from_pool(pool).await?;
+```
+
+Manual `UserContext` assembly is an advanced customization path only. Use it
+only when you deliberately need a custom runtime and understand which generated
+registries, behaviors, checkers, resources, schema setup, and initial graphs you
+are bypassing:
 
 ```rust
 let ctx = teaql_runtime::UserContext::new()
@@ -237,7 +259,8 @@ let ctx = teaql_runtime::UserContext::new()
     .with_repository_behavior_registry(robot_kanban_service::behavior_registry());
 ```
 
-Use `module_with_behaviors()` when behavior hooks should be active.
+Use `module_with_behaviors()` or `module_with_behaviors_and_checkers()` in this
+manual path only when behavior hooks or checkers should be active.
 
 ## SQL Debugging
 

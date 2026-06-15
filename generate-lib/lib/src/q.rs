@@ -34,18 +34,18 @@ impl Q {
             .enhance_children_if_needed()
     }
 
-    pub fn task_status() -> TaskStatusRequest {
+    pub fn task_statuses() -> TaskStatusRequest {
         TaskStatusRequest::new()
             .select_self()
             .and_filter(Expr::gt("version", 0_i64))
     }
 
-    pub fn task_status_minimal() -> TaskStatusRequest {
+    pub fn task_statuses_minimal() -> TaskStatusRequest {
         TaskStatusRequest::new()
             .and_filter(Expr::gt("version", 0_i64))
     }
 
-    pub fn task_status_with_children() -> TaskStatusRequest {
+    pub fn task_statuses_with_children() -> TaskStatusRequest {
         TaskStatusRequest::new()
             .unlimited()
             .select_self_fields()
