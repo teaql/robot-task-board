@@ -207,8 +207,49 @@ export default function App() {
       <div className="columns-container">
         {STATUSES.map(status => {
           const colTasks = tasks.filter(t => t.status === status);
+          
+          const handleDragOver = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          };
+          
+          const handleDrop = async (e) => {
+            e.preventDefault();
+            const idStr = e.dataTransfer.getData('text/plain');
+            if (!idStr) return;
+            const id = parseInt(idStr, 10);
+            
+            // Call the same API as /mv <id> <status>
+            try {
+              const res = await fetch(`/api/tasks/${id}/move`, {
+                method: "PUT",
+                headers: { 
+                  "Content-Type": "application/json",
+                  "x-session-id": sessionId 
+                },
+                body: JSON.stringify({ status })
+              });
+              
+              if (res.ok) await fetchTasks();
+              else {
+                if (res.status === 404) {
+                  addLog("INFO", `WARNING: Task ${id} not found.`);
+                } else {
+                  addLog("WARN", "Error moving task: " + await res.text());
+                }
+              }
+            } catch (err) {
+              addLog("WARN", "Error moving task: " + err.message);
+            }
+          };
+          
           return (
-            <div key={status} className={`panel kanban-col status-${status}`}>
+            <div 
+              key={status} 
+              className={`panel kanban-col status-${status}`}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
               <div className="panel-header">
                 <div className="title flex items-center">
                   <span className="status-indicator"></span>
@@ -219,7 +260,15 @@ export default function App() {
               <div className="panel-content">
                 <div className="kanban-content">
                   {colTasks.map(task => (
-                    <div key={task.id} className="task-item">
+                    <div 
+                      key={task.id} 
+                      className="task-item"
+                      draggable="true"
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', task.id.toString());
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                    >
                       <div className="task-id">ID: {task.id}</div>
                       <div className="task-name">{task.name}</div>
                     </div>

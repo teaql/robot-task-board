@@ -131,8 +131,14 @@ body {
   flex-direction: column;
   gap: 6px;
   transition: transform 0.2s, box-shadow 0.2s;
-  cursor: default;
+  cursor: grab;
   animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.task-item:active {
+  cursor: grabbing;
+  opacity: 0.8;
+  transform: scale(0.98);
 }
 
 .task-item:hover {
