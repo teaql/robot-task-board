@@ -40,9 +40,35 @@ A short live proof that the TeaQL Robot Task Board exists, runs, and exposes the
 
 The demo is fully open source, including:
 
-* the demo application
-* the generated TeaQL domain libraries
+* the demo application (`rust-app-console`)
+* the generated TeaQL domain libraries (`rust-lib-core`)
 * the TeaQL Rust runtime
+
+---
+
+## Quick Start (Build & Run)
+
+This repository is structured as a standard Rust Cargo workspace following the TeaQL Agent Kit layout.
+
+### Directory Structure
+
+* `models/main.xml` — The TeaQL KSML domain model.
+* `rust-lib-core/` — The generated TeaQL domain logic library.
+* `rust-app-console/` — The TUI application (editable business logic).
+
+### Running Locally
+
+To build and run the application locally, ensure you have Rust installed and run:
+
+```bash
+cargo run -p robot-task-board
+```
+
+Or to run the test suite (which includes a simulated mission trace):
+
+```bash
+cargo test
+```
 
 ---
 

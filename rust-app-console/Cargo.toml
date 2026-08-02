@@ -1,0 +1,43 @@
+[package]
+name = "robot-task-board"
+version = "0.1.0"
+edition = "2021"
+default-run = "robot-task-board"
+
+[dependencies]
+crossterm = { version = "0.27", features = ["event-stream"] }
+ratatui = "0.30"
+rusqlite = { version = "0.40", features = ["bundled", "column_decltype"] }
+chrono = { version = "0.4", features = ["serde"] }
+rust_decimal = { version = "1", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+# TeaQL runtime packages
+teaql-core = "4.2.3"
+teaql-runtime = "4.2.3"
+teaql-macros = "4.2.3"
+teaql-sql = "4.2.3"
+teaql-provider-sqlite = "4.2.3"
+teaql-data-service = "4.2.3"
+
+# Our generated TeaQL domain logic library
+robot_kanban = { path = "../rust-lib-core", package = "robot-kanban-service-core" }
+teaql-provider-meilisearch = "4.2.3"
+whoami = "2.1.2"
+rand = "0.10.1"
+teaql-provider-postgres = "4.2.3"
+teaql-provider-mysql = "4.2.3"
+tokio-postgres = "0.7.17"
+deadpool-postgres = "0.14.1"
+mysql_async = "0.37.0"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+
