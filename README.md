@@ -4,6 +4,8 @@
 
 *A tiny self-bootstrapping business application built with TeaQL Runtime.*
 
+> 🤖 **Built with AI:** This project was developed autonomously using the [TeaQL Agent Kit](https://github.com/teaql/teaql-agent-kit) skill.
+
 **Fully open source:** demo app + generated libraries + TeaQL Rust runtime.
 
 ```bash
