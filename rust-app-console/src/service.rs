@@ -2,7 +2,7 @@ use std::error::Error;
 use std::sync::Mutex;
 use robot_kanban::{AuditedSave, Q, Task, TaskExecutionLog};
 use teaql_provider_sqlite::{
-    ensure_sqlite_schema_for, SqliteIdSpaceGenerator,
+    ensure_sqlite_schema_for,
     SqliteMutationExecutor, SqliteProviderExt,
 };
 use teaql_runtime::{
@@ -25,7 +25,7 @@ impl UserContextExt for UserContext {
 }
 
 pub trait TaskDomainBehavior {
-    fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> where Self: Sized;
+    fn create(cmd: &CreateTaskCommand, ctx: &UserContext) -> Result<Self, String> where Self: Sized;
     fn transition_status(&self, cmd: &TransitionCommand) -> Result<Option<u64>, String>;
     fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> Result<TaskExecutionLog, Box<dyn Error>>;
 }
@@ -39,15 +39,14 @@ pub struct CreateTaskCommand {
 }
 
 impl TaskDomainBehavior for Task {
-    fn create(cmd: &CreateTaskCommand, next_id: u64, ctx: &UserContext) -> Result<Self, String> {
+    fn create(cmd: &CreateTaskCommand, ctx: &UserContext) -> Result<Self, String> {
         if cmd.name.trim().is_empty() {
             return Err("Task name cannot be empty".to_owned());
         }
         
         let comment = format!("Create task '{}'", cmd.name);
         let mut task = Q::tasks().comment(&comment).purpose("Create new task").new_entity(ctx);
-        task.update_id(next_id)
-            .update_name(cmd.name.clone())
+        task.update_name(cmd.name.clone())
             .update_status_to_planned()
             .update_platform_id(1_u64);
         Ok(task)
@@ -55,11 +54,9 @@ impl TaskDomainBehavior for Task {
 
     fn generate_execution_log(&self, action: &str, detail: &str, ctx: &UserContext) -> Result<TaskExecutionLog, Box<dyn Error>> {
         let comment = format!("Generate execution log for action '{}'", action);
-        let log_id = ctx.next_id_for::<TaskExecutionLog>()?;
         let mut log = Q::task_execution_logs().comment(&comment).purpose("Create execution log").new_entity(ctx);
         teaql_core::Entity::set_comment(&mut log, comment);
-        log.update_id(log_id)
-            .update_action(action.to_owned())
+        log.update_action(action.to_owned())
             .update_detail(detail.to_owned())
             .update_task_id(self.id());
         Ok(log)
@@ -130,7 +127,7 @@ impl TaskService {
 
         // Register synchronous executors
         ctx.use_sqlite_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(SqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
+        ctx.set_internal_id_generator(teaql_runtime::AtomicCounterIdGenerator::new(0));
 
         // Also register ServiceRuntimeExecutor for the generated repository lookups
         let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());
@@ -323,9 +320,8 @@ impl TaskService {
     pub async fn add_task(&self, name: &str) -> Result<u64, Box<dyn Error>> {
         self.log_info(&format!("Starting business action: Create task '{}'", name));
         self.log_info(&format!("Execute TeaQL - Q::tasks().comment({:?}).new_entity(ctx)", format!("Create task '{}'", name)));
-        let next_id = self.ctx.next_id_for::<Task>()?;
         let cmd = CreateTaskCommand { name: name.to_owned() };
-        let mut task = Task::create(&cmd, next_id, &self.ctx)?;
+        let mut task = Task::create(&cmd, &self.ctx)?;
 
         let log = task.generate_execution_log("CREATED", &format!("Task '{}' created.", name), &self.ctx)?;
 
@@ -333,10 +329,18 @@ impl TaskService {
         
         task.task_execution_log_list_mut().push(log);
         
-        task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        let task = task.audit_as(&comment).save(&self.ctx).await.map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         self.log_info(&format!("Finished business action: Create task '{}'", name));
-        Ok(next_id)
+        Ok(task.id().and_then(|v| {
+            if let teaql_core::Value::I64(val) = v {
+                Some(*val as u64)
+            } else if let teaql_core::Value::U64(val) = v {
+                Some(*val)
+            } else {
+                None
+            }
+        }).unwrap_or(0))
     }
 
     pub async fn delete_task(&self, id: u64) -> Result<bool, Box<dyn Error>> {
