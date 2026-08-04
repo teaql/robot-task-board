@@ -231,9 +231,14 @@ impl TaskService {
             "Get active tasks"
         };
 
-        let query = robot_kanban::Q::tasks()
+        let mut query = robot_kanban::Q::tasks()
             .comment(search_comment)
+            .order_by_id_asc()
             .facet_by_status_as("status_stats", robot_kanban::Q::task_statuses().comment("Count status").count_tasks());
+
+        if let Some(term) = search_term {
+            query = query.with_name_containing(term);
+        }
 
         // Unified logging: Log the TeaQL expression and query trace
         self.log_info(&format!("Starting query: {}", search_comment));
@@ -273,15 +278,9 @@ impl TaskService {
         let mut executing_tasks = Vec::new();
         let mut verified_tasks = Vec::new();
 
-        let mut all_tasks = list_result.data;
-        all_tasks.sort_by_key(|t| t.id());
+        let all_tasks = list_result.data;
 
         for task in all_tasks {
-            if let Some(term) = search_term {
-                if !task.name().to_lowercase().contains(&term.to_lowercase()) {
-                    continue;
-                }
-            }
             let task_model = TaskModel {
                 id: task.id(),
                 name: task.name().to_string(),

@@ -32,7 +32,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [1 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -61,7 +61,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [2 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -90,7 +90,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [3 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -119,7 +119,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [5 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -148,7 +148,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [5 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -177,7 +177,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [6 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -206,7 +206,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [7 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -235,7 +235,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [8 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -264,7 +264,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [9 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -293,7 +293,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [10 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -322,7 +322,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [11 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -351,7 +351,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [12 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -380,7 +380,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [13 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -409,7 +409,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [14 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -438,7 +438,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [15 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -467,7 +467,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [1 rows returned]
@@ -492,7 +492,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [2 rows returned]
@@ -517,7 +517,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [2 rows returned]
@@ -542,7 +542,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [2 rows returned]
@@ -567,7 +567,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -592,7 +592,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -617,7 +617,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [2 rows returned]
@@ -642,7 +642,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -667,7 +667,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -692,7 +692,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [2 rows returned]
@@ -717,7 +717,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -742,7 +742,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -767,7 +767,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [2 rows returned]
@@ -792,7 +792,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -817,7 +817,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -842,7 +842,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
@@ -867,7 +867,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -892,7 +892,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
@@ -917,7 +917,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -942,7 +942,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
@@ -967,7 +967,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [3 rows returned]
@@ -992,7 +992,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
@@ -1017,7 +1017,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
@@ -1042,7 +1042,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
@@ -1067,7 +1067,7 @@
     [TIME]-[philip]-[INFO]-Starting query: Get active tasks
     [TIME]-[philip]-[INFO]-Execute TeaQL - Q::tasks().comment("Get active tasks").facet_by_status_as("status_stats", Q::task_status().count_tasks()).execute_for_list(&ctx)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks] - [16 rows returned]
-              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0)
+              SELECT id, version, id, name, version, status AS status_id FROM task_data WHERE (version > 0) ORDER BY id ASC
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats] - [5 rows returned]
               SELECT id, version, id, name, code, color, display_order, progress, version FROM task_status_data WHERE (version > 0)
     [TIME]-[philip]-[DURATION]-[DEBUG]-SqlLogEntry - [List tasks -> Get active tasks -> status_stats -> Count status -> Calculate facet status_stats -> count_tasks] - [5 rows returned]
