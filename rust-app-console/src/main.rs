@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tui::show_cursor(&mut terminal)?;
 
     let mut app = App::new(service);
+    let _ = app.reload_data().await;
     app.service.log_info("Ready — type a command to begin.");
 
     app.run(&mut terminal).await?;
