@@ -2,7 +2,7 @@ use std::error::Error;
 use std::sync::Mutex;
 use robot_kanban::{AuditedSave, Q, Task, TaskExecutionLog};
 use teaql_provider_sqlite::{
-    ensure_sqlite_schema_for, SqliteIdSpaceGenerator,
+    ensure_sqlite_schema_for,
     SqliteMutationExecutor, SqliteProviderExt,
 };
 use teaql_runtime::{
@@ -127,7 +127,7 @@ impl TaskService {
 
         // Register synchronous executors
         ctx.use_sqlite_provider(inner_executor.clone());
-        ctx.set_internal_id_generator(SqliteIdSpaceGenerator::from_executor(inner_executor.clone()));
+        ctx.set_internal_id_generator(teaql_runtime::AtomicCounterIdGenerator::new(0));
 
         // Also register ServiceRuntimeExecutor for the generated repository lookups
         let service_runtime_executor = robot_kanban::ServiceRuntimeExecutor::new(inner_executor.clone());

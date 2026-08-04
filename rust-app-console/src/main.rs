@@ -273,17 +273,18 @@ mod tests {
 
         let db = TaskService::new(db_file).await?;
 
-        // Bulk insert 10 tasks
+        let mut task_ids = vec![];
         for i in 1..=10 {
-            db.add_task(&format!("Task number {}", i)).await?;
+            let id = db.add_task(&format!("Task number {}", i)).await?;
+            task_ids.push(id);
         }
 
         let reloaded = db.reload_data(&None).await?;
         assert_eq!(reloaded.planned_tasks.len(), 10, "Should have 10 planned tasks");
 
         // Move the first 5 to 'process' (which is 'Ready' status)
-        for i in 1..=5 {
-            db.move_task(i as u64, "ready").await?;
+        for i in 0..5 {
+            db.move_task(task_ids[i], "ready").await?;
         }
 
         let reloaded_after_move = db.reload_data(&None).await?;
@@ -291,8 +292,8 @@ mod tests {
         assert_eq!(reloaded_after_move.ready_tasks.len(), 5, "Should have 5 ready tasks");
 
         // Delete the remaining 5 planned tasks
-        for i in 6..=10 {
-            db.delete_task(i as u64).await?;
+        for i in 5..10 {
+            db.delete_task(task_ids[i]).await?;
         }
 
         let final_state = db.reload_data(&None).await?;
@@ -361,32 +362,28 @@ mod tests_ui {
         let mut app = App::new(service);
 
         let inputs = vec![
-            "Review Mission Timeline",
-            "Validate Payload Configuration",
-            "Verify Flight Software Build",
-            "Calibrate Guidance System",
-            "Load Flight Parameters",
-            "Initialize Ground Telemetry",
-            "Review Telemetry Anomaly",
-            "Review Launch Criteria",
-            "Range Safety Check",
-            "Begin Propellant Loading",
-            "Complete Cryogenic Fueling",
-            "Arm Flight Termination System",
-            "Conduct GO/NO-GO Poll",
-            "Start Terminal Countdown",
-            "Execute Hold-Down Release",
-            "Confirm Orbital Insertion",
-            "/mv 1", "/mv 1", "/mv 1",
-            "/mv 2", "/mv 2", "/mv 2",
-            "/mv 3", "/mv 3", "/mv 3",
-            "/mv 4", "/mv 4", "/mv 4",
-            "/mv 5", "/mv 5",
-            "/mv 6", "/mv 6",
-            "/mv 7", "/mv 7",
-            "/mv 8", "/mv 8",
-            "/mv 9", "/mv 10", "/mv 11", "/mv 12"
+            "Review Mission Timeline".to_string(),
+            "Validate Payload Configuration".to_string(),
+            "Verify Flight Software Build".to_string(),
+            "Calibrate Guidance System".to_string(),
+            "Load Flight Parameters".to_string(),
+            "Initialize Ground Telemetry".to_string(),
+            "Review Telemetry Anomaly".to_string(),
+            "Review Launch Criteria".to_string(),
+            "Range Safety Check".to_string(),
+            "Begin Propellant Loading".to_string(),
+            "Complete Cryogenic Fueling".to_string(),
+            "Arm Flight Termination System".to_string(),
+            "Conduct GO/NO-GO Poll".to_string(),
+            "Start Terminal Countdown".to_string(),
+            "Execute Hold-Down Release".to_string(),
+            "Confirm Orbital Insertion".to_string(),
         ];
+        // The first 16 tasks will get IDs depending on the generator. 
+        // We can just query them after they are created! But we create them one by one.
+        // Actually, the easiest is to just compute the starting ID. Since we are using AtomicCounterIdGenerator(0),
+        // and 5 entities are created before tasks, the first task is 6.
+        // But to be robust, we'll just add the mv commands after the creation.
 
         let mut actual_output = String::new();
         let mut print_cap = |s: &str| {
@@ -395,11 +392,17 @@ mod tests_ui {
         };
 
         print_cap("\n========== Starting Automated Mission Simulation ==========\n");
-        for input in inputs {
+        let mut created_ids = vec![];
+        for input in &inputs {
             print_cap(&format!("\n>>> Executing command: {}\n\n", input));
             let start_log_idx = app.logs.len();
             app.input = input.to_string();
             crate::commands::execute(&mut app).await?;
+            if let Some(task) = app.planned_tasks.last() {
+                if !created_ids.contains(&task.id) {
+                    created_ids.push(task.id);
+                }
+            }
             
             for i in start_log_idx..app.logs.len() {
                 print_cap(&format!("    {}\n", app.logs[i]));
@@ -407,6 +410,26 @@ mod tests_ui {
 
             print_cap(&format!("\n    [Facet] Planned: {} | Ready: {} | Executing: {} | Verified: {}\n", 
                 app.planned_count, app.ready_count, app.executing_count, app.verified_count));
+        }
+
+        let mv_commands = vec![
+            (0, 3), (1, 3), (2, 3), (3, 3),
+            (4, 2), (5, 2), (6, 2), (7, 2),
+            (8, 1), (9, 1), (10, 1), (11, 1)
+        ];
+        for (idx, times) in mv_commands {
+            for _ in 0..times {
+                let input = format!("/mv {}", created_ids[idx]);
+                print_cap(&format!("\n>>> Executing command: {}\n\n", input));
+                let start_log_idx = app.logs.len();
+                app.input = input.to_string();
+                crate::commands::execute(&mut app).await?;
+                for i in start_log_idx..app.logs.len() {
+                    print_cap(&format!("    {}\n", app.logs[i]));
+                }
+                print_cap(&format!("\n    [Facet] Planned: {} | Ready: {} | Executing: {} | Verified: {}\n", 
+                    app.planned_count, app.ready_count, app.executing_count, app.verified_count));
+            }
         }
 
         print_cap("\n========== Final Facet Results ==========\n");
