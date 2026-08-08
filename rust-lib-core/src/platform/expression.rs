@@ -32,25 +32,30 @@ impl<'a> PlatformExpression<'a> {
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_name(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("name", |entity| entity.eval_name());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
 
     pub fn get_founded(self) -> crate::ValueExpression<'a, teaql_core::time::Timestamp> {
         let next = self.result.and_then("founded", |entity| entity.eval_founded());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_user_email(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("user_email", |entity| entity.eval_user_email());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_version(self) -> crate::ValueExpression<'a, i64> {
         let next = self.result.and_then("version", |entity| entity.eval_version());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_task_status_list(self) -> crate::TaskStatusListExpression<'a> {
         let next = self.result.and_then("task_status_list", |entity| entity.eval_task_status_list());
         crate::TaskStatusListExpression::new(next, self.root_desc.clone())

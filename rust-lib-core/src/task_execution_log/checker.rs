@@ -1,4 +1,3 @@
-
 use teaql_runtime::{CheckObjectStatus, CheckResults, ObjectLocation, TypedChecker, UserContext};
 
 pub trait TaskExecutionLogCheckerLogic: Send + Sync {

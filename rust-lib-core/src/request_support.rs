@@ -1,4 +1,3 @@
-
 #![allow(unused_imports)]
 #![allow(async_fn_in_trait)]
 use std::{collections::BTreeMap, future::Future, marker::PhantomData};
@@ -9,6 +8,7 @@ use teaql_core::{
     RelationAggregate as RuntimeRelationAggregate, SelectQuery, SmartList,
 };
 use teaql_runtime::{ContextError, GraphNode, EntityDataServiceBehavior, DataServiceError, PurposedSelectQuery, RuntimeError, UserContext};
+pub use teaql_runtime::AuditedSaveExt as AuditedSave;
 
 // Re-export query builder types from teaql_core::request
 pub use teaql_core::request::{
@@ -57,6 +57,7 @@ pub trait TeaqlEntityRepository: TeaqlRecordRepository {
     ) -> Result<SmartList<T>, DataServiceError<Self::Error>>
     where
         T: teaql_core::Entity;
+
 
 }
 
@@ -117,6 +118,7 @@ where
         ).await
     }
 
+
 }
 
 pub type TeaqlDataServiceError<R> = DataServiceError<<R as TeaqlRecordRepository>::Error>;
@@ -139,20 +141,10 @@ pub trait TeaqlRuntime {
     fn fetch_facet_smart_list(
         &self,
         entity: &str,
-        query: &PurposedSelectQuery,
+        query: &SelectQuery,
         relation_aggregates: &[RuntimeRelationAggregate],
         trace_context: Vec<teaql_core::TraceNode>,
     ) -> impl std::future::Future<Output = Result<SmartList<Record>, RuntimeError>> + Send;
-}
-
-/// Internal trait for repository access. Application code should not use this trait directly.
-#[doc(hidden)]
-pub trait AuditedSave<'a, C>
-where
-    C: TeaqlRepositoryProvider + ?Sized + 'a,
-{
-    type Error;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>>;
 }
 
 
@@ -182,6 +174,7 @@ pub trait TeaqlRepositoryProvider: TeaqlRuntime {
 
 #[allow(async_fn_in_trait)]
 pub trait TeaqlUserContextExt {
+
     async fn transaction_data<F, Fut>(&self, f: F) -> Result<(), DataServiceError<<crate::runtime::DataServiceExecutor as teaql_data_service::DataServiceExecutor>::Error>>
     where
         F: FnOnce() -> Fut,
@@ -189,6 +182,7 @@ pub trait TeaqlUserContextExt {
 }
 
 impl TeaqlUserContextExt for teaql_runtime::UserContext {
+
     async fn transaction_data<F, Fut>(&self, f: F) -> Result<(), DataServiceError<<crate::runtime::DataServiceExecutor as teaql_data_service::DataServiceExecutor>::Error>>
     where
         F: FnOnce() -> Fut,
@@ -228,18 +222,20 @@ impl TeaqlRuntime for teaql_runtime::UserContext {
     async fn fetch_facet_smart_list(
         &self,
         entity: &str,
-        query: &PurposedSelectQuery,
+        query: &SelectQuery,
         relation_aggregates: &[RuntimeRelationAggregate],
         trace_context: Vec<teaql_core::TraceNode>,
     ) -> Result<SmartList<Record>, RuntimeError> {
+        let purposed = authorize_query(query.clone())?;
         self.entity_data_service::<crate::runtime::DataServiceExecutor>(entity)
             .map_err(|err| RuntimeError::Graph(err.to_string()))?
             .with_trace_context(trace_context)
-            .fetch_smart_list_with_relation_aggregates(query, relation_aggregates)
+            .fetch_smart_list_with_relation_aggregates(&purposed, relation_aggregates)
             .await
             .map_err(|err| RuntimeError::Graph(err.to_string()))
     }
 }
+
 
 impl TeaqlRepositoryProvider for teaql_runtime::UserContext {
     type PlatformRepository<'a> = teaql_runtime::EntityDataService<'a, crate::runtime::DataServiceExecutor>
@@ -249,7 +245,6 @@ impl TeaqlRepositoryProvider for teaql_runtime::UserContext {
     fn platform_repository(&self) -> Result<Self::PlatformRepository<'_>, ContextError> {
         self.entity_data_service::<crate::runtime::DataServiceExecutor>("Platform")
     }
-
     type TaskStatusRepository<'a> = teaql_runtime::EntityDataService<'a, crate::runtime::DataServiceExecutor>
     where
         Self: 'a;
@@ -257,7 +252,6 @@ impl TeaqlRepositoryProvider for teaql_runtime::UserContext {
     fn task_status_repository(&self) -> Result<Self::TaskStatusRepository<'_>, ContextError> {
         self.entity_data_service::<crate::runtime::DataServiceExecutor>("TaskStatus")
     }
-
     type TaskRepository<'a> = teaql_runtime::EntityDataService<'a, crate::runtime::DataServiceExecutor>
     where
         Self: 'a;
@@ -265,7 +259,6 @@ impl TeaqlRepositoryProvider for teaql_runtime::UserContext {
     fn task_repository(&self) -> Result<Self::TaskRepository<'_>, ContextError> {
         self.entity_data_service::<crate::runtime::DataServiceExecutor>("Task")
     }
-
     type TaskExecutionLogRepository<'a> = teaql_runtime::EntityDataService<'a, crate::runtime::DataServiceExecutor>
     where
         Self: 'a;
@@ -296,19 +289,14 @@ where
             &selection.query_options,
             &selection.child_enhancements,
         );
-        let entity = query.entity.clone();
         let mut chain = outer_query.trace_chain.clone();
-        chain.push(teaql_core::TraceNode::new(
-            query.entity.clone(),
-            None,
-            facet.facet_name.clone(),
-        ));
+        chain.push(teaql_core::TraceNode {
+            entity_type: query.entity.clone(),
+            entity_id: None,
+            comment: facet.facet_name.clone(),
+        });
 
-        let query = PurposedSelectQuery::new(
-            query,
-            format!("Calculate facet {}", facet.facet_name),
-        );
-        let facet_rows = ctx.fetch_facet_smart_list(&entity, &query, &relation_aggregates, chain).await?;
+        let facet_rows = ctx.fetch_facet_smart_list(&query.entity, &query, &relation_aggregates, chain).await?;
         facets.insert(facet.facet_name.clone(), facet_rows);
     }
     Ok(facets)

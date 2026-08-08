@@ -1,4 +1,3 @@
-
 //! Generated TeaQL domain crate for `robot-kanban-service-core`.
 //!
 //! **Before writing queries**, read the `AGENTS.md` at the workspace root.

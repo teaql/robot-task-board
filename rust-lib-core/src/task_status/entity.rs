@@ -1,4 +1,3 @@
-
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/task_status
 use std::collections::BTreeMap;
 
@@ -28,20 +27,25 @@ pub struct TaskStatus {
     color: String,
 
 // @source main.xml:25
-    display_order: rust_decimal::Decimal,
+    display_order: i32,
 
 // @source main.xml:25
-    progress: rust_decimal::Decimal,
+    progress: i32,
+
 #[teaql(version)]
     version: i64,
+
 // @source main.xml:25
 #[teaql(column = "platform")]
     platform_id: u64,
+
 // @source main.xml:25
 #[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
     platform: Option<crate::Platform>,
+
 #[teaql(relation(target = "Task", local_key = "id", foreign_key = "status_id", many))]
     task_list: SmartList<crate::Task>,
+
     #[teaql(dynamic)]
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
@@ -58,15 +62,25 @@ impl TaskStatus {
     pub(crate) fn runtime_new(root: teaql_runtime::EntityRoot) -> Self {
         Self {
             id: 0_u64,
+
             name: String::new(),
+
             code: String::new(),
+
             color: String::new(),
-            display_order: rust_decimal::Decimal::ZERO,
-            progress: rust_decimal::Decimal::ZERO,
+
+            display_order: 0_i32,
+
+            progress: 0_i32,
+
             version: 0_i64,
+
             platform_id: 0_u64,
+
             platform: None,
+
             task_list: Default::default(),
+
             dynamic: BTreeMap::new(),
             root,
             __load_state: teaql_core::eval::LoadState::FullyLoaded,
@@ -82,9 +96,11 @@ impl TaskStatus {
         if let Some(entity) = &mut self.platform {
             entity.attach_root_recursive(root.clone());
         }
+
         for entity in &mut self.task_list {
             entity.attach_root_recursive(root.clone());
         }
+
     }
 
     pub fn is_loaded(&self, field_or_relation: &str) -> bool {
@@ -117,6 +133,7 @@ impl TaskStatus {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
 
+
     pub fn name(&self) -> String {
         self.changed_name().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.name.clone())
     }
@@ -138,6 +155,7 @@ impl TaskStatus {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.name())
                 }}
+
 
     pub fn code(&self) -> String {
         self.changed_code().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.code.clone())
@@ -161,6 +179,7 @@ impl TaskStatus {
                     teaql_core::eval::EvalResult::Value(self.code())
                 }}
 
+
     pub fn color(&self) -> String {
         self.changed_color().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.color.clone())
     }
@@ -183,13 +202,14 @@ impl TaskStatus {
                     teaql_core::eval::EvalResult::Value(self.color())
                 }}
 
-    pub fn display_order(&self) -> rust_decimal::Decimal {
-        self.changed_display_order().and_then(|value| value.try_decimal()).unwrap_or(self.display_order)
+
+    pub fn display_order(&self) -> i32 {
+        self.changed_display_order().and_then(|value| value.try_i64().map(|v| v as i32)).unwrap_or(self.display_order)
     }
 
     pub fn update_display_order(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.display_order = value.try_decimal().unwrap_or(self.display_order.clone());
+        self.display_order = value.try_i64().map(|v| v as i32).unwrap_or(self.display_order.clone());
         self.root.set(self.entity_key(), "display_order", value);
         self
     }
@@ -198,20 +218,21 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "display_order")
     }
 
-    pub fn eval_display_order(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
+    pub fn eval_display_order(&self) -> teaql_core::eval::EvalResult<i32> {
         if !self.is_loaded("display_order") {
                     teaql_core::eval::EvalResult::NotLoaded { failed_node: "display_order".to_string(), attempted_path: "display_order".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.display_order())
                 }}
 
-    pub fn progress(&self) -> rust_decimal::Decimal {
-        self.changed_progress().and_then(|value| value.try_decimal()).unwrap_or(self.progress)
+
+    pub fn progress(&self) -> i32 {
+        self.changed_progress().and_then(|value| value.try_i64().map(|v| v as i32)).unwrap_or(self.progress)
     }
 
     pub fn update_progress(&mut self, value: impl Into<teaql_core::Value>) -> &mut Self {
         let value = value.into();
-        self.progress = value.try_decimal().unwrap_or(self.progress.clone());
+        self.progress = value.try_i64().map(|v| v as i32).unwrap_or(self.progress.clone());
         self.root.set(self.entity_key(), "progress", value);
         self
     }
@@ -220,12 +241,13 @@ impl TaskStatus {
         self.root.get(&self.entity_key(), "progress")
     }
 
-    pub fn eval_progress(&self) -> teaql_core::eval::EvalResult<rust_decimal::Decimal> {
+    pub fn eval_progress(&self) -> teaql_core::eval::EvalResult<i32> {
         if !self.is_loaded("progress") {
                     teaql_core::eval::EvalResult::NotLoaded { failed_node: "progress".to_string(), attempted_path: "progress".to_string() }
                 } else {
                     teaql_core::eval::EvalResult::Value(self.progress())
                 }}
+
 
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
@@ -248,6 +270,7 @@ impl TaskStatus {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
+
     pub fn platform_id(&self) -> u64 {
         self.changed_platform_id().and_then(|value| value.try_u64()).unwrap_or(self.platform_id)
     }
@@ -269,6 +292,7 @@ impl TaskStatus {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.platform_id())
                 }}
+
     pub fn platform(&self) -> Option<&crate::Platform> {
         self.platform.as_ref()
     }
@@ -283,6 +307,7 @@ impl TaskStatus {
             }
         }
     }
+
     pub fn task_list(&self) -> &SmartList<crate::Task> {
         &self.task_list
     }
@@ -308,5 +333,6 @@ impl TaskStatus {
         self.root.set_comment(comment);
         self
     }
-}
 
+
+}

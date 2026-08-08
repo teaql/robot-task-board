@@ -1,4 +1,3 @@
-
 // The `E` expression wrapper provides zero-cost AST traversal
 // and will automatically panic if it encounters a NotLoaded error.
 pub struct E;
@@ -83,7 +82,7 @@ pub fn trigger_logic_bug_panic(root_desc: &str, failed_node: &str, attempted_pat
 
     let human_message = format!("\"访问 {}.{} 时缺少预加载。请在查询中加入 {}{}\"", root_name, attempted_path, suggested_fix, human_nested);
 
-    panic!("\n\n💥 [Coding Logic Bug]\n\noriginal_expr_with_broken_point: \"{}\"\nroot: {}\naccess_path: {}\nbreak_point: \"{}\"\nmissing_preload: {}\nsuggested_fix: {}\nnested_fix: {}\nseverity: \"error\"\nhuman_message: {}\n", 
+    panic!("\n\n💥 [Coding Logic Bug]\n\noriginal_expr_with_broken_point: \"{}\"\nroot: {}\naccess_path: {}\nbreak_point: \"{}\"\nmissing_preload: {}\nsuggested_fix: {}\nnested_fix: {}\nseverity: \"error\"\nhuman_message: {}\n",
         original_expr, root_desc, access_path_json, failed_node, missing_preload_json, suggested_fix, nested_fix, human_message);
 }
 
@@ -129,4 +128,3 @@ impl<'a, T: Clone> ValueExpression<'a, T> {
         self.eval().unwrap_or_default()
     }
 }
-

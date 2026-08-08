@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
-
 use serde_json::Value as JsonValue;
 use teaql_core::{Aggregate, AggregateFunction, EntityDescriptor, Expr, Record, SelectQuery, SmartList};
 use teaql_runtime::{DataServiceError, RuntimeError};
-
 use crate::request_support::*;
 
 impl EntityReference for crate::TaskStatus {
@@ -17,6 +15,8 @@ impl EntityReference for &crate::TaskStatus {
         teaql_core::IdentifiableEntity::id_value(self)
     }
 }
+
+
 
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/task_status
 #[derive(Debug)]
@@ -476,13 +476,21 @@ impl<R> TaskStatusRequest<R> {
     fn dynamic_json_self_field(field: &str) -> Option<&'static str> {
         match field {
             "id" => Some("id"),
+
             "name" => Some("name"),
+
             "code" => Some("code"),
+
             "color" => Some("color"),
+
             "display_order" => Some("display_order"),
+
             "progress" => Some("progress"),
+
             "version" => Some("version"),
+
             "platform" | "platform_id" => Some("platform_id"),
+
             _ => None,
         }
     }
@@ -496,12 +504,14 @@ impl<R> TaskStatusRequest<R> {
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
+
             "task_list" => {
                 self.with_task_list_matching(
                     crate::Q::tasks_minimal()
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
+
             _ => self,
         }
     }
@@ -580,13 +590,21 @@ impl<R> TaskStatusRequest<R> {
 
     pub fn select_self(mut self) -> Self {
         self.query = self.query.project("id");
+
         self.query = self.query.project("name");
+
         self.query = self.query.project("code");
+
         self.query = self.query.project("color");
+
         self.query = self.query.project("display_order");
+
         self.query = self.query.project("progress");
+
         self.query = self.query.project("version");
+
         self.query = self.query.project("platform_id");
+
         self
     }
 
@@ -601,6 +619,7 @@ impl<R> TaskStatusRequest<R> {
     pub fn select_all(self) -> Self {
         let mut request = self.select_self();
         request = request.select_platform();
+
         request
     }
 
@@ -772,6 +791,7 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
+
     pub fn with_id(
         mut self,
         operator: FieldOperator,
@@ -807,6 +827,7 @@ impl<R> TaskStatusRequest<R> {
         self.query = self.query.and_filter(Expr::ne("id", value));
         self
     }
+
 
     pub fn with_id_in(
         mut self,
@@ -1669,18 +1690,6 @@ impl<R> TaskStatusRequest<R> {
         self
     }
 
-    pub fn select_display_order_with_function(self, function: AggregateFunction) -> Self {
-        self.select_display_order_as_with_function("display_order", function)
-    }
-
-    pub fn select_display_order_as_with_function(
-        self,
-        alias: impl Into<String>,
-        function: AggregateFunction,
-    ) -> Self {
-        self.aggregate_with_function("display_order", alias, function)
-    }
-
     pub fn group_by_display_order(self) -> Self {
         self.group_by("display_order")
     }
@@ -1741,38 +1750,6 @@ impl<R> TaskStatusRequest<R> {
 
     pub fn max_display_order_as(self, alias: impl Into<String>) -> Self {
         self.aggregate_max("display_order", alias)
-    }
-
-    pub fn standard_deviation_display_order(self) -> Self {
-        self.standard_deviation_display_order_as("stdDev_display_order")
-    }
-
-    pub fn standard_deviation_display_order_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_stddev("display_order", alias)
-    }
-
-    pub fn square_root_of_population_standard_deviation_display_order(self) -> Self {
-        self.square_root_of_population_standard_deviation_display_order_as("stdDevPop_display_order")
-    }
-
-    pub fn square_root_of_population_standard_deviation_display_order_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_stddev_pop("display_order", alias)
-    }
-
-    pub fn sample_variance_display_order(self) -> Self {
-        self.sample_variance_display_order_as("varSamp_display_order")
-    }
-
-    pub fn sample_variance_display_order_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_var_samp("display_order", alias)
-    }
-
-    pub fn sample_population_variance_display_order(self) -> Self {
-        self.sample_population_variance_display_order_as("varPop_display_order")
-    }
-
-    pub fn sample_population_variance_display_order_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_var_pop("display_order", alias)
     }
 
     pub fn unselect_display_order(mut self) -> Self {
@@ -1945,18 +1922,6 @@ impl<R> TaskStatusRequest<R> {
         self
     }
 
-    pub fn select_progress_with_function(self, function: AggregateFunction) -> Self {
-        self.select_progress_as_with_function("progress", function)
-    }
-
-    pub fn select_progress_as_with_function(
-        self,
-        alias: impl Into<String>,
-        function: AggregateFunction,
-    ) -> Self {
-        self.aggregate_with_function("progress", alias, function)
-    }
-
     pub fn group_by_progress(self) -> Self {
         self.group_by("progress")
     }
@@ -2017,38 +1982,6 @@ impl<R> TaskStatusRequest<R> {
 
     pub fn max_progress_as(self, alias: impl Into<String>) -> Self {
         self.aggregate_max("progress", alias)
-    }
-
-    pub fn standard_deviation_progress(self) -> Self {
-        self.standard_deviation_progress_as("stdDev_progress")
-    }
-
-    pub fn standard_deviation_progress_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_stddev("progress", alias)
-    }
-
-    pub fn square_root_of_population_standard_deviation_progress(self) -> Self {
-        self.square_root_of_population_standard_deviation_progress_as("stdDevPop_progress")
-    }
-
-    pub fn square_root_of_population_standard_deviation_progress_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_stddev_pop("progress", alias)
-    }
-
-    pub fn sample_variance_progress(self) -> Self {
-        self.sample_variance_progress_as("varSamp_progress")
-    }
-
-    pub fn sample_variance_progress_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_var_samp("progress", alias)
-    }
-
-    pub fn sample_population_variance_progress(self) -> Self {
-        self.sample_population_variance_progress_as("varPop_progress")
-    }
-
-    pub fn sample_population_variance_progress_as(self, alias: impl Into<String>) -> Self {
-        self.aggregate_var_pop("progress", alias)
     }
 
     pub fn unselect_progress(mut self) -> Self {
@@ -2262,6 +2195,8 @@ impl<R> TaskStatusRequest<R> {
         self.aggregate_max("version", alias)
     }
 
+
+
     pub fn order_by_version_asc(mut self) -> Self {
         self.query = self.query.order_asc("version");
         self
@@ -2296,6 +2231,7 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
+
     pub fn id_is_value_1002(self) -> Self {
         self.with_id_is("1002")
     }
@@ -2311,6 +2247,7 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
+
     pub fn id_is_value_1003(self) -> Self {
         self.with_id_is("1003")
     }
@@ -2324,6 +2261,7 @@ impl<R> TaskStatusRequest<R> {
     pub fn with_id_is_not_value_1003(self) -> Self {
         self.with_id_is_not("1003")
     }
+
 
 
     pub fn id_is_value_1004(self) -> Self {
@@ -2342,6 +2280,8 @@ impl<R> TaskStatusRequest<R> {
 
 
 
+
+
     pub fn name_is_planned(self) -> Self {
         self.with_name_is("Planned")
     }
@@ -2355,6 +2295,7 @@ impl<R> TaskStatusRequest<R> {
     pub fn with_name_is_not_planned(self) -> Self {
         self.with_name_is_not("Planned")
     }
+
 
 
     pub fn name_is_ready(self) -> Self {
@@ -2372,6 +2313,7 @@ impl<R> TaskStatusRequest<R> {
     }
 
 
+
     pub fn name_is_executing(self) -> Self {
         self.with_name_is("Executing")
     }
@@ -2385,6 +2327,7 @@ impl<R> TaskStatusRequest<R> {
     pub fn with_name_is_not_executing(self) -> Self {
         self.with_name_is_not("Executing")
     }
+
 
 
     pub fn name_is_verified(self) -> Self {
@@ -2403,247 +2346,269 @@ impl<R> TaskStatusRequest<R> {
 
 
 
-    pub fn code_is_planne_d(self) -> Self {
+
+
+    pub fn code_is_planned(self) -> Self {
         self.with_code_is("PLANNED")
     }
 
-    pub fn with_code_is_planne_d(self) -> Self {
+    pub fn with_code_is_planned(self) -> Self {
         self.with_code_is("PLANNED")
     }
 
 
 
-    pub fn with_code_is_not_planne_d(self) -> Self {
+    pub fn with_code_is_not_planned(self) -> Self {
         self.with_code_is_not("PLANNED")
     }
 
 
-    pub fn code_is_read_y(self) -> Self {
+
+    pub fn code_is_ready(self) -> Self {
         self.with_code_is("READY")
     }
 
-    pub fn with_code_is_read_y(self) -> Self {
+    pub fn with_code_is_ready(self) -> Self {
         self.with_code_is("READY")
     }
 
 
 
-    pub fn with_code_is_not_read_y(self) -> Self {
+    pub fn with_code_is_not_ready(self) -> Self {
         self.with_code_is_not("READY")
     }
 
 
-    pub fn code_is_executin_g(self) -> Self {
+
+    pub fn code_is_executing(self) -> Self {
         self.with_code_is("EXECUTING")
     }
 
-    pub fn with_code_is_executin_g(self) -> Self {
+    pub fn with_code_is_executing(self) -> Self {
         self.with_code_is("EXECUTING")
     }
 
 
 
-    pub fn with_code_is_not_executin_g(self) -> Self {
+    pub fn with_code_is_not_executing(self) -> Self {
         self.with_code_is_not("EXECUTING")
     }
 
 
-    pub fn code_is_verifie_d(self) -> Self {
+
+    pub fn code_is_verified(self) -> Self {
         self.with_code_is("VERIFIED")
     }
 
-    pub fn with_code_is_verifie_d(self) -> Self {
+    pub fn with_code_is_verified(self) -> Self {
         self.with_code_is("VERIFIED")
     }
 
 
 
-    pub fn with_code_is_not_verifie_d(self) -> Self {
+    pub fn with_code_is_not_verified(self) -> Self {
         self.with_code_is_not("VERIFIED")
     }
 
 
 
-    pub fn color_is_value_94a3b8(self) -> Self {
+
+
+    pub fn color_is_94a3b8(self) -> Self {
         self.with_color_is("#94A3B8")
     }
 
-    pub fn with_color_is_value_94a3b8(self) -> Self {
+    pub fn with_color_is_94a3b8(self) -> Self {
         self.with_color_is("#94A3B8")
     }
 
 
 
-    pub fn with_color_is_not_value_94a3b8(self) -> Self {
+    pub fn with_color_is_not_94a3b8(self) -> Self {
         self.with_color_is_not("#94A3B8")
     }
 
 
-    pub fn color_is_value_3b82f6(self) -> Self {
+
+    pub fn color_is_3b82f6(self) -> Self {
         self.with_color_is("#3B82F6")
     }
 
-    pub fn with_color_is_value_3b82f6(self) -> Self {
+    pub fn with_color_is_3b82f6(self) -> Self {
         self.with_color_is("#3B82F6")
     }
 
 
 
-    pub fn with_color_is_not_value_3b82f6(self) -> Self {
+    pub fn with_color_is_not_3b82f6(self) -> Self {
         self.with_color_is_not("#3B82F6")
     }
 
 
-    pub fn color_is_f59e0_b(self) -> Self {
+
+    pub fn color_is_f59e0b(self) -> Self {
         self.with_color_is("#F59E0B")
     }
 
-    pub fn with_color_is_f59e0_b(self) -> Self {
+    pub fn with_color_is_f59e0b(self) -> Self {
         self.with_color_is("#F59E0B")
     }
 
 
 
-    pub fn with_color_is_not_f59e0_b(self) -> Self {
+    pub fn with_color_is_not_f59e0b(self) -> Self {
         self.with_color_is_not("#F59E0B")
     }
 
 
-    pub fn color_is_value_16a34_a(self) -> Self {
+
+    pub fn color_is_16a34a(self) -> Self {
         self.with_color_is("#16A34A")
     }
 
-    pub fn with_color_is_value_16a34_a(self) -> Self {
+    pub fn with_color_is_16a34a(self) -> Self {
         self.with_color_is("#16A34A")
     }
 
 
 
-    pub fn with_color_is_not_value_16a34_a(self) -> Self {
+    pub fn with_color_is_not_16a34a(self) -> Self {
         self.with_color_is_not("#16A34A")
     }
 
 
 
-    pub fn display_order_is_value_10(self) -> Self {
+
+
+    pub fn display_order_is_10(self) -> Self {
         self.with_display_order_is("10")
     }
 
-    pub fn with_display_order_is_value_10(self) -> Self {
+    pub fn with_display_order_is_10(self) -> Self {
         self.with_display_order_is("10")
     }
 
 
 
-    pub fn with_display_order_is_not_value_10(self) -> Self {
+    pub fn with_display_order_is_not_10(self) -> Self {
         self.with_display_order_is_not("10")
     }
 
 
-    pub fn display_order_is_value_20(self) -> Self {
+
+    pub fn display_order_is_20(self) -> Self {
         self.with_display_order_is("20")
     }
 
-    pub fn with_display_order_is_value_20(self) -> Self {
+    pub fn with_display_order_is_20(self) -> Self {
         self.with_display_order_is("20")
     }
 
 
 
-    pub fn with_display_order_is_not_value_20(self) -> Self {
+    pub fn with_display_order_is_not_20(self) -> Self {
         self.with_display_order_is_not("20")
     }
 
 
-    pub fn display_order_is_value_30(self) -> Self {
+
+    pub fn display_order_is_30(self) -> Self {
         self.with_display_order_is("30")
     }
 
-    pub fn with_display_order_is_value_30(self) -> Self {
+    pub fn with_display_order_is_30(self) -> Self {
         self.with_display_order_is("30")
     }
 
 
 
-    pub fn with_display_order_is_not_value_30(self) -> Self {
+    pub fn with_display_order_is_not_30(self) -> Self {
         self.with_display_order_is_not("30")
     }
 
 
-    pub fn display_order_is_value_40(self) -> Self {
+
+    pub fn display_order_is_40(self) -> Self {
         self.with_display_order_is("40")
     }
 
-    pub fn with_display_order_is_value_40(self) -> Self {
+    pub fn with_display_order_is_40(self) -> Self {
         self.with_display_order_is("40")
     }
 
 
 
-    pub fn with_display_order_is_not_value_40(self) -> Self {
+    pub fn with_display_order_is_not_40(self) -> Self {
         self.with_display_order_is_not("40")
     }
 
 
 
-    pub fn progress_is_value_0(self) -> Self {
+
+
+    pub fn progress_is_0(self) -> Self {
         self.with_progress_is("0")
     }
 
-    pub fn with_progress_is_value_0(self) -> Self {
+    pub fn with_progress_is_0(self) -> Self {
         self.with_progress_is("0")
     }
 
 
 
-    pub fn with_progress_is_not_value_0(self) -> Self {
+    pub fn with_progress_is_not_0(self) -> Self {
         self.with_progress_is_not("0")
     }
 
 
-    pub fn progress_is_value_25(self) -> Self {
+
+    pub fn progress_is_25(self) -> Self {
         self.with_progress_is("25")
     }
 
-    pub fn with_progress_is_value_25(self) -> Self {
+    pub fn with_progress_is_25(self) -> Self {
         self.with_progress_is("25")
     }
 
 
 
-    pub fn with_progress_is_not_value_25(self) -> Self {
+    pub fn with_progress_is_not_25(self) -> Self {
         self.with_progress_is_not("25")
     }
 
 
-    pub fn progress_is_value_50(self) -> Self {
+
+    pub fn progress_is_50(self) -> Self {
         self.with_progress_is("50")
     }
 
-    pub fn with_progress_is_value_50(self) -> Self {
+    pub fn with_progress_is_50(self) -> Self {
         self.with_progress_is("50")
     }
 
 
 
-    pub fn with_progress_is_not_value_50(self) -> Self {
+    pub fn with_progress_is_not_50(self) -> Self {
         self.with_progress_is_not("50")
     }
 
 
-    pub fn progress_is_value_100(self) -> Self {
+
+    pub fn progress_is_100(self) -> Self {
         self.with_progress_is("100")
     }
 
-    pub fn with_progress_is_value_100(self) -> Self {
+    pub fn with_progress_is_100(self) -> Self {
         self.with_progress_is("100")
     }
 
 
 
-    pub fn with_progress_is_not_value_100(self) -> Self {
+    pub fn with_progress_is_not_100(self) -> Self {
         self.with_progress_is_not("100")
     }
+
+
 
 
 
@@ -2754,6 +2719,8 @@ impl<R> TaskStatusRequest<R> {
         self.query.relations.retain(|relation| relation.name != "platform");
         self
     }
+
+
     pub fn select_platform(mut self) -> Self {
         self.query = self.query.relation("platform");
         self
@@ -2784,6 +2751,7 @@ impl<R> TaskStatusRequest<R> {
         ));
         self
     }
+
     pub fn have_tasks(self) -> Self {
         self.with_task_list_matching(SelectQuery::new("Task"))
     }
@@ -2827,6 +2795,7 @@ impl<R> TaskStatusRequest<R> {
         self.relation_selections.push(RelationSelection::new("task_list", selection));
         self
 }
+
     pub fn count_tasks(self) -> Self {
         self.count_tasks_as("count_tasks")
     }
@@ -2864,9 +2833,6 @@ impl<R> TaskStatusRequest<R> {
     pub fn group_by_tasks_with_details(self, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_tasks(request)
     }
-
-
-
 }
 
 impl<R> Default for TaskStatusRequest<R> {
@@ -2894,19 +2860,6 @@ impl<R> From< TaskStatusRequest<R> > for QuerySelection {
 }
 
 
-impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::TaskStatus> 
-where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
-{
-    type Error = crate::TeaqlDataServiceError<C::TaskStatusRepository<'a>>;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
-        Box::pin(async move {
-            teaql_runtime::save_audited_ledger_entity(self, ctx.user_context())
-                .await
-                .map_err(DataServiceError::Runtime)
-        })
-    }
-}
-
 impl<R: teaql_core::Entity> crate::PurposedQuery<TaskStatusRequest<R>> {
     pub fn new_entity<C>(&self, ctx: &C) -> crate::TaskStatus
     where
@@ -2916,11 +2869,11 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<TaskStatusRequest<R>> {
     }
 
     fn into_inner_with_trace(mut self) -> TaskStatusRequest<R> {
-        self.inner.query.trace_chain.push(teaql_core::TraceNode::new(
-            self.inner.query.entity.clone(),
-            None,
-            self.purpose,
-        ));
+        self.inner.query.trace_chain.push(teaql_core::TraceNode {
+            entity_type: self.inner.query.entity.clone(),
+            entity_id: None,
+            comment: self.purpose,
+        });
         self.inner
     }
 

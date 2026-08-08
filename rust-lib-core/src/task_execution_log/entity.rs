@@ -1,4 +1,3 @@
-
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/task_execution_log
 use std::collections::BTreeMap;
 
@@ -11,7 +10,7 @@ use teaql_macros::TeaqlEntity;
 /// If you encounter compilation errors (e.g., method not found), DO NOT guess another method name.
 /// Read the method signatures in this file before proceeding.
 #[derive(Clone, Debug, PartialEq, TeaqlEntity)]
-#[teaql(entity = "TaskExecutionLog", table = "task_execution_log_data", data_service = "meilisearch", audit_mask_fields = "detail", audit_value_max_len = 2048)]
+#[teaql(entity = "TaskExecutionLog", table = "task_execution_log_data", data_service = "meilisearch", audit_mask_fields = "detail")]
 pub struct TaskExecutionLog {
 #[teaql(id)]
     id: u64,
@@ -21,14 +20,18 @@ pub struct TaskExecutionLog {
 
 // @source main.xml:55
     detail: String,
+
 #[teaql(version)]
     version: i64,
+
 // @source main.xml:55
 #[teaql(column = "task")]
     task_id: u64,
+
 // @source main.xml:55
 #[teaql(relation(target = "Task", local_key = "task_id", foreign_key = "id"))]
     task: Option<crate::Task>,
+
     #[teaql(dynamic)]
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
@@ -45,11 +48,17 @@ impl TaskExecutionLog {
     pub(crate) fn runtime_new(root: teaql_runtime::EntityRoot) -> Self {
         Self {
             id: 0_u64,
+
             action: String::new(),
+
             detail: String::new(),
+
             version: 0_i64,
+
             task_id: 0_u64,
+
             task: None,
+
             dynamic: BTreeMap::new(),
             root,
             __load_state: teaql_core::eval::LoadState::FullyLoaded,
@@ -65,6 +74,7 @@ impl TaskExecutionLog {
         if let Some(entity) = &mut self.task {
             entity.attach_root_recursive(root.clone());
         }
+
     }
 
     pub fn is_loaded(&self, field_or_relation: &str) -> bool {
@@ -97,6 +107,7 @@ impl TaskExecutionLog {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
 
+
     pub fn action(&self) -> String {
         self.changed_action().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.action.clone())
     }
@@ -118,6 +129,7 @@ impl TaskExecutionLog {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.action())
                 }}
+
 
     pub fn detail(&self) -> String {
         self.changed_detail().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.detail.clone())
@@ -141,6 +153,7 @@ impl TaskExecutionLog {
                     teaql_core::eval::EvalResult::Value(self.detail())
                 }}
 
+
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
     }
@@ -162,6 +175,7 @@ impl TaskExecutionLog {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
+
     pub fn task_id(&self) -> u64 {
         self.changed_task_id().and_then(|value| value.try_u64()).unwrap_or(self.task_id)
     }
@@ -183,6 +197,7 @@ impl TaskExecutionLog {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.task_id())
                 }}
+
     pub fn task(&self) -> Option<&crate::Task> {
         self.task.as_ref()
     }
@@ -198,6 +213,7 @@ impl TaskExecutionLog {
         }
     }
 
+
     pub fn mark_as_delete(&mut self) -> &mut Self {
         self.root.mark_as_delete(self.entity_key());
         self
@@ -207,5 +223,6 @@ impl TaskExecutionLog {
         self.root.set_comment(comment);
         self
     }
-}
 
+
+}

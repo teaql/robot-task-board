@@ -1,4 +1,3 @@
-
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/task
 use std::collections::BTreeMap;
 
@@ -19,8 +18,10 @@ pub struct Task {
 
 // @source main.xml:42
     name: String,
+
 #[teaql(version)]
     version: i64,
+
 // @source main.xml:42
 #[teaql(column = "status")]
     status_id: u64,
@@ -28,6 +29,7 @@ pub struct Task {
 // @source main.xml:42
 #[teaql(column = "platform")]
     platform_id: u64,
+
 // @source main.xml:42
 #[teaql(relation(target = "TaskStatus", local_key = "status_id", foreign_key = "id"))]
     status: Option<crate::TaskStatus>,
@@ -35,8 +37,10 @@ pub struct Task {
 // @source main.xml:42
 #[teaql(relation(target = "Platform", local_key = "platform_id", foreign_key = "id"))]
     platform: Option<crate::Platform>,
+
 #[teaql(relation(target = "TaskExecutionLog", local_key = "id", foreign_key = "task_id", many))]
     task_execution_log_list: SmartList<crate::TaskExecutionLog>,
+
     #[teaql(dynamic)]
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
@@ -53,13 +57,21 @@ impl Task {
     pub(crate) fn runtime_new(root: teaql_runtime::EntityRoot) -> Self {
         Self {
             id: 0_u64,
+
             name: String::new(),
+
             version: 0_i64,
+
             status_id: 0_u64,
+
             platform_id: 0_u64,
+
             status: None,
+
             platform: None,
+
             task_execution_log_list: Default::default(),
+
             dynamic: BTreeMap::new(),
             root,
             __load_state: teaql_core::eval::LoadState::FullyLoaded,
@@ -75,12 +87,15 @@ impl Task {
         if let Some(entity) = &mut self.status {
             entity.attach_root_recursive(root.clone());
         }
+
         if let Some(entity) = &mut self.platform {
             entity.attach_root_recursive(root.clone());
         }
+
         for entity in &mut self.task_execution_log_list {
             entity.attach_root_recursive(root.clone());
         }
+
     }
 
     pub fn is_loaded(&self, field_or_relation: &str) -> bool {
@@ -113,6 +128,7 @@ impl Task {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
 
+
     pub fn name(&self) -> String {
         self.changed_name().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.name.clone())
     }
@@ -135,6 +151,7 @@ impl Task {
                     teaql_core::eval::EvalResult::Value(self.name())
                 }}
 
+
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
     }
@@ -156,6 +173,7 @@ impl Task {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
+
     pub fn status_id(&self) -> u64 {
         self.changed_status_id().and_then(|value| value.try_u64()).unwrap_or(self.status_id)
     }
@@ -178,6 +196,7 @@ impl Task {
                     teaql_core::eval::EvalResult::Value(self.status_id())
                 }}
 
+
     pub fn platform_id(&self) -> u64 {
         self.changed_platform_id().and_then(|value| value.try_u64()).unwrap_or(self.platform_id)
     }
@@ -199,6 +218,7 @@ impl Task {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.platform_id())
                 }}
+
     pub fn update_status_to_planned(&mut self) -> &mut Self {
         self.update_status_id(1001_u64)
     }
@@ -206,6 +226,7 @@ impl Task {
     pub fn status_is_planned(&self) -> bool {
         self.status_id() == 1001_u64
     }
+
     pub fn update_status_to_ready(&mut self) -> &mut Self {
         self.update_status_id(1002_u64)
     }
@@ -213,6 +234,7 @@ impl Task {
     pub fn status_is_ready(&self) -> bool {
         self.status_id() == 1002_u64
     }
+
     pub fn update_status_to_executing(&mut self) -> &mut Self {
         self.update_status_id(1003_u64)
     }
@@ -220,6 +242,7 @@ impl Task {
     pub fn status_is_executing(&self) -> bool {
         self.status_id() == 1003_u64
     }
+
     pub fn update_status_to_verified(&mut self) -> &mut Self {
         self.update_status_id(1004_u64)
     }
@@ -227,6 +250,8 @@ impl Task {
     pub fn status_is_verified(&self) -> bool {
         self.status_id() == 1004_u64
     }
+
+
     pub fn status(&self) -> Option<&crate::TaskStatus> {
         self.status.as_ref()
     }
@@ -242,6 +267,7 @@ impl Task {
         }
     }
 
+
     pub fn platform(&self) -> Option<&crate::Platform> {
         self.platform.as_ref()
     }
@@ -256,6 +282,7 @@ impl Task {
             }
         }
     }
+
     pub fn task_execution_log_list(&self) -> &SmartList<crate::TaskExecutionLog> {
         &self.task_execution_log_list
     }
@@ -281,5 +308,6 @@ impl Task {
         self.root.set_comment(comment);
         self
     }
-}
 
+
+}

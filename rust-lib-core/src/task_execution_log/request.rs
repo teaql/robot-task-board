@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
-
 use serde_json::Value as JsonValue;
 use teaql_core::{Aggregate, AggregateFunction, EntityDescriptor, Expr, Record, SelectQuery, SmartList};
 use teaql_runtime::{DataServiceError, RuntimeError};
-
 use crate::request_support::*;
 
 impl EntityReference for crate::TaskExecutionLog {
@@ -17,6 +15,8 @@ impl EntityReference for &crate::TaskExecutionLog {
         teaql_core::IdentifiableEntity::id_value(self)
     }
 }
+
+
 
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/task_execution_log
 #[derive(Debug)]
@@ -476,10 +476,15 @@ impl<R> TaskExecutionLogRequest<R> {
     fn dynamic_json_self_field(field: &str) -> Option<&'static str> {
         match field {
             "id" => Some("id"),
+
             "action" => Some("action"),
+
             "detail" => Some("detail"),
+
             "version" => Some("version"),
+
             "task" | "task_id" => Some("task_id"),
+
             _ => None,
         }
     }
@@ -493,6 +498,7 @@ impl<R> TaskExecutionLogRequest<R> {
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
+
             _ => self,
         }
     }
@@ -571,10 +577,15 @@ impl<R> TaskExecutionLogRequest<R> {
 
     pub fn select_self(mut self) -> Self {
         self.query = self.query.project("id");
+
         self.query = self.query.project("action");
+
         self.query = self.query.project("detail");
+
         self.query = self.query.project("version");
+
         self.query = self.query.project("task_id");
+
         self
     }
 
@@ -589,6 +600,7 @@ impl<R> TaskExecutionLogRequest<R> {
     pub fn select_all(self) -> Self {
         let mut request = self.select_self();
         request = request.select_task();
+
         request
     }
 
@@ -758,6 +770,7 @@ impl<R> TaskExecutionLogRequest<R> {
     }
 
 
+
     pub fn with_id(
         mut self,
         operator: FieldOperator,
@@ -793,6 +806,7 @@ impl<R> TaskExecutionLogRequest<R> {
         self.query = self.query.and_filter(Expr::ne("id", value));
         self
     }
+
 
     pub fn with_id_in(
         mut self,
@@ -1430,6 +1444,8 @@ impl<R> TaskExecutionLogRequest<R> {
         self.aggregate_max("version", alias)
     }
 
+
+
     pub fn order_by_version_asc(mut self) -> Self {
         self.query = self.query.order_asc("version");
         self
@@ -1449,6 +1465,14 @@ impl<R> TaskExecutionLogRequest<R> {
         self.query = self.query.order_gbk_desc("version");
         self
     }
+
+
+
+
+
+
+
+
     pub fn filter_by_task(mut self, value: impl EntityReference) -> Self {
         self.query = self.query.and_filter(Expr::eq("task_id", value.entity_id_value()));
         self
@@ -1555,6 +1579,8 @@ impl<R> TaskExecutionLogRequest<R> {
         self.query.relations.retain(|relation| relation.name != "task");
         self
     }
+
+
     pub fn select_task(mut self) -> Self {
         self.query = self.query.relation("task");
         self
@@ -1612,19 +1638,6 @@ impl<R> From< TaskExecutionLogRequest<R> > for QuerySelection {
 }
 
 
-impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::TaskExecutionLog> 
-where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
-{
-    type Error = crate::TeaqlDataServiceError<C::TaskExecutionLogRepository<'a>>;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
-        Box::pin(async move {
-            teaql_runtime::save_audited_ledger_entity(self, ctx.user_context())
-                .await
-                .map_err(DataServiceError::Runtime)
-        })
-    }
-}
-
 impl<R: teaql_core::Entity> crate::PurposedQuery<TaskExecutionLogRequest<R>> {
     pub fn new_entity<C>(&self, ctx: &C) -> crate::TaskExecutionLog
     where
@@ -1634,11 +1647,11 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<TaskExecutionLogRequest<R>> {
     }
 
     fn into_inner_with_trace(mut self) -> TaskExecutionLogRequest<R> {
-        self.inner.query.trace_chain.push(teaql_core::TraceNode::new(
-            self.inner.query.entity.clone(),
-            None,
-            self.purpose,
-        ));
+        self.inner.query.trace_chain.push(teaql_core::TraceNode {
+            entity_type: self.inner.query.entity.clone(),
+            entity_id: None,
+            comment: self.purpose,
+        });
         self.inner
     }
 

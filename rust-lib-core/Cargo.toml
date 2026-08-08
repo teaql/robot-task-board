@@ -1,7 +1,6 @@
-
 [package]
 name = "robot-kanban-service-core"
-version = "1.0.0"
+version = "0.1.0"
 edition = "2021"
 description = "Generated TeaQL service crate for robot-kanban-service"
 license = "MIT OR Apache-2.0"

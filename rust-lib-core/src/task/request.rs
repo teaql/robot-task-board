@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
-
 use serde_json::Value as JsonValue;
 use teaql_core::{Aggregate, AggregateFunction, EntityDescriptor, Expr, Record, SelectQuery, SmartList};
 use teaql_runtime::{DataServiceError, RuntimeError};
-
 use crate::request_support::*;
 
 impl EntityReference for crate::Task {
@@ -17,6 +15,8 @@ impl EntityReference for &crate::Task {
         teaql_core::IdentifiableEntity::id_value(self)
     }
 }
+
+
 
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/task
 #[derive(Debug)]
@@ -476,10 +476,15 @@ impl<R> TaskRequest<R> {
     fn dynamic_json_self_field(field: &str) -> Option<&'static str> {
         match field {
             "id" => Some("id"),
+
             "name" => Some("name"),
+
             "version" => Some("version"),
+
             "status" | "status_id" => Some("status_id"),
+
             "platform" | "platform_id" => Some("platform_id"),
+
             _ => None,
         }
     }
@@ -493,18 +498,21 @@ impl<R> TaskRequest<R> {
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
+
             "platform" => {
                 self.with_platform_matching(
                     crate::Q::platforms_minimal()
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
+
             "task_execution_log_list" => {
                 self.with_task_execution_log_list_matching(
                     crate::Q::task_execution_logs_minimal()
                         .apply_dynamic_json_filter(tail, value),
                 )
             }
+
             _ => self,
         }
     }
@@ -583,10 +591,15 @@ impl<R> TaskRequest<R> {
 
     pub fn select_self(mut self) -> Self {
         self.query = self.query.project("id");
+
         self.query = self.query.project("name");
+
         self.query = self.query.project("version");
+
         self.query = self.query.project("status_id");
+
         self.query = self.query.project("platform_id");
+
         self
     }
 
@@ -601,7 +614,9 @@ impl<R> TaskRequest<R> {
     pub fn select_all(self) -> Self {
         let mut request = self.select_self();
         request = request.select_status();
+
         request = request.select_platform();
+
         request
     }
 
@@ -773,6 +788,7 @@ impl<R> TaskRequest<R> {
     }
 
 
+
     pub fn with_id(
         mut self,
         operator: FieldOperator,
@@ -808,6 +824,7 @@ impl<R> TaskRequest<R> {
         self.query = self.query.and_filter(Expr::ne("id", value));
         self
     }
+
 
     pub fn with_id_in(
         mut self,
@@ -1179,6 +1196,8 @@ impl<R> TaskRequest<R> {
         self.aggregate_max("version", alias)
     }
 
+
+
     pub fn order_by_version_asc(mut self) -> Self {
         self.query = self.query.order_asc("version");
         self
@@ -1215,7 +1234,7 @@ impl<R> TaskRequest<R> {
     /// 2. **Advanced**: Only use this method when you need to perform advanced searches, dynamic subqueries, or filter based on complex relation conditions.
     ///
     /// # Example
-    /// ```rust
+    /// ```rust,ignore
     /// // Only use when building dynamic queries
     /// let dynamic_query = crate::Q::task_statuses_minimal().filter(...);
     /// let request = crate::Q::tasks().with_status_matching(dynamic_query);
@@ -1245,7 +1264,7 @@ impl<R> TaskRequest<R> {
     /// 2. **Advanced**: Only use this method when you need to perform advanced searches, dynamic subqueries, or filter based on complex relation conditions.
     ///
     /// # Example
-    /// ```rust
+    /// ```rust,ignore
     /// // Only use when building dynamic queries
     /// let dynamic_query = crate::Q::task_statuses_minimal().filter(...);
     /// let request = crate::Q::tasks().without_status_matching(dynamic_query);
@@ -1446,6 +1465,7 @@ impl<R> TaskRequest<R> {
         self.query.relations.retain(|relation| relation.name != "platform");
         self
     }
+
     pub fn status_is_planned(self) -> Self {
         self.filter_by_status(1001_u64)
     }
@@ -1460,6 +1480,7 @@ impl<R> TaskRequest<R> {
         self.query = self.query.and_filter(Expr::ne("status_id", 1001_u64));
         self
     }
+
 
 
     pub fn status_is_ready(self) -> Self {
@@ -1478,6 +1499,7 @@ impl<R> TaskRequest<R> {
     }
 
 
+
     pub fn status_is_executing(self) -> Self {
         self.filter_by_status(1003_u64)
     }
@@ -1494,6 +1516,7 @@ impl<R> TaskRequest<R> {
     }
 
 
+
     pub fn status_is_verified(self) -> Self {
         self.filter_by_status(1004_u64)
     }
@@ -1508,8 +1531,6 @@ impl<R> TaskRequest<R> {
         self.query = self.query.and_filter(Expr::ne("status_id", 1004_u64));
         self
     }
-
-
 
 
     pub fn select_status(mut self) -> Self {
@@ -1543,6 +1564,7 @@ impl<R> TaskRequest<R> {
         self
     }
 
+
     pub fn select_platform(mut self) -> Self {
         self.query = self.query.relation("platform");
         self
@@ -1573,6 +1595,7 @@ impl<R> TaskRequest<R> {
         ));
         self
     }
+
     pub fn have_task_execution_logs(self) -> Self {
         self.with_task_execution_log_list_matching(SelectQuery::new("TaskExecutionLog"))
     }
@@ -1616,6 +1639,7 @@ impl<R> TaskRequest<R> {
         self.relation_selections.push(RelationSelection::new("task_execution_log_list", selection));
         self
 }
+
     pub fn count_task_execution_logs(self) -> Self {
         self.count_task_execution_logs_as("count_task_execution_logs")
     }
@@ -1653,9 +1677,6 @@ impl<R> TaskRequest<R> {
     pub fn group_by_task_execution_logs_with_details(self, request: impl Into<QuerySelection>) -> Self {
         self.stats_from_task_execution_logs(request)
     }
-
-
-
 }
 
 impl<R> Default for TaskRequest<R> {
@@ -1683,19 +1704,6 @@ impl<R> From< TaskRequest<R> > for QuerySelection {
 }
 
 
-impl<'a, C> crate::request_support::AuditedSave<'a, C> for teaql_core::Audited<crate::Task> 
-where C: crate::request_support::TeaqlRepositoryProvider + ?Sized + 'a
-{
-    type Error = crate::TeaqlDataServiceError<C::TaskRepository<'a>>;
-    fn save(self, ctx: &'a C) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<teaql_runtime::GraphNode, Self::Error>> + '_>> {
-        Box::pin(async move {
-            teaql_runtime::save_audited_ledger_entity(self, ctx.user_context())
-                .await
-                .map_err(DataServiceError::Runtime)
-        })
-    }
-}
-
 impl<R: teaql_core::Entity> crate::PurposedQuery<TaskRequest<R>> {
     pub fn new_entity<C>(&self, ctx: &C) -> crate::Task
     where
@@ -1705,11 +1713,11 @@ impl<R: teaql_core::Entity> crate::PurposedQuery<TaskRequest<R>> {
     }
 
     fn into_inner_with_trace(mut self) -> TaskRequest<R> {
-        self.inner.query.trace_chain.push(teaql_core::TraceNode::new(
-            self.inner.query.entity.clone(),
-            None,
-            self.purpose,
-        ));
+        self.inner.query.trace_chain.push(teaql_core::TraceNode {
+            entity_type: self.inner.query.entity.clone(),
+            entity_id: None,
+            comment: self.purpose,
+        });
         self.inner
     }
 

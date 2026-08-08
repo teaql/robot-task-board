@@ -32,24 +32,29 @@ impl<'a> TaskExecutionLogExpression<'a> {
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_action(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("action", |entity| entity.eval_action());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
 
     pub fn get_detail(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("detail", |entity| entity.eval_detail());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_version(self) -> crate::ValueExpression<'a, i64> {
         let next = self.result.and_then("version", |entity| entity.eval_version());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_task_id(self) -> crate::ValueExpression<'a, u64> {
         let next = self.result.and_then("task_id", |entity| entity.eval_task_id());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_task(self) -> crate::TaskExpression<'a> {
         let next = self.result.and_then("task", |entity| entity.eval_task());
         crate::TaskExpression::new(next, self.root_desc.clone())

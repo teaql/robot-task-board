@@ -32,39 +32,47 @@ impl<'a> TaskStatusExpression<'a> {
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_name(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("name", |entity| entity.eval_name());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
 
     pub fn get_code(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("code", |entity| entity.eval_code());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_color(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("color", |entity| entity.eval_color());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_display_order(self) -> crate::ValueExpression<'a, rust_decimal::Decimal> {
+
+    pub fn get_display_order(self) -> crate::ValueExpression<'a, i32> {
         let next = self.result.and_then("display_order", |entity| entity.eval_display_order());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
-    pub fn get_progress(self) -> crate::ValueExpression<'a, rust_decimal::Decimal> {
+
+    pub fn get_progress(self) -> crate::ValueExpression<'a, i32> {
         let next = self.result.and_then("progress", |entity| entity.eval_progress());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
 
     pub fn get_version(self) -> crate::ValueExpression<'a, i64> {
         let next = self.result.and_then("version", |entity| entity.eval_version());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_platform_id(self) -> crate::ValueExpression<'a, u64> {
         let next = self.result.and_then("platform_id", |entity| entity.eval_platform_id());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_platform(self) -> crate::PlatformExpression<'a> {
         let next = self.result.and_then("platform", |entity| entity.eval_platform());
         crate::PlatformExpression::new(next, self.root_desc.clone())

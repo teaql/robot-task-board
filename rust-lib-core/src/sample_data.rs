@@ -1,10 +1,9 @@
-
 use std::collections::BTreeMap;
 use crate::TeaqlRuntime;
 use crate::Q;
 use teaql_core::Entity;
 use crate::request_support::TeaqlUserContextExt;
-use crate::request_support::AuditedSave;
+use teaql_runtime::AuditedSaveExt;
 
 pub trait IntoU64 {
     fn into_u64(self) -> u64;
@@ -123,6 +122,15 @@ impl SampleDataState {
     }
 }
 
+
+
+
+
+
+
+
+
+
 pub async fn generate_sample_data<C>(
     ctx: &C,
     plan: SampleDataPlan,
@@ -137,6 +145,13 @@ where
 
     load_constant_task_statuses(ctx, &mut state).await?;
 
+
+    ctx.user_context().transaction_data(|| async {
+        Box::pin(generate_platforms(ctx, &mut state)).await.map_err(|e| {
+            teaql_runtime::DataServiceError::Runtime(teaql_runtime::RuntimeError::Graph(e))
+        })
+    }).await.map_err(|e| e.to_string())?;
+
     ctx.user_context().transaction_data(|| async {
         Box::pin(generate_tasks(ctx, &mut state)).await.map_err(|e| {
             teaql_runtime::DataServiceError::Runtime(teaql_runtime::RuntimeError::Graph(e))
@@ -148,7 +163,6 @@ where
             teaql_runtime::DataServiceError::Runtime(teaql_runtime::RuntimeError::Graph(e))
         })
     }).await.map_err(|e| e.to_string())?;
-
 
     let report = state.into_report();
     log::info!("Sample data generation completed successfully. Generated: {} tables, Skipped: {} tables.", report.generated.len(), report.skipped.len());
@@ -183,6 +197,55 @@ where
     Ok(())
 }
 
+async fn generate_platforms<C>(
+    ctx: &C,
+    state: &mut SampleDataState,
+) -> Result<(), String>
+where
+    C: TeaqlRuntime + ?Sized + crate::TeaqlRepositoryProvider,
+{
+
+    let object_fields_count = 0;
+    let base_fanout = std::cmp::max(1, object_fields_count) * 20;
+
+    let fanout = match state.plan.scale {
+        SampleDataScale::Tiny => base_fanout,
+        SampleDataScale::Small => base_fanout * 5,
+        SampleDataScale::Medium => base_fanout * 50,
+    };
+
+    log::info!("Generating sample data for Platform (expected: {})...", fanout);
+
+    for i in 0..fanout {
+        let mut entity = Q::platforms().purpose("Init Sample Data").new_entity(ctx);
+        let mut used_refs: std::collections::HashSet<u64> = std::collections::HashSet::new();
+
+                entity.update_name(format!("{} {}", "Robot System", i + 1));
+
+                {
+                    let days = ((i as u64 + state.plan.seed) % (365 * 3)) as i64;
+                    let past = chrono::Utc::now().naive_utc() - chrono::Duration::try_days(days).unwrap_or_default();
+                    entity.update_founded(past.format("%Y-%m-%d").to_string());
+                }
+
+                entity.update_user_email(format!("{} {}", "Sample", i + 1));
+
+
+
+        let entity = entity.audit_as("Init Sample Data").save(ctx.user_context()).await.map_err(|e| e.to_string())?;
+
+        state.record_generated("Platform");
+
+        if i % 20 == 0 {
+            log::info!("Generating Platform: {}/{}", i, fanout);
+        }
+
+        state.add_reference("Platform", entity.id().into_u64());
+    }
+
+    log::info!("Successfully generated sample records for Platform.");
+    Ok(())
+}
 async fn generate_tasks<C>(
     ctx: &C,
     state: &mut SampleDataState,
@@ -195,13 +258,11 @@ where
             log::info!("Skipped generating Task: Required dependency Task Status is missing in reference pool.");
             return Ok(());
         }
-
         if state.ids("Platform").is_empty() {
             state.record_skipped("Task", "Required dependency Platform is missing in reference pool".to_string());
             log::info!("Skipped generating Task: Required dependency Platform is missing in reference pool.");
             return Ok(());
         }
-
 
     let object_fields_count = 0 + 1 + 1;
     let base_fanout = std::cmp::max(1, object_fields_count) * 20;
@@ -216,7 +277,7 @@ where
 
     for i in 0..fanout {
         let mut entity = Q::tasks().purpose("Init Sample Data").new_entity(ctx);
-        let mut used_refs = std::collections::HashSet::new();
+        let mut used_refs: std::collections::HashSet<u64> = std::collections::HashSet::new();
 
                 if let Some(ref_id) = state.pick_unused_id("Task Status", i as usize, &used_refs) {
                     entity.update_status_id(ref_id);
@@ -230,11 +291,11 @@ where
                 } else {
                     // Optional relation was missing in reference pool
                 }
-                entity.update_name(format!("{} {}", "Task Name", i + 1));
+                entity.update_name(format!("{} {}", "Task Name|[1,200]", i + 1));
 
 
 
-        let entity = entity.audit_as("Init Sample Data").save(ctx).await.map_err(|e| e.to_string())?;
+        let entity = entity.audit_as("Init Sample Data").save(ctx.user_context()).await.map_err(|e| e.to_string())?;
 
         state.record_generated("Task");
 
@@ -248,8 +309,6 @@ where
     log::info!("Successfully generated sample records for Task.");
     Ok(())
 }
-
-
 async fn generate_task_execution_logs<C>(
     ctx: &C,
     state: &mut SampleDataState,
@@ -262,7 +321,6 @@ where
             log::info!("Skipped generating Task Execution Log: Required dependency Task is missing in reference pool.");
             return Ok(());
         }
-
 
     let object_fields_count = 0 + 1;
     let base_fanout = std::cmp::max(1, object_fields_count) * 20;
@@ -277,7 +335,7 @@ where
 
     for i in 0..fanout {
         let mut entity = Q::task_execution_logs().purpose("Init Sample Data").new_entity(ctx);
-        let mut used_refs = std::collections::HashSet::new();
+        let mut used_refs: std::collections::HashSet<u64> = std::collections::HashSet::new();
 
                 if let Some(ref_id) = state.pick_unused_id("Task", i as usize, &used_refs) {
                     entity.update_task_id(ref_id);
@@ -285,20 +343,21 @@ where
                 } else {
                     // Optional relation was missing in reference pool
                 }
-                entity.update_action(format!("{} {}", "string()", i + 1));
+                entity.update_action(format!("{} {}", "Sample", i + 1));
 
-                entity.update_detail(format!("{} {}", "string()", i + 1));
+                entity.update_detail(format!("{} {}", "Sample", i + 1));
 
 
 
-entity.audit_as("Init Sample Data").save(ctx).await.map_err(|e| e.to_string())?;
+
+
+entity.audit_as("Init Sample Data").save(ctx.user_context()).await.map_err(|e| e.to_string())?;
 
         state.record_generated("Task Execution Log");
 
         if i % 20 == 0 {
             log::info!("Generating Task Execution Log: {}/{}", i, fanout);
         }
-
     }
 
     log::info!("Successfully generated sample records for Task Execution Log.");

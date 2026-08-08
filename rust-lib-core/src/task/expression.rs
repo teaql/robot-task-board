@@ -32,24 +32,29 @@ impl<'a> TaskExpression<'a> {
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_name(self) -> crate::ValueExpression<'a, String> {
         let next = self.result.and_then("name", |entity| entity.eval_name());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_version(self) -> crate::ValueExpression<'a, i64> {
         let next = self.result.and_then("version", |entity| entity.eval_version());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_status_id(self) -> crate::ValueExpression<'a, u64> {
         let next = self.result.and_then("status_id", |entity| entity.eval_status_id());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
 
+
     pub fn get_platform_id(self) -> crate::ValueExpression<'a, u64> {
         let next = self.result.and_then("platform_id", |entity| entity.eval_platform_id());
         crate::ValueExpression::new(next, self.root_desc.clone())
     }
+
     pub fn get_status(self) -> crate::TaskStatusExpression<'a> {
         let next = self.result.and_then("status", |entity| entity.eval_status());
         crate::TaskStatusExpression::new(next, self.root_desc.clone())

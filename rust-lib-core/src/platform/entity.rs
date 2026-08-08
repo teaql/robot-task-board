@@ -1,4 +1,3 @@
-
 // ⛔ AI agents: DO NOT read this file for API discovery. Instead run: cargo teaql --input modeling/MODEL.xml rust-assist-query/platform
 use std::collections::BTreeMap;
 
@@ -25,12 +24,16 @@ pub struct Platform {
 
 // @source main.xml:9
     user_email: String,
+
 #[teaql(version)]
     version: i64,
+
 #[teaql(relation(target = "TaskStatus", local_key = "id", foreign_key = "platform_id", many))]
     task_status_list: SmartList<crate::TaskStatus>,
+
 #[teaql(relation(target = "Task", local_key = "id", foreign_key = "platform_id", many))]
     task_list: SmartList<crate::Task>,
+
     #[teaql(dynamic)]
     dynamic: BTreeMap<String, teaql_core::Value>,
     #[teaql(skip)]
@@ -47,12 +50,19 @@ impl Platform {
     pub(crate) fn runtime_new(root: teaql_runtime::EntityRoot) -> Self {
         Self {
             id: 0_u64,
+
             name: String::new(),
+
             founded: teaql_core::time::Timestamp::now(),
+
             user_email: String::new(),
+
             version: 0_i64,
+
             task_status_list: Default::default(),
+
             task_list: Default::default(),
+
             dynamic: BTreeMap::new(),
             root,
             __load_state: teaql_core::eval::LoadState::FullyLoaded,
@@ -68,9 +78,11 @@ impl Platform {
         for entity in &mut self.task_status_list {
             entity.attach_root_recursive(root.clone());
         }
+
         for entity in &mut self.task_list {
             entity.attach_root_recursive(root.clone());
         }
+
     }
 
     pub fn is_loaded(&self, field_or_relation: &str) -> bool {
@@ -103,6 +115,7 @@ impl Platform {
                     teaql_core::eval::EvalResult::Value(self.id())
                 }}
 
+
     pub fn name(&self) -> String {
         self.changed_name().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.name.clone())
     }
@@ -124,6 +137,7 @@ impl Platform {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.name())
                 }}
+
 
     pub fn founded(&self) -> teaql_core::time::Timestamp {
         self.changed_founded().and_then(|value| value.try_timestamp()).unwrap_or(self.founded)
@@ -147,6 +161,7 @@ impl Platform {
                     teaql_core::eval::EvalResult::Value(self.founded())
                 }}
 
+
     pub fn user_email(&self) -> String {
         self.changed_user_email().and_then(|value| value.try_text().map(|value| value.to_owned())).unwrap_or_else(|| self.user_email.clone())
     }
@@ -169,6 +184,7 @@ impl Platform {
                     teaql_core::eval::EvalResult::Value(self.user_email())
                 }}
 
+
     pub fn version(&self) -> i64 {
         self.changed_version().and_then(|value| value.try_i64()).unwrap_or(self.version)
     }
@@ -190,6 +206,7 @@ impl Platform {
                 } else {
                     teaql_core::eval::EvalResult::Value(self.version())
                 }}
+
     pub fn task_status_list(&self) -> &SmartList<crate::TaskStatus> {
         &self.task_status_list
     }
@@ -231,5 +248,6 @@ impl Platform {
         self.root.set_comment(comment);
         self
     }
-}
 
+
+}
